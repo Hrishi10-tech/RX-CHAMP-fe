@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/validate_palette.js \"#2222cc,#8b5cf6,#2dd4bf,#f59e0b,#22c55e\" --mode light)",
+      "Bash(node scripts/validate_palette.js \"#4f46e5,#a855f7,#14b8a6,#f59e0b\" --mode light --pairs all)",
+      "Bash(node scripts/validate_palette.js \"#4f46e5,#9333ea,#0d9488,#f59e0b\" --mode light --pairs all)",
+      "Bash(node \"C:/Users/Techuser/AppData/Local/Temp/claude/C--Users-Techuser-Documents-timechamp-new-fe/bc886b83-53f0-4051-8dd3-69cd958b91f8/scratchpad/shoot.js\")",
+      "Bash(NODE_PATH=\"c:/Users/Techuser/Documents/timechamp new fe/node_modules\" node \"C:/Users/Techuser/AppData/Local/Temp/claude/C--Users-Techuser-Documents-timechamp-new-fe/bc886b83-53f0-4051-8dd3-69cd958b91f8/scratchpad/shoot.js\")",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(NODE_PATH=\"c:/Users/Techuser/Documents/timechamp new fe/node_modules\" node \"C:/Users/Techuser/AppData/Local/Temp/claude/C--Users-Techuser-Documents-timechamp-new-fe/bc886b83-53f0-4051-8dd3-69cd958b91f8/scratchpad/shoot2.js\")",
+      "Bash(grep -rn -e \"Result of \\\\`get\" -e \"Return value of the\" -e \"the member is on right now\" -e \"Live rollup\" -e \"Manager-set presence\" -e \"Effective live status\" -e \"One entry in the client-built\" -e \"Props for the full-screen\" -e \"── Live status\" --include=\"*.ts\" --include=\"*.tsx\" .)",
+      "Bash(grep -rnE \"^\\\\s*//\\\\s*[A-Za-z]{2,12}\\\\s*$\" --include=\"*.ts\" --include=\"*.tsx\" .)",
+      "Bash(grep -viE \"//\\\\s*\\(eslint.*\\)?$\")",
+      "Bash(grep -rnE \"//.*[bcdfghjklmnpqrstvwxyz]{4,}\" --include=\"*.ts\" --include=\"*.tsx\" .)",
+      "Bash(grep -iE \"//.*\\(fsf|sfs|asdf|sdf|dfg|fgh|ghj|hjk|jkl|qwe|wer|rty|zxc|xcv|cvb|vbn|bnm|kjh|lkj|mnb|poi|uio\\)\")",
+      "Bash(grep -rnE \"^\\\\s*//\\\\s*\\(const|let|var|return|if|for|console\\\\.|function|import|export|await|setState|<[A-Za-z]\\)\" --include=\"*.ts\" --include=\"*.tsx\" .)",
+      "Bash(NODE_PATH='c:/Users/Techuser/Documents/timechamp new fe/node_modules' node __TRACKED_VAR__/strip-comments2.js src)",
+      "Bash(npx prettier *)",
+      "Bash(npx next *)",
+      "Bash(echo \"=== BUILD EXIT: $? ===\")",
+      "Bash(node -e \"const L=require\\('lucide-react'\\);['Lock','LockOpen','Unlock','ShieldBan','ShieldCheck','UserX','UserCheck'].forEach\\(n=>console.log\\(n,n in L?'ok':'MISSING'\\)\\)\")"
+    ]
+  }
+}
