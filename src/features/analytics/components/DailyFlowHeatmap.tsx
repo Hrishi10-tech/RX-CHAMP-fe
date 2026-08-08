@@ -1,32 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import type { DailyFlowCell } from "@/features/analytics/types";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -46,33 +17,45 @@ function cellColor(value: number): string {
   return `rgba(79, 70, 229, ${(0.12 + value * 0.88).toFixed(3)})`;
 }
 
-export function DailyFlowHeatmap({ data }: { data: DailyFlowCell[] }) {
+export function DailyFlowHeatmap({
+  data,
+  days,
+}: {
+  data: DailyFlowCell[];
+  /** Monday-based weekday rows to draw. Defaults to the whole week; a single-day
+   *  report passes just that day so six empty rows aren't printed. */
+  days?: number[];
+}) {
   const byKey = new Map(data.map((c) => [`${c.day}-${c.hour}`, c.value]));
+  const rows = days ?? DAYS.map((_, i) => i);
 
   return (
     <div>
       <div className="space-y-1">
-        {DAYS.map((label, day) => (
-          <div key={label} className="flex items-center gap-2">
-            <span className="w-8 shrink-0 text-[11px] font-medium text-slate-400">{label}</span>
-            <div
-              className="grid flex-1 gap-1"
-              style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}
-            >
-              {Array.from({ length: 24 }, (_, hour) => {
-                const v = byKey.get(`${day}-${hour}`) ?? 0;
-                return (
-                  <div
-                    key={hour}
-                    className="aspect-square rounded-[3px]"
-                    style={{ backgroundColor: cellColor(v) }}
-                    title={`${label} ${hour}:00 — ${Math.round(v * 100)}%`}
-                  />
-                );
-              })}
+        {rows.map((day) => {
+          const label = DAYS[day] ?? "";
+          return (
+            <div key={label} className="flex items-center gap-2">
+              <span className="w-8 shrink-0 text-[11px] font-medium text-slate-400">{label}</span>
+              <div
+                className="grid flex-1 gap-1"
+                style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}
+              >
+                {Array.from({ length: 24 }, (_, hour) => {
+                  const v = byKey.get(`${day}-${hour}`) ?? 0;
+                  return (
+                    <div
+                      key={hour}
+                      className="aspect-square rounded-[3px]"
+                      style={{ backgroundColor: cellColor(v) }}
+                      title={`${label} ${hour}:00 — ${Math.round(v * 100)}%`}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mt-2 flex items-center gap-2">

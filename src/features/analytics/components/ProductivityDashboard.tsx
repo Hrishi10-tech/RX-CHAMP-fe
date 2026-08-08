@@ -35,6 +35,14 @@ import { OnlineHoursChart } from "@/features/analytics/components/OnlineHoursCha
 import { TopAppsWidget } from "@/features/analytics/components/TopAppsWidget";
 import { LiveStatusBadge } from "@/features/analytics/components/LiveStatusBadge";
 import { useLiveStatus } from "@/features/analytics/hooks/useLiveStatus";
+import { ExportReportModal } from "@/features/analytics/components/ExportReportModal";
+import { ReportPdfBuilder } from "@/features/analytics/components/ReportPdfBuilder";
+import {
+  MAX_REPORT_DAYS,
+  datesBetween,
+  fetchReportRange,
+  type ReportDay,
+} from "@/features/analytics/lib/reportRange";
 
 const KPI_META: Record<string, { icon: LucideIcon; color: string }> = {
   idle: { icon: Moon, color: C.amber },
@@ -80,6 +88,15 @@ export function ProductivityDashboard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Export: the range is chosen in a dialog, then the report prints without ever
+  // being shown on screen.
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(
+    null,
+  );
+  const [report, setReport] = useState<ReportDay[] | null>(null);
+  const [reportRange, setReportRange] = useState<{ from: string; to: string } | null>(null);
+
   const greeting = useMemo(() => greetingFor(new Date().getHours()), []);
   const isManagerView = Boolean(backHref);
 
@@ -122,6 +139,25 @@ export function ProductivityDashboard({
     };
   }, [presenceVersion, userId, selectedDate]);
 
+  async function handleGenerate(from: string, to: string) {
+    const dates = datesBetween(from, to);
+    if (dates.length === 0 || dates.length > MAX_REPORT_DAYS) return; // dialog already guards this
+
+    setExportProgress({ done: 0, total: dates.length });
+    try {
+      const days = await fetchReportRange(userId, dates, (done, total) =>
+        setExportProgress({ done, total }),
+      );
+      setExportOpen(false);
+      setReportRange({ from, to });
+      setReport(days); // mounts the builder, which renders the PDF and downloads it
+    } catch {
+      toast.error("Couldn't build the report. Please try again.");
+    } finally {
+      setExportProgress(null);
+    }
+  }
+
   const back = backHref ? (
     <Link
       href={backHref}
@@ -156,7 +192,7 @@ export function ProductivityDashboard({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm">
             <span className="text-slate-400">Date</span>
             <input
@@ -167,9 +203,10 @@ export function ProductivityDashboard({
               className="bg-transparent font-semibold text-slate-900 focus:outline-none"
             />
           </label>
+
           <button
             type="button"
-            onClick={() => toast.info("Export isn't wired up yet — coming from the backend.")}
+            onClick={() => setExportOpen(true)}
             className="flex items-center gap-2 rounded-xl bg-[rgb(34_34_204)] px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[rgb(28_28_180)]"
           >
             <Download className="h-4 w-4" />
@@ -177,6 +214,29 @@ export function ProductivityDashboard({
           </button>
         </div>
       </div>
+
+      {/* Lives with the button so it works from the loading and error states too. */}
+      {exportOpen && (
+        <ExportReportModal
+          progress={exportProgress}
+          onGenerate={handleGenerate}
+          onClose={() => setExportOpen(false)}
+        />
+      )}
+
+      {/* Renders nothing visible — the dashboard stays up while the PDF is built. */}
+      {report && reportRange && (
+        <ReportPdfBuilder
+          days={report}
+          userName={userName}
+          from={reportRange.from}
+          to={reportRange.to}
+          onDone={() => {
+            setReport(null);
+            setReportRange(null);
+          }}
+        />
+      )}
     </div>
   );
 
