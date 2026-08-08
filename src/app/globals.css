@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer base {
   :root {
     /* ---- Enterprise (light) ---- */
@@ -41,7 +40,6 @@
     --ring: 245 75% 59%;
 
     --radius: 0.75rem;
-
 
     --c-bg: 15 23 42;
     --c-card: 30 41 59;
@@ -88,11 +86,12 @@
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
     -webkit-font-smoothing: antialiased;
   }
 }
-
 
 @keyframes toast-slide-in-right {
   from {
@@ -131,9 +130,8 @@
   }
 }
 
-
 .scrollbar-slim {
-  scrollbar-width: thin; 
+  scrollbar-width: thin;
   scrollbar-color: rgba(34, 34, 204, 0.35) transparent;
 }
 .scrollbar-slim::-webkit-scrollbar {
@@ -155,8 +153,8 @@
 }
 
 .scrollbar-none {
-  scrollbar-width: none; 
-  -ms-overflow-style: none; 
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
