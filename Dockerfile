@@ -13,6 +13,19 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Both of these must exist during `next build`, not just at runtime:
+#   - BACKEND_URL is read inside next.config.mjs `rewrites()`, which Next evaluates
+#     at build time and serialises into .next/routes-manifest.json. Setting it later
+#     cannot change the baked destination.
+#   - NEXT_PUBLIC_* values are inlined into the client bundle at build time.
+# Docker hides the host environment from the build unless it is declared as ARG, so
+# without these the config fell back to localhost and every /api/* call 500'd.
+ARG BACKEND_URL
+ARG NEXT_PUBLIC_SOCKET_URL
+ENV BACKEND_URL=${BACKEND_URL}
+ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
+
 RUN npm run build
 
 # ---- Runner ----
