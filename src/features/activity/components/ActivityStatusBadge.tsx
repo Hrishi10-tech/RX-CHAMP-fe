@@ -19,6 +19,12 @@ const STYLES: Record<ActivityStatus, { dot: string; text: string; bg: string; la
     bg: "bg-slate-50 ring-slate-200",
     label: "Offline",
   },
+  DAY_ENDED: {
+    dot: "bg-indigo-500",
+    text: "text-indigo-700",
+    bg: "bg-indigo-50 ring-indigo-200",
+    label: "Day ended",
+  },
 };
 
 export function ActivityStatusBadge({

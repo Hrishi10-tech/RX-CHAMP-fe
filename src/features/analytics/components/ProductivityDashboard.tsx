@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Coffee,
   Download,
+  LogIn,
   Moon,
   Users,
   Utensils,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { getDashboardAnalytics } from "@/features/analytics/api/getDashboardAnalytics";
+import { getUserDaily } from "@/features/activity/api/getUserDaily";
 import type { DashboardAnalytics } from "@/features/analytics/types";
 import { C } from "@/features/analytics/lib/palette";
 import { formatDuration } from "@/features/activity/lib/format";
@@ -70,6 +72,16 @@ function longDate(iso: string): string {
   }
 }
 
+/** ISO timestamp → local "9:10 AM", or null if unparseable. */
+function shortTime(iso: string | null): string | null {
+  if (!iso) return null;
+  try {
+    return format(parseISO(iso), "h:mm a");
+  } catch {
+    return null;
+  }
+}
+
 export function ProductivityDashboard({
   userId,
   userName,
@@ -85,6 +97,7 @@ export function ProductivityDashboard({
 }) {
   const [selectedDate, setSelectedDate] = useState(date ?? todayIso());
   const [data, setData] = useState<DashboardAnalytics | null>(null);
+  const [loginAt, setLoginAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,6 +133,11 @@ export function ProductivityDashboard({
         if (active) setError(err instanceof Error ? err.message : "Couldn't load dashboard.");
       })
       .finally(() => active && setLoading(false));
+    // Login time lives on the daily activity rollup — best-effort, never blocks
+    // or fails the dashboard.
+    getUserDaily(userId, selectedDate)
+      .then((d) => active && setLoginAt(d.loginAt))
+      .catch(() => active && setLoginAt(null));
     return () => {
       active = false;
     };
@@ -186,6 +204,12 @@ export function ProductivityDashboard({
                 : "Productivity Dashboard"}
             </h1>
             {liveStatus && <LiveStatusBadge status={liveStatus} live={liveConnected} />}
+            {shortTime(loginAt) && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                <LogIn className="h-3.5 w-3.5 text-slate-400" />
+                Login {shortTime(loginAt)}
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm text-slate-500">
             Productivity overview for {longDate(selectedDate)}.

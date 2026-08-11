@@ -1,4 +1,4 @@
-export type ActivityStatus = "ACTIVE" | "IDLE" | "OFFLINE";
+export type ActivityStatus = "ACTIVE" | "IDLE" | "OFFLINE" | "DAY_ENDED";
 
 export interface CurrentActivity {
   status: ActivityStatus;
@@ -38,6 +38,7 @@ export interface LiveActivityUpdate {
   title: string | null;
   url: string | null;
   lastSampleAt: string | null;
+  loginAt: string | null;
   activeSec: number;
   idleSec: number;
 }
@@ -66,6 +67,10 @@ export interface DailyActivity {
   extraSec: number;
   remainingSec: number;
   clockedOut: boolean;
+  /** True once the user pressed "End Day". */
+  dayEnded: boolean;
+  /** When the user logged in / the agent first reported today (ISO), or null. */
+  loginAt: string | null;
   clockInAt: string | null;
   clockOutAt: string | null;
   topApps: AppUsage[];

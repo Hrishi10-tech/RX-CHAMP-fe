@@ -19,6 +19,12 @@ const STYLES: Record<LiveStatus, { dot: string; text: string; bg: string; label:
     bg: "bg-slate-50 ring-slate-200",
     label: "Offline",
   },
+  DAY_ENDED: {
+    dot: "bg-indigo-500",
+    text: "text-indigo-700",
+    bg: "bg-indigo-50 ring-indigo-200",
+    label: "Day ended",
+  },
   BREAK: { dot: "bg-sky-500", text: "text-sky-700", bg: "bg-sky-50 ring-sky-200", label: "Break" },
   LUNCH: {
     dot: "bg-violet-500",
