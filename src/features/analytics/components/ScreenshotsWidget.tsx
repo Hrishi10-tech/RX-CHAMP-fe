@@ -40,6 +40,23 @@ const PAGE_SIZE = 10;
 // through any overtime — instead of a fixed 9–6 window that hid captures outside it.
 // The user can still narrow the range to inspect a specific time.
 const FULL_DAY = { start: "00:00", end: "23:59" };
+// The chosen range is remembered across refreshes so a set window (e.g. 10:00–19:00)
+// doesn't reset to the default every time the page reloads.
+const RANGE_KEY = "rxchamp.screenshots.range";
+
+function loadSavedRange(): { start: string; end: string } {
+  if (typeof window === "undefined") return FULL_DAY;
+  try {
+    const raw = window.localStorage.getItem(RANGE_KEY);
+    if (raw) {
+      const r = JSON.parse(raw);
+      if (typeof r?.start === "string" && typeof r?.end === "string") return r;
+    }
+  } catch {
+    /* ignore */
+  }
+  return FULL_DAY;
+}
 
 function rangeIso(
   date: string | undefined,
@@ -143,6 +160,22 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
     return () => {
       mounted.current = false;
     };
+  }, []);
+
+  // Restore the last-used range on load so a set window survives a refresh.
+  useEffect(() => {
+    const saved = loadSavedRange();
+    setRange((cur) => (saved.start === cur.start && saved.end === cur.end ? cur : saved));
+  }, []);
+
+  // Change the range AND remember it for next time.
+  const updateRange = useCallback((next: { start: string; end: string }) => {
+    setRange(next);
+    try {
+      window.localStorage.setItem(RANGE_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const startMin = toMinutes(range.start);
@@ -289,9 +322,15 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
         </div>
 
         <div className="flex items-center gap-2">
-          <TimeField value={range.start} onChange={(v) => setRange({ start: v, end: range.end })} />
+          <TimeField
+            value={range.start}
+            onChange={(v) => updateRange({ start: v, end: range.end })}
+          />
           <span className="text-sm text-slate-400">to</span>
-          <TimeField value={range.end} onChange={(v) => setRange({ start: range.start, end: v })} />
+          <TimeField
+            value={range.end}
+            onChange={(v) => updateRange({ start: range.start, end: v })}
+          />
           <button
             type="button"
             onClick={handleCapture}
@@ -484,7 +523,7 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
           {(range.start !== FULL_DAY.start || range.end !== FULL_DAY.end) && (
             <button
               type="button"
-              onClick={() => setRange(FULL_DAY)}
+              onClick={() => updateRange(FULL_DAY)}
               className="absolute right-0 text-sm font-semibold text-[rgb(34_34_204)] hover:underline"
             >
               View Full Timeline →
