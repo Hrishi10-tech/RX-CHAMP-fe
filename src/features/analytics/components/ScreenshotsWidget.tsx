@@ -1,16 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
-import {
-  Camera,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  Loader2,
-  Maximize2,
-} from "lucide-react";
+import { Camera, ChevronDown, ChevronUp, Loader2, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { getScreenshots } from "@/features/screenshots/api/getScreenshots";
@@ -98,12 +90,6 @@ function TimeField({ value, onChange }: { value: string; onChange: (v: string) =
   );
 }
 
-function hourLabel(h: number): string {
-  const ampm = h < 12 || h === 24 ? "AM" : "PM";
-  const hr = h % 12 === 0 ? 12 : h % 12;
-  return `${pad(hr)}:00 ${ampm}`;
-}
-
 function minuteLabel(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -129,13 +115,8 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
   const [capturing, setCapturing] = useState(false);
   const [preview, setPreview] = useState<Screenshot | null>(null);
   const [range, setRange] = useState(FULL_DAY);
-  const [dragging, setDragging] = useState(false);
-  const [activeHour, setActiveHour] = useState<number | null>(null);
 
   const mounted = useRef(true);
-  const stripRef = useRef<HTMLDivElement>(null);
-  const axisRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ x: number; scroll: number } | null>(null);
   const fetchingRef = useRef(false);
 
   useEffect(() => {
@@ -187,8 +168,6 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
 
   useEffect(() => {
     setItems([]);
-    setActiveHour(null);
-    stripRef.current?.scrollTo({ left: 0 });
     void loadPage(0, true);
   }, [loadPage]);
 
@@ -200,39 +179,6 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
   }
 
   const filtered = items;
-
-  const hours = useMemo(() => {
-    const startH = Math.floor(startMin / 60);
-    const endH = Math.ceil(endMin / 60);
-    const list: { hour: number; count: number }[] = [];
-    for (let h = startH; h <= endH; h++) {
-      const count = filtered.filter((s) => new Date(s.takenAt).getHours() === h).length;
-      list.push({ hour: h, count });
-    }
-    return list;
-  }, [startMin, endMin, filtered]);
-
-  useEffect(() => {
-    setActiveHour(filtered.length ? new Date(filtered[0].takenAt).getHours() : null);
-  }, [filtered]);
-
-  const activeIndex = useMemo(() => {
-    if (activeHour == null) return -1;
-    return hours.findIndex((h) => h.hour === activeHour);
-  }, [hours, activeHour]);
-  const fillPct =
-    activeIndex > 0 && hours.length > 1 ? (activeIndex / (hours.length - 1)) * 100 : 0;
-
-  function onStripScroll() {
-    const el = stripRef.current;
-    if (!el || !filtered.length) return;
-    const step = 176 + 12;
-    const idx = Math.min(filtered.length - 1, Math.max(0, Math.round(el.scrollLeft / step)));
-    const hour = new Date(filtered[idx].takenAt).getHours();
-    setActiveHour((prev) => (prev === hour ? prev : hour));
-
-    if (el.scrollWidth - el.scrollLeft - el.clientWidth < 260) loadMore();
-  }
 
   async function handleCapture() {
     setCapturing(true);
@@ -249,27 +195,6 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
     } finally {
       if (mounted.current) setCapturing(false);
     }
-  }
-
-  function scrollStrip(dir: -1 | 1) {
-    stripRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
-  }
-  function scrollAxis(dir: -1 | 1) {
-    axisRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
-  }
-
-  function onDown(e: React.PointerEvent) {
-    if (!stripRef.current) return;
-    dragRef.current = { x: e.clientX, scroll: stripRef.current.scrollLeft };
-    setDragging(true);
-  }
-  function onMove(e: React.PointerEvent) {
-    if (!dragRef.current || !stripRef.current) return;
-    stripRef.current.scrollLeft = dragRef.current.scroll - (e.clientX - dragRef.current.x);
-  }
-  function endDrag() {
-    dragRef.current = null;
-    setDragging(false);
   }
 
   return (
@@ -304,78 +229,10 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
         </div>
       </div>
 
-      {!loading && hours.length > 0 && (
-        <div className="mt-6 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => scrollAxis(-1)}
-            aria-label="Scroll timeline left"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-
-          <div ref={axisRef} className="scrollbar-slim flex-1 overflow-x-auto">
-            <div style={{ minWidth: `${hours.length * 92}px` }}>
-              <div className="flex">
-                {hours.map((h, i) => {
-                  const active = i === activeIndex;
-                  return (
-                    <div key={h.hour} className="flex flex-1 flex-col items-center gap-2">
-                      <span className="whitespace-nowrap text-xs font-medium text-slate-500">
-                        {hourLabel(h.hour)}
-                      </span>
-                      <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                          active
-                            ? "bg-[rgb(34_34_204)] text-white shadow-sm shadow-[rgba(34,34,204,0.35)]"
-                            : "bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]"
-                        }`}
-                      >
-                        {h.count}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="relative mt-3 h-3">
-                <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-slate-200" />
-                <div
-                  className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-[rgb(34_34_204)]"
-                  style={{ width: `${fillPct}%` }}
-                />
-                <div className="relative flex justify-between">
-                  {hours.map((h, i) => (
-                    <span
-                      key={h.hour}
-                      className={`h-3 w-3 rounded-full ring-2 ring-white ${
-                        i <= activeIndex && activeIndex >= 0
-                          ? "bg-[rgb(34_34_204)]"
-                          : "bg-slate-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => scrollAxis(1)}
-            aria-label="Scroll timeline right"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
       {loading ? (
-        <div className="mt-6 flex gap-3 overflow-hidden">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-28 w-44 shrink-0 animate-pulse rounded-xl bg-slate-100" />
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="aspect-video animate-pulse rounded-xl bg-slate-100" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -384,29 +241,10 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
           <p>No screenshots in this range.</p>
         </div>
       ) : (
-        <div className="relative mt-6">
-          <button
-            type="button"
-            onClick={() => scrollStrip(-1)}
-            aria-label="Previous screenshots"
-            className="absolute -left-3 top-[38%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-
-          <div
-            ref={stripRef}
-            onScroll={onStripScroll}
-            onPointerDown={onDown}
-            onPointerMove={onMove}
-            onPointerUp={endDrag}
-            onPointerLeave={endDrag}
-            className={`scrollbar-slim flex gap-3 overflow-x-auto pb-2 ${
-              dragging ? "cursor-grabbing select-none" : "cursor-grab"
-            }`}
-          >
+        <>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {filtered.map((shot, i) => (
-              <div key={shotKey(shot, i)} className="w-44 shrink-0">
+              <div key={shotKey(shot, i)}>
                 <p className="mb-1.5 text-xs font-semibold text-slate-500">
                   {timeLabel(shot.takenAt)}
                 </p>
@@ -420,7 +258,6 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
                     src={shot.url}
                     alt={`Screenshot at ${timeLabel(shot.takenAt)}`}
                     loading="lazy"
-                    draggable={false}
                     className="aspect-video w-full object-cover transition group-hover:opacity-90"
                   />
                 </button>
@@ -437,60 +274,31 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
                 </div>
               </div>
             ))}
+          </div>
 
+          <div className="mt-5 flex items-center justify-center gap-4">
             {hasMore && (
               <button
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="flex aspect-video w-44 shrink-0 flex-col items-center justify-center gap-1.5 self-start rounded-xl border border-dashed border-slate-200 bg-slate-50 text-xs font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-70"
+                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-70"
               >
-                {loadingMore ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Loading…
-                  </>
-                ) : (
-                  <>
-                    <ChevronRight className="h-5 w-5" />
-                    Load more
-                    <span className="text-[10px] font-medium text-slate-400">
-                      {items.length} of {total}
-                    </span>
-                  </>
-                )}
+                {loadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+                {loadingMore ? "Loading…" : `Load more (${items.length} of ${total})`}
+              </button>
+            )}
+            {(range.start !== FULL_DAY.start || range.end !== FULL_DAY.end) && (
+              <button
+                type="button"
+                onClick={() => setRange(FULL_DAY)}
+                className="text-sm font-semibold text-[rgb(34_34_204)] hover:underline"
+              >
+                View Full Timeline →
               </button>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={() => scrollStrip(1)}
-            aria-label="Next screenshots"
-            className="absolute -right-3 top-[38%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {!loading && (
-        <div className="relative mt-4 flex items-center justify-center">
-          <span className="flex items-center gap-2 text-xs text-slate-400">
-            <ChevronLeft className="h-3.5 w-3.5" />
-            Drag to scroll
-            <ChevronRight className="h-3.5 w-3.5" />
-          </span>
-          {(range.start !== FULL_DAY.start || range.end !== FULL_DAY.end) && (
-            <button
-              type="button"
-              onClick={() => setRange(FULL_DAY)}
-              className="absolute right-0 text-sm font-semibold text-[rgb(34_34_204)] hover:underline"
-            >
-              View Full Timeline →
-            </button>
-          )}
-        </div>
+        </>
       )}
 
       {preview && (
