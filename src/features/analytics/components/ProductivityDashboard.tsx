@@ -10,6 +10,7 @@ import {
   Coffee,
   Download,
   LogIn,
+  LogOut,
   Moon,
   Users,
   Utensils,
@@ -98,6 +99,8 @@ export function ProductivityDashboard({
   const [selectedDate, setSelectedDate] = useState(date ?? todayIso());
   const [data, setData] = useState<DashboardAnalytics | null>(null);
   const [loginAt, setLoginAt] = useState<string | null>(null);
+  // Logout = the End-Day time; only shown once the user has ended their day.
+  const [logoutAt, setLogoutAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,8 +139,19 @@ export function ProductivityDashboard({
     // Login time lives on the daily activity rollup — best-effort, never blocks
     // or fails the dashboard.
     getUserDaily(userId, selectedDate)
-      .then((d) => active && setLoginAt(d.loginAt))
-      .catch(() => active && setLoginAt(null));
+      .then((d) => {
+        if (!active) return;
+        setLoginAt(d.loginAt);
+        // clockOutAt is the End-Day time once the day has ended; otherwise it's
+        // just the last sample, which isn't a real "logout" — so only show it
+        // when the day was actually ended.
+        setLogoutAt(d.dayEnded ? d.clockOutAt : null);
+      })
+      .catch(() => {
+        if (!active) return;
+        setLoginAt(null);
+        setLogoutAt(null);
+      });
     return () => {
       active = false;
     };
@@ -208,6 +222,12 @@ export function ProductivityDashboard({
               <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
                 <LogIn className="h-3.5 w-3.5 text-slate-400" />
                 Login {shortTime(loginAt)}
+              </span>
+            )}
+            {shortTime(logoutAt) && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                <LogOut className="h-3.5 w-3.5 text-slate-400" />
+                Logout {shortTime(logoutAt)}
               </span>
             )}
           </div>
