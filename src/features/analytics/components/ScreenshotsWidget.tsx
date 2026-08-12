@@ -36,7 +36,9 @@ const toMinutes = (hhmm: string) => {
 };
 
 const PAGE_SIZE = 10;
-const DEFAULT_RANGE = { start: "09:00", end: "18:00" };
+// Default to the whole day so every screenshot the agent took shows — from login
+// through any overtime — instead of a fixed 9–6 window that hid captures outside it.
+// The user can still narrow the range to inspect a specific time.
 const FULL_DAY = { start: "00:00", end: "23:59" };
 
 function rangeIso(
@@ -126,7 +128,7 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
   const [loadingMore, setLoadingMore] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [preview, setPreview] = useState<Screenshot | null>(null);
-  const [range, setRange] = useState(DEFAULT_RANGE);
+  const [range, setRange] = useState(FULL_DAY);
   const [dragging, setDragging] = useState(false);
   const [activeHour, setActiveHour] = useState<number | null>(null);
 
