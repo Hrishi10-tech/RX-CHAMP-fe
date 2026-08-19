@@ -17,6 +17,9 @@ import type {
   UseChatResult,
 } from "@/features/chat/types";
 
+/** Floor between two forced refetches of the same thread. */
+const REFETCH_COOLDOWN_MS = 5_000;
+
 function otherParty(m: ChatMessage): string {
   return m.mine ? m.toUserId : m.fromUserId;
 }
@@ -46,6 +49,7 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
   // reopening a conversation reads the cache instead of refetching the page.
   const loadedRef = useRef<Set<string>>(new Set());
   const inFlightRef = useRef<Set<string>>(new Set());
+  const lastFetchRef = useRef<Map<string, number>>(new Map());
 
   const messages = useMemo<ChatMessage[]>(
     () => (activeUserId ? threads[activeUserId] ?? [] : []),
@@ -75,12 +79,22 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
     if (inFlightRef.current.has(userId)) return;
     const cached = loadedRef.current.has(userId);
     if (cached && !force) return;
+    // A flapping socket fires `reconnect` over and over; without this every flap
+    // would refetch the open thread.
+    if (force) {
+      const last = lastFetchRef.current.get(userId) ?? 0;
+      if (Date.now() - last < REFETCH_COOLDOWN_MS) return;
+    }
 
     inFlightRef.current.add(userId);
-    if (!cached && activeUserIdRef.current === userId) setLoadingMessages(true);
+    // A forced refetch is a silent catch-up over messages already on screen —
+    // showing the spinner would blank the thread and read as a blink.
+    const silent = force || cached;
+    if (!silent && activeUserIdRef.current === userId) setLoadingMessages(true);
     try {
       const thread = await getMessages({ withUserId: userId, limit: 50 });
       loadedRef.current.add(userId);
+      lastFetchRef.current.set(userId, Date.now());
       setThreads((prev) => ({ ...prev, [userId]: mergeThread(prev[userId], thread) }));
       const last = thread[thread.length - 1];
       if (last)
@@ -159,10 +173,11 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
 
     socket.io.on("reconnect", () => {
       if (!active) return;
-      // Messages sent while the socket was down never arrived, so every cached
-      // thread is stale. Refetch the open one now, the rest when they're opened.
-      loadedRef.current.clear();
       const open = activeUserIdRef.current;
+      // Messages sent while the socket was down never arrived, so the closed
+      // threads are stale — drop them and they refetch when next opened. The
+      // open one keeps its flag so the catch-up below stays silent.
+      loadedRef.current = new Set(open && loadedRef.current.has(open) ? [open] : []);
       if (open) void loadMessages(open, true);
     });
 
