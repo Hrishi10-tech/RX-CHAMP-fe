@@ -58,7 +58,7 @@ export default function LoginPage() {
           <div className="flex items-center lg:hidden">
             <Image
               src="/brand/logo.png"
-              alt="Rx Champ logo"
+              alt="Rx Vision logo"
               width={1476}
               height={720}
               priority
@@ -195,7 +195,7 @@ export default function LoginPage() {
           <div className="relative h-full w-full overflow-hidden rounded-3xl">
             <Image
               src="/brand/login-illustration.svg"
-              alt="Time Champ illustration"
+              alt="Rx Vision illustration"
               fill
               priority
               sizes="50vw"

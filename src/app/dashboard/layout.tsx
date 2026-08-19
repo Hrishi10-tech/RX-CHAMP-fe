@@ -119,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Clock className="h-5 w-5" />
               </span>
               {!collapsed && (
-                <span className="text-lg font-bold tracking-tight text-slate-900">Rx Champ</span>
+                <span className="text-lg font-bold tracking-tight text-slate-900">Rx Vision</span>
               )}
             </Link>
             {!collapsed && (

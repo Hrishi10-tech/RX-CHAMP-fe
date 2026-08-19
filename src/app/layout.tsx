@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/Toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Time Champ",
+  title: "Rx Vision",
   description: "Enterprise business-management platform.",
 };
 
