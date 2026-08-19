@@ -11,7 +11,6 @@ import { login } from "@/features/auth/api/login";
 import { loginErrorCopy } from "@/features/auth/lib/loginErrors";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/login.schema";
 import { saveSession } from "@/lib/auth/session";
-import { setApiAuthToken } from "@/lib/api";
 import { resolveHomeRoute } from "@/constants/roles";
 
 export default function LoginPage() {
@@ -39,8 +38,7 @@ export default function LoginPage() {
         return;
       }
 
-      saveSession({ token: data.token, user: data.user });
-      setApiAuthToken(data.token);
+      saveSession({ user: data.user });
       toast.success("Login successful", {
         description: "Redirecting you to your dashboard…",
       });
@@ -71,7 +69,7 @@ export default function LoginPage() {
           <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
             <h1 className="text-4xl font-bold tracking-tight text-slate-900">Sign in</h1>
             <p className="mt-4 text-sm leading-6 text-slate-600">
-              Welcome back! Please enter your credentials Test 123
+              Welcome back! Please enter your credentials 
               <br />
               to access your account.
             </p>

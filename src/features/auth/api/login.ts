@@ -63,7 +63,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
         : { ok: false, reason: "invalid_credentials", message };
     }
 
-    return { ok: true, token: data.data.token, user: data.data.user };
+    return { ok: true, user: data.data.user };
   } catch (error) {
     const { reason, message } = classify(error);
     return { ok: false, reason, message };

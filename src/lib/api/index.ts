@@ -1,3 +1,3 @@
-export { apiClient, refreshAccessToken, setApiAuthToken } from "./client";
+export { apiClient, refreshAccessToken } from "./client";
 export { errorMessage } from "./errorMessage";
 export type { ApiResponse, PaginationMeta } from "./types";

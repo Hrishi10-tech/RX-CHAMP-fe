@@ -6,7 +6,6 @@ import { Provider } from "react-redux";
 import { makeStore, type AppStore } from "@/store";
 import { sessionLoaded } from "@/features/auth/store/authSlice";
 import { getSession } from "@/lib/auth/session";
-import { setApiAuthToken } from "@/lib/api";
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const storeRef = useRef<AppStore | null>(null);
@@ -16,7 +15,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // the server and first client render identical. Runs once for the whole app.
   useEffect(() => {
     const session = getSession();
-    if (session?.token) setApiAuthToken(session.token);
     storeRef.current?.dispatch(sessionLoaded(session));
   }, []);
 

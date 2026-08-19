@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { sessionCleared } from "@/features/auth/store/authSlice";
+import { logout as logoutRequest } from "@/features/auth/api/logout";
 import { clearSession } from "@/lib/auth/session";
-import { setApiAuthToken } from "@/lib/api";
 import type { UseSessionResult } from "@/features/auth/types";
 
 export function useSession(): UseSessionResult {
@@ -17,8 +17,10 @@ export function useSession(): UseSessionResult {
   const ready = useAppSelector((state) => state.auth.ready);
 
   const logout = useCallback(() => {
+    // Fired, not awaited: the server clears the auth cookies while the UI moves
+    // on. Local state goes first so the menu can't act on a dead session.
+    void logoutRequest();
     clearSession();
-    setApiAuthToken(null);
     dispatch(sessionCleared());
     router.replace("/auth/login");
   }, [dispatch, router]);

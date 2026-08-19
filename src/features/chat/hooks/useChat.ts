@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Socket } from "socket.io-client";
 
-import { apiClient } from "@/lib/api";
+import { refreshAccessToken } from "@/lib/api";
 import { getContacts } from "@/features/chat/api/getContacts";
 import { getMessages } from "@/features/chat/api/getMessages";
 import { sendMessage } from "@/features/chat/api/sendMessage";
@@ -111,9 +111,15 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
 
     socket.on("unauthorized", async () => {
       try {
-        await apiClient.post("/api/v1/auth/refresh");
+        // Shared single-flight refresh: when the access token expires every
+        // socket and request gets kicked at once, and N parallel refreshes
+        // rotate the token N times server-side — only the last one survives.
+        await refreshAccessToken();
         if (active) socket.connect();
-      } catch {}
+      } catch {
+        // Refresh failed, so the session is genuinely gone. The API client owns
+        // redirecting to login; reconnecting here would just get kicked again.
+      }
     });
 
     socket.io.on("reconnect", () => {

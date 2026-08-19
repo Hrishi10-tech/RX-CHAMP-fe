@@ -14,7 +14,6 @@ export interface AuthUser {
 }
 
 export interface LoginData {
-  token: string;
   user: AuthUser;
 }
 
@@ -26,7 +25,7 @@ export type LoginFailureReason =
   | "unknown";
 
 export type LoginResult =
-  | { ok: true; token: string; user: AuthUser }
+  | { ok: true; user: AuthUser }
   | { ok: false; reason: LoginFailureReason; message?: string };
 
 export interface AuthState {
