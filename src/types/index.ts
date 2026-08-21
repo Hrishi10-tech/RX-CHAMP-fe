@@ -16,5 +16,7 @@ export interface TeamMember {
   team: string;
   company: string;
   status: Status;
+  /** Whether the agent takes automatic screenshots for this member. */
+  screenshotsEnabled: boolean;
   joined: string;
 }

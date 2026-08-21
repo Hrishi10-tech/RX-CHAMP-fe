@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Lock, LockOpen, Pencil, Trash2 } from "lucide-react";
+import { Camera, CameraOff, Lock, LockOpen, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -9,9 +9,11 @@ import { rowActionButtonClass, rowActionHover } from "@/components/ui/rowAction"
 import { errorMessage } from "@/lib/api";
 import { DownloadAgentRowButton } from "@/features/agent/components/DownloadAgentRowButton";
 import { deleteUser } from "@/features/users/api/deleteUser";
+import { setUserScreenshots } from "@/features/users/api/setUserScreenshots";
 import { setUserStatus } from "@/features/users/api/setUserStatus";
 import { EditMemberModal } from "@/features/users/components/EditMemberModal";
 import type {
+  MemberChange,
   MemberStatusTarget,
   UseMemberActionsOptions,
   UseMemberActionsResult,
@@ -47,6 +49,67 @@ function BlockMemberButton({
   );
 }
 
+
+/**
+ * Turns this member's automatic screenshots on or off. Saves on click — there is no
+ * confirm step, because it is trivially reversible and a manager may flip several
+ * people in a row.
+ *
+ * Only the periodic capture is affected: activity tracking carries on, and the
+ * Capture button on the screenshots timeline still works either way. The tooltip
+ * says so, so nobody expects this to stop tracking.
+ */
+function ScreenshotsMemberButton({
+  member,
+  onChanged,
+}: {
+  member: TeamMember;
+  onChanged: (change: MemberChange) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const enabled = member.screenshotsEnabled;
+  const Icon = enabled ? Camera : CameraOff;
+
+  async function toggle(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (saving) return;
+
+    setSaving(true);
+    try {
+      await setUserScreenshots(String(member.id), !enabled);
+      toast.success(enabled ? "Screenshots turned off" : "Screenshots turned on", {
+        description: enabled
+          ? `${member.name} will stop being screenshotted automatically. Tracking and manual capture still work.`
+          : `${member.name} will be screenshotted automatically again.`,
+      });
+      onChanged("updated");
+    } catch (err) {
+      toast.error("Couldn't change screenshots", {
+        description: errorMessage(err) ?? "Please try again.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={saving}
+      title={enabled ? "Screenshots on — click to turn off" : "Screenshots off — click to turn on"}
+      aria-label={`${enabled ? "Turn off" : "Turn on"} automatic screenshots for ${member.name}`}
+      aria-pressed={enabled}
+      className={`${rowActionButtonClass} ${
+        enabled
+          ? "border-[rgba(34,34,204,0.35)] bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)] hover:bg-[rgba(34,34,204,0.14)]"
+          : rowActionHover.primary
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
+}
 
 export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMemberActionsResult {
   const [editing, setEditing] = useState<TeamMember | null>(null);
@@ -101,6 +164,7 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
   const renderActions = useCallback(
     (m: TeamMember) => (
       <div className="flex justify-end gap-2">
+        <ScreenshotsMemberButton member={m} onChanged={onChanged} />
         <DownloadAgentRowButton userId={String(m.id)} userName={m.name} />
         <button
           type="button"
@@ -129,7 +193,7 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
         </button>
       </div>
     ),
-    [],
+    [onChanged],
   );
 
   const dialogs = (

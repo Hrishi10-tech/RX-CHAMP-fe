@@ -37,6 +37,9 @@ export function mapUserToMember(u: User): TeamMember {
     team: u.department ?? "—",
     company: u.company ?? "—",
     status: toStatus(u.status),
+    // Default on, matching the backend: an older API that omits the field must not
+    // make the toggle read as off.
+    screenshotsEnabled: u.screenshotsEnabled ?? true,
     joined: formatJoined(u.createdAt),
   };
 }

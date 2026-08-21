@@ -17,6 +17,8 @@ export interface User {
   companyId?: string;
   managerId?: string;
   status?: string;
+  /** Automatic screenshots for this user. Absent on an older API → treated as on. */
+  screenshotsEnabled?: boolean;
   shiftId?: string;
   shiftStart?: string;
   shiftEnd?: string;
