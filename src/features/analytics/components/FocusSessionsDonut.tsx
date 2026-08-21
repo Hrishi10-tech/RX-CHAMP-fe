@@ -5,7 +5,10 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { FocusSessionBucket } from "@/features/analytics/types";
 import { C, TOOLTIP_STYLE } from "@/features/analytics/lib/palette";
 
-const COLORS = [C.indigo, C.violet, C.teal];
+// Buckets run longest-first (`> 60 min`, `30–60 min`, `15–30 min`), so the ramp
+// reads as a verdict: a long unbroken stretch is the good outcome, a short one
+// means focus kept breaking.
+const COLORS = [C.green, C.amber, C.red];
 
 export function FocusSessionsDonut({
   total,
