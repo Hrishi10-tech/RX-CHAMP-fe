@@ -82,9 +82,9 @@ export interface GetUsersParams {
   /** Omitted for the server's default order (joined_desc). */
   sort?: MemberSortKey;
 
-  // Filter params below are NOT confirmed against the backend yet — these are the
-  // names the UI sends. getUsers() drops empty values, so nothing is sent until a
-  // filter is applied. Rename here once the real query contract lands.
+  // The filter panel's fields. All of them combine with each other and with
+  // `search`; getUsers() drops empty values, so nothing is sent until a filter is
+  // applied. Team is an exact match, and the joined dates are inclusive whole days.
   department?: string;
   joinedFrom?: string;
   joinedTo?: string;
