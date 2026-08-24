@@ -32,9 +32,15 @@ function AppAvatar({
 export function TopAppsWidget({
   data,
   current,
+  scroll = true,
 }: {
   data: AppUsageRow[];
   current?: CurrentAppInfo | null;
+  /**
+   * Cap the height and scroll. Off for the printed report, where there is nothing
+   * to scroll and a fixed height would simply cut entries off the page.
+   */
+  scroll?: boolean;
 }) {
   const max = Math.max(...data.map((d) => d.seconds), 1);
   const showCurrent = Boolean(current?.app);
@@ -75,7 +81,13 @@ export function TopAppsWidget({
         </div>
       )}
 
-      <ul className="space-y-3.5">
+      {/*
+        Scrolls rather than stretches. The list is everything the person touched,
+        not a top ten, so on a busy day it runs well past what fits — letting it
+        grow pushed the rest of the dashboard down the page. `pr-1` keeps the
+        progress bars off the scrollbar.
+      */}
+      <ul className={`space-y-3.5 ${scroll ? "max-h-80 overflow-y-auto pr-1" : ""}`}>
         {data.map((d, i) => (
           <li key={d.name} className="flex items-center gap-3">
             <AppAvatar name={d.name} fallbackColor={CAT[i % CAT.length]} />

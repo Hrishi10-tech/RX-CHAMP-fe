@@ -17,7 +17,9 @@ export function TopAppsList({
   const max = Math.max(...items.map((i) => i.seconds), 1);
 
   return (
-    <ul className="space-y-3">
+    // Scrolls rather than stretches: these lists hold everything the person used
+    // that day, not a top ten, so a busy day would otherwise run off the card.
+    <ul className="max-h-72 space-y-3 overflow-y-auto pr-1">
       {items.map((item) => (
         <li key={item.name}>
           <div className="flex items-baseline justify-between gap-3 text-sm">

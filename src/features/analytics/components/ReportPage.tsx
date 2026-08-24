@@ -166,7 +166,8 @@ export function ReportPage({
 
       <div className="mt-3 grid grid-cols-3 gap-3">
         <Panel title="Top Apps &amp; Websites">
-          <TopAppsWidget data={data.topApps} />
+          {/* No scroll on paper — a capped height would just cut entries off. */}
+          <TopAppsWidget data={data.topApps} scroll={false} />
         </Panel>
         <Panel title="Focus Sessions">
           <FocusSessionsDonut
