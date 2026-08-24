@@ -13,7 +13,7 @@ import { setUserScreenshots } from "@/features/users/api/setUserScreenshots";
 import { setUserStatus } from "@/features/users/api/setUserStatus";
 import { EditMemberModal } from "@/features/users/components/EditMemberModal";
 import type {
-  MemberChange,
+  MemberScreenshotsTarget,
   MemberStatusTarget,
   UseMemberActionsOptions,
   UseMemberActionsResult,
@@ -51,52 +51,31 @@ function BlockMemberButton({
 
 
 /**
- * Turns this member's automatic screenshots on or off. Saves on click — there is no
- * confirm step, because it is trivially reversible and a manager may flip several
- * people in a row.
+ * Turns this member's automatic screenshots on or off. Asks first, the same way
+ * blocking and deleting do — it changes what is recorded about a person, so it
+ * shouldn't happen on a stray click.
  *
  * Only the periodic capture is affected: activity tracking carries on, and the
- * Capture button on the screenshots timeline still works either way. The tooltip
- * says so, so nobody expects this to stop tracking.
+ * Capture button on the screenshots timeline still works either way. Both the
+ * tooltip and the dialog say so, so nobody expects this to stop tracking.
  */
 function ScreenshotsMemberButton({
   member,
-  onChanged,
+  onSelect,
 }: {
   member: TeamMember;
-  onChanged: (change: MemberChange) => void;
+  onSelect: (target: MemberScreenshotsTarget) => void;
 }) {
-  const [saving, setSaving] = useState(false);
   const enabled = member.screenshotsEnabled;
   const Icon = enabled ? Camera : CameraOff;
-
-  async function toggle(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (saving) return;
-
-    setSaving(true);
-    try {
-      await setUserScreenshots(String(member.id), !enabled);
-      toast.success(enabled ? "Screenshots turned off" : "Screenshots turned on", {
-        description: enabled
-          ? `${member.name} will stop being screenshotted automatically. Tracking and manual capture still work.`
-          : `${member.name} will be screenshotted automatically again.`,
-      });
-      onChanged("updated");
-    } catch (err) {
-      toast.error("Couldn't change screenshots", {
-        description: errorMessage(err) ?? "Please try again.",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
 
   return (
     <button
       type="button"
-      onClick={toggle}
-      disabled={saving}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect({ member, enable: !enabled });
+      }}
       title={enabled ? "Screenshots on — click to turn off" : "Screenshots off — click to turn on"}
       aria-label={`${enabled ? "Turn off" : "Turn on"} automatic screenshots for ${member.name}`}
       aria-pressed={enabled}
@@ -117,8 +96,33 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
   const [statusTarget, setStatusTarget] = useState<MemberStatusTarget | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
 
+  const [screenshotsTarget, setScreenshotsTarget] = useState<MemberScreenshotsTarget | null>(null);
+  const [screenshotsSaving, setScreenshotsSaving] = useState(false);
+
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  async function handleConfirmScreenshots() {
+    if (!screenshotsTarget) return;
+    const { member, enable } = screenshotsTarget;
+    setScreenshotsSaving(true);
+    try {
+      await setUserScreenshots(String(member.id), enable);
+      toast.success(enable ? "Screenshots turned on" : "Screenshots turned off", {
+        description: enable
+          ? `${member.name} will be screenshotted automatically again.`
+          : `${member.name} will stop being screenshotted automatically. Tracking and manual capture still work.`,
+      });
+      setScreenshotsTarget(null);
+      onChanged("updated");
+    } catch (err) {
+      toast.error("Couldn't change screenshots", {
+        description: errorMessage(err) ?? "Please try again.",
+      });
+    } finally {
+      setScreenshotsSaving(false);
+    }
+  }
 
   async function handleConfirmStatus() {
     if (!statusTarget) return;
@@ -164,7 +168,7 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
   const renderActions = useCallback(
     (m: TeamMember) => (
       <div className="flex justify-end gap-2">
-        <ScreenshotsMemberButton member={m} onChanged={onChanged} />
+        <ScreenshotsMemberButton member={m} onSelect={setScreenshotsTarget} />
         <DownloadAgentRowButton userId={String(m.id)} userName={m.name} />
         <button
           type="button"
@@ -193,7 +197,7 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
         </button>
       </div>
     ),
-    [onChanged],
+    [],
   );
 
   const dialogs = (
@@ -203,6 +207,37 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
         member={editing}
         onClose={() => setEditing(null)}
         onSaved={() => onChanged("updated")}
+      />
+
+      <ConfirmDialog
+        open={screenshotsTarget !== null}
+        onClose={() => {
+          if (!screenshotsSaving) setScreenshotsTarget(null);
+        }}
+        onConfirm={handleConfirmScreenshots}
+        loading={screenshotsSaving}
+        title="Are you sure?"
+        confirmLabel={
+          screenshotsSaving
+            ? screenshotsTarget?.enable
+              ? "Turning on…"
+              : "Turning off…"
+            : screenshotsTarget?.enable
+              ? "Turn on"
+              : "Turn off"
+        }
+        description={
+          screenshotsTarget ? (
+            <>
+              <span className="font-semibold text-slate-700">
+                {screenshotsTarget.member.name}
+              </span>{" "}
+              {screenshotsTarget.enable
+                ? "will be screenshotted automatically again, about every 5 minutes."
+                : "will stop being screenshotted automatically. Activity tracking and manual capture are unaffected, and you can turn this back on at any time."}
+            </>
+          ) : null
+        }
       />
 
       <ConfirmDialog

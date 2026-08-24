@@ -36,6 +36,13 @@ export interface MemberStatusTarget {
   block: boolean;
 }
 
+/** A pending screenshots on/off change awaiting confirmation. */
+export interface MemberScreenshotsTarget {
+  member: TeamMember;
+  /** The value being moved to — true = about to be switched on. */
+  enable: boolean;
+}
+
 export interface MembersSectionProps {
   /** Scopes the list to one manager's reports. Omit to list across the company. */
   managerId?: string;
