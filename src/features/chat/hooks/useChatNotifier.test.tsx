@@ -1,4 +1,5 @@
 import * as React from "react";
+import * as ReactRedux from "react-redux";
 import { renderHook, waitFor } from "@testing-library/react";
 
 /**
@@ -18,6 +19,11 @@ interface Harness {
   acquires: number;
   releases: number;
   contactCalls: number;
+  setServerUnread: (n: number) => void;
+  unreadCalls: number;
+  unreadTotal: () => number;
+  fireVisibility: (state: "visible" | "hidden") => void;
+  fireConnect: () => void;
   pushed: string[];
 }
 
@@ -30,17 +36,22 @@ interface Harness {
  * another finds no dispatcher and throws on the first `useEffect`. Importing the
  * renderer in here instead is not an option — it registers lifecycle hooks at
  * import time, which Jest refuses inside a test.
+ *
+ * react-redux is pinned for the same reason as React: a Provider from one copy
+ * puts the store on a context the hook from another copy cannot read.
  */
-async function loadHarness(): Promise<Harness> {
+async function loadHarness(opts: { unreadFails?: boolean } = {}): Promise<Harness> {
   let harness: Harness | undefined;
 
   await jest.isolateModulesAsync(async () => {
     jest.doMock("react", () => React);
+    jest.doMock("react-redux", () => ReactRedux);
 
     const handlers = new Map<string, ((...args: unknown[]) => void)[]>();
     const toasts: Harness["toasts"] = [];
     const pushed: string[] = [];
-    const counts = { acquires: 0, releases: 0, contactCalls: 0 };
+    const counts = { acquires: 0, releases: 0, contactCalls: 0, unreadCalls: 0 };
+    const serverUnread = { value: 0 };
 
     const socket = {
       on: (event: string, fn: (...args: unknown[]) => void) => {
@@ -64,6 +75,14 @@ async function loadHarness(): Promise<Harness> {
       },
     }));
 
+    jest.doMock("@/features/chat/api/getChatUnread", () => ({
+      getChatUnread: async () => {
+        counts.unreadCalls += 1;
+        if (opts.unreadFails) throw new Error("offline");
+        return serverUnread.value;
+      },
+    }));
+
     jest.doMock("@/features/chat/api/getContacts", () => ({
       getContacts: async () => {
         counts.contactCalls += 1;
@@ -83,10 +102,26 @@ async function loadHarness(): Promise<Harness> {
 
     const { useChatNotifier } = await import("./useChatNotifier");
     const { setActiveConversation } = await import("@/features/chat/lib/activeConversation");
+    const { makeStore } = await import("@/store");
+
+    const store = makeStore();
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(ReactRedux.Provider, { store, children });
 
     harness = {
-      render: (enabled = true) => renderHook(() => useChatNotifier(enabled)),
+      render: (enabled = true) => renderHook(() => useChatNotifier(enabled), { wrapper }),
       waitFor,
+      setServerUnread: (n: number) => {
+        serverUnread.value = n;
+      },
+      unreadTotal: () => store.getState().chat.unreadTotal,
+      fireVisibility: (state: "visible" | "hidden") => {
+        Object.defineProperty(document, "visibilityState", { value: state, configurable: true });
+        document.dispatchEvent(new Event("visibilitychange"));
+      },
+      fireConnect: () => {
+        for (const fn of handlers.get("connect") ?? []) fn();
+      },
       setActiveConversation,
       emit: (message) => {
         for (const fn of handlers.get("chat:message") ?? []) fn(message);
@@ -101,6 +136,9 @@ async function loadHarness(): Promise<Harness> {
       },
       get contactCalls() {
         return counts.contactCalls;
+      },
+      get unreadCalls() {
+        return counts.unreadCalls;
       },
       pushed,
     };
@@ -227,5 +265,72 @@ describe("useChatNotifier", () => {
 
     h.toasts[0].onClick?.();
     expect(h.pushed).toEqual(["/dashboard/chat"]);
+  });
+});
+
+describe("useChatNotifier unread badge", () => {
+  it("seeds the count from the server on open", async () => {
+    const h = await loadHarness();
+    h.setServerUnread(7);
+    h.render();
+
+    await h.waitFor(() => expect(h.unreadTotal()).toBe(7));
+  });
+
+  it("counts a message that arrives out of sight", async () => {
+    const h = await loadHarness();
+    h.render();
+    await h.waitFor(() => expect(h.unreadCalls).toBe(1));
+
+    h.emit(incoming());
+
+    expect(h.unreadTotal()).toBe(1);
+  });
+
+  it("does not count a message into the conversation on screen", async () => {
+    const h = await loadHarness();
+    h.render();
+    await h.waitFor(() => expect(h.unreadCalls).toBe(1));
+
+    h.setActiveConversation("u-ravi");
+    h.emit(incoming());
+
+    // Reading it is what marks it read, so the badge owes nothing.
+    expect(h.unreadTotal()).toBe(0);
+  });
+
+  it("re-reads the count on every reconnect", async () => {
+    const h = await loadHarness();
+    h.render();
+    await h.waitFor(() => expect(h.unreadCalls).toBe(1));
+
+    h.setServerUnread(4);
+    h.fireConnect();
+
+    // The derived count knows nothing of what arrived while the socket was down.
+    await h.waitFor(() => expect(h.unreadTotal()).toBe(4));
+  });
+
+  it("re-reads the count when a backgrounded tab comes back", async () => {
+    const h = await loadHarness();
+    h.render();
+    await h.waitFor(() => expect(h.unreadCalls).toBe(1));
+
+    h.fireVisibility("hidden");
+    h.setServerUnread(3);
+    h.fireVisibility("visible");
+
+    await h.waitFor(() => expect(h.unreadTotal()).toBe(3));
+  });
+
+  it("keeps the derived count when the server cannot be reached", async () => {
+    const h = await loadHarness({ unreadFails: true });
+    h.render();
+
+    h.emit(incoming());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Zeroing a badge that might be right is worse than leaving it alone.
+    expect(h.unreadTotal()).toBe(1);
   });
 });

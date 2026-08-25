@@ -19,6 +19,7 @@ import {
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useChatNotifier } from "@/features/chat/hooks/useChatNotifier";
+import { useAppSelector } from "@/store/hooks";
 import { canAccess, type Role } from "@/constants/roles";
 import { UserMenu } from "@/components/layout/UserMenu";
 import PageWrapper from "@/components/layout/PageWrapper";
@@ -79,8 +80,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ready && !!user,
   );
   // Here rather than on the messages page: a popup about a new message is only
-  // useful on the screens that are not already showing it.
+  // useful on the screens that are not already showing it, and so is the badge.
   useChatNotifier(ready && !!user);
+  const chatUnread = useAppSelector((state) => state.chat.unreadTotal);
 
   useEffect(() => {
     if (ready && !user) router.replace("/auth/login");
@@ -149,6 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="flex flex-col gap-1.5">
                   {section.items.map(({ href, label, icon: Icon }) => {
                     const active = href === activeHref;
+                    const badge = href === "/dashboard/chat" ? chatUnread : 0;
                     return (
                       <Link
                         key={href}
@@ -172,6 +175,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           }`}
                         />
                         {!collapsed && <span className="flex-1 truncate">{label}</span>}
+                        {badge > 0 && (
+                          <span
+                            aria-label={`${badge} unread messages`}
+                            className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
+                              active ? "bg-white text-[rgb(34_34_204)]" : "bg-red-500 text-white"
+                            } ${collapsed ? "absolute right-1.5 top-1.5" : ""}`}
+                          >
+                            {badge > 99 ? "99+" : badge}
+                          </span>
+                        )}
                       </Link>
                     );
                   })}

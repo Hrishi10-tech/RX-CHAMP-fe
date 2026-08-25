@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import { authReducer } from "@/features/auth/store/authSlice";
+import { chatReducer } from "@/features/chat/store/chatSlice";
 
 /**
  * Built per client instance rather than as a module singleton so server
@@ -10,6 +11,7 @@ export function makeStore() {
   return configureStore({
     reducer: {
       auth: authReducer,
+      chat: chatReducer,
     },
   });
 }

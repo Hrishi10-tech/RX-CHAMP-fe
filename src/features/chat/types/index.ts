@@ -18,6 +18,16 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+/**
+ * A contact plus what the server already knows about the conversation. Seeding
+ * from this is why the list shows previews and badges on open, instead of
+ * staying blank until a message happens to arrive.
+ */
+export interface ChatThread extends ChatContact {
+  unreadCount?: number;
+  lastMessage?: { body: string; createdAt: string } | null;
+}
+
 export interface ChatContactView extends ChatContact {
   unread: number;
   lastMessage?: string;
