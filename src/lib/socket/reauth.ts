@@ -1,6 +1,6 @@
 import type { Socket } from "socket.io-client";
 
-import { refreshAccessToken } from "@/lib/api";
+import { clearSocketTicket } from "@/lib/socket/ticket";
 
 /**
  * How many times a socket may refresh-and-retry before it gives up. A handshake
@@ -12,20 +12,22 @@ const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = [1_000, 5_000, 15_000];
 
 /**
- * The gateways authenticate off the `accessToken` cookie at handshake time only,
- * and that cookie is short-lived (it tracks `JWT_ACCESS_TTL`). A socket that
- * outlives it gets kicked with `unauthorized` and, left alone, never returns —
- * so live updates silently stop until the page is reloaded.
+ * The gateways authenticate at handshake time only, off a short-lived ticket, so
+ * an established socket stays authenticated however long it lives. Expiry only
+ * bites on reconnect — and a socket kicked with `unauthorized`, left alone, never
+ * returns, so live updates silently stop until the page is reloaded.
  *
- * Refresh the cookie (single-flight, shared with the HTTP client) and reconnect.
+ * Drop the cached ticket and reconnect: socket.io asks for auth again on the next
+ * attempt, which mints a fresh ticket. Retrying with the rejected one would only
+ * be refused again.
  *
- * Bounded on purpose. Refreshing on every `unauthorized` with no cap turns a
- * handshake that can *never* authenticate — a cookie the browser won't send
- * cross-site, say — into an unthrottled loop: unauthorized → refresh → connect →
- * unauthorized, as fast as the network allows. That is what put ~12,000 refresh
- * rows an hour on one signed-in manager. A refresh that succeeds resets the count,
- * so a genuinely expired token still recovers indefinitely; only repeated failures
- * to *stay* connected give up.
+ * Bounded on purpose. Retrying every `unauthorized` with no cap turns a handshake
+ * that can *never* authenticate into an unthrottled loop — unauthorized → new
+ * ticket → connect → unauthorized, as fast as the network allows. That is what
+ * put ~12,000 refresh rows an hour on one signed-in manager, and the ticket
+ * endpoint is rate limited to 30/min, which such a loop would exhaust in seconds.
+ * Connecting resets the count, so a genuinely expired ticket still recovers
+ * indefinitely; only repeated failures to *stay* connected give up.
  */
 export function attachSocketReauth(socket: Socket): void {
   let attempts = 0;
@@ -52,14 +54,12 @@ export function attachSocketReauth(socket: Socket): void {
 
     timer = setTimeout(() => {
       timer = null;
-      void refreshAccessToken()
-        .then(() => {
-          if (!socket.connected) socket.connect();
-        })
-        .catch(() => {
-          // Refresh itself failed — the session is genuinely gone. The 401 handler
-          // in the API client owns redirecting to login; nothing to do here.
-        });
+      // Minting the replacement is socket.io's job, via the `auth` callback on
+      // the next attempt. If the cookie behind that call has itself expired, the
+      // API client refreshes and retries it; if the session is genuinely gone it
+      // redirects to login. Either way there is nothing to await here.
+      clearSocketTicket();
+      if (!socket.connected) socket.connect();
     }, delay);
   });
 
