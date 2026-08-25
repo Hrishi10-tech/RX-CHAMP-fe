@@ -105,8 +105,9 @@ async function loadHarness(opts: { unreadFails?: boolean } = {}): Promise<Harnes
     const { makeStore } = await import("@/store");
 
     const store = makeStore();
-    const wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(ReactRedux.Provider, { store, children });
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <ReactRedux.Provider store={store}>{children}</ReactRedux.Provider>
+    );
 
     harness = {
       render: (enabled = true) => renderHook(() => useChatNotifier(enabled), { wrapper }),
