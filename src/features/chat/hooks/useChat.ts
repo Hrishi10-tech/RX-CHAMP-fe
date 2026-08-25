@@ -4,11 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Socket } from "socket.io-client";
 
-import { attachSocketReauth } from "@/lib/socket/reauth";
 import { getContacts } from "@/features/chat/api/getContacts";
 import { getMessages } from "@/features/chat/api/getMessages";
 import { sendMessage } from "@/features/chat/api/sendMessage";
-import { createChatSocket } from "@/features/chat/socket";
+import { acquireChatSocket, releaseChatSocket } from "@/features/chat/socket";
+import { setActiveConversation } from "@/features/chat/lib/activeConversation";
 import type {
   ChatContact,
   ChatContactView,
@@ -115,6 +115,7 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
     (userId: string) => {
       if (activeUserIdRef.current === userId) return;
       activeUserIdRef.current = userId;
+      setActiveConversation(userId);
       setActiveUserId(userId);
       setUnread((prev) => (prev[userId] ? { ...prev, [userId]: 0 } : prev));
       setLoadingMessages(!loadedRef.current.has(userId));
@@ -144,10 +145,10 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
         if (active) setLoadingContacts(false);
       });
 
-    const socket = createChatSocket();
+    const socket = acquireChatSocket();
     socketRef.current = socket;
 
-    socket.on("chat:message", (m: ChatMessage) => {
+    const onMessage = (m: ChatMessage) => {
       if (!active) return;
       const other = otherParty(m);
       bumpPreview(other, m);
@@ -156,14 +157,9 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
       if (other !== activeUserIdRef.current && !m.mine) {
         setUnread((prev) => ({ ...prev, [other]: (prev[other] ?? 0) + 1 }));
       }
-    });
+    };
 
-    // Refresh-and-reconnect on `unauthorized`, capped with backoff. Retrying
-    // unbounded here turned a handshake that could never authenticate into a
-    // refresh loop running several times a second.
-    attachSocketReauth(socket);
-
-    socket.io.on("reconnect", () => {
+    const onReconnect = () => {
       if (!active) return;
       const open = activeUserIdRef.current;
       // Messages sent while the socket was down never arrived, so the closed
@@ -171,16 +167,23 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
       // open one keeps its flag so the catch-up below stays silent.
       loadedRef.current = new Set(open && loadedRef.current.has(open) ? [open] : []);
       if (open) void loadMessages(open, true);
-    });
+    };
 
-    socket.connect();
+    // Both by reference: the socket is shared with the notifier, and a bare
+    // `off()` would take its listener down too. Reauth is attached where the
+    // socket is created, once, rather than per holder.
+    socket.on("chat:message", onMessage);
+    socket.io.on("reconnect", onReconnect);
 
     return () => {
       active = false;
-      socket.off();
-      socket.io.off("reconnect");
-      socket.disconnect();
+      socket.off("chat:message", onMessage);
+      socket.io.off("reconnect", onReconnect);
       socketRef.current = null;
+      // Leaving the page closes the conversation, so a later message about it is
+      // news again and the notifier should say so.
+      setActiveConversation(null);
+      releaseChatSocket();
     };
   }, [enabled, autoSelectRole, bumpPreview, appendToThread, loadMessages, selectContact]);
 

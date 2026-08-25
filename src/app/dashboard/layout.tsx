@@ -18,6 +18,7 @@ import {
 
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
+import { useChatNotifier } from "@/features/chat/hooks/useChatNotifier";
 import { canAccess, type Role } from "@/constants/roles";
 import { UserMenu } from "@/components/layout/UserMenu";
 import PageWrapper from "@/components/layout/PageWrapper";
@@ -77,6 +78,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications(
     ready && !!user,
   );
+  // Here rather than on the messages page: a popup about a new message is only
+  // useful on the screens that are not already showing it.
+  useChatNotifier(ready && !!user);
 
   useEffect(() => {
     if (ready && !user) router.replace("/auth/login");

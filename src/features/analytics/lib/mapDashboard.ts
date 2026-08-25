@@ -49,7 +49,10 @@ function mapFocusSessions(sessions: RawFocusSession[] = []): {
     buckets: [
       { name: "> 60 min", count: over60 },
       { name: "30–60 min", count: mid },
-      { name: "15–30 min", count: short },
+      // Not "15–30 min": `short` is everything below 30, and the API sets no
+      // floor, so a two-minute session lands here too. Labelling it 15+ made
+      // the chart claim a minimum the data doesn't have.
+      { name: "< 30 min", count: short },
     ],
   };
 }

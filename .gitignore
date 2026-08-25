@@ -19,3 +19,7 @@
 # misc
 *.tsbuildinfo
 next-env.d.ts
+
+# Screenshots pasted into the editor land beside whichever file was open, always
+# named image.png. Real assets live in /public, so nothing under src/ is lost.
+/src/**/*.png

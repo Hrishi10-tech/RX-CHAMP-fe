@@ -54,6 +54,9 @@ const CAT = {
   idle: AMBER,
 };
 
+/** Fallback refresh for the live card, used only while the socket is down. */
+const DISCONNECTED_POLL_MS = 30_000;
+
 const toHours = (sec: number) => +(sec / 3600).toFixed(2);
 const toMinutes = (sec: number) => Math.round(sec / 60);
 
@@ -218,23 +221,6 @@ export function UserActivityView({
     };
   }, [userId, selectedDate, selectedDay]);
 
-  useEffect(() => {
-    let active = true;
-
-    const poll = () => {
-      getUserCurrent(userId)
-        .then((c) => active && setCurrent(c))
-        .catch(() => active && setCurrent(null));
-    };
-
-    poll();
-    const id = setInterval(poll, 30_000);
-    return () => {
-      active = false;
-      clearInterval(id);
-    };
-  }, [userId]);
-
   const handleLive = useCallback((u: LiveActivityUpdate) => {
     setLive(u);
     setCurrent({
@@ -248,6 +234,36 @@ export function UserActivityView({
     });
   }, []);
   const liveConnected = useReportActivityLive(userId, handleLive);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = () => {
+      getUserCurrent(userId)
+        .then((c) => active && setCurrent(c))
+        .catch(() => active && setCurrent(null));
+    };
+
+    // Once on open, because the socket only pushes on change and says nothing
+    // about the state already in progress. Again whenever the socket comes back,
+    // to catch up on the changes that went nowhere while it was down.
+    load();
+
+    // While it is up, every change arrives over the socket, so a timer on top of
+    // it is pure duplication — a request a minute per open tab, per viewer. It
+    // stays only as the fallback for a socket that isn't connected at all.
+    if (liveConnected) {
+      return () => {
+        active = false;
+      };
+    }
+
+    const id = setInterval(load, DISCONNECTED_POLL_MS);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [userId, liveConnected]);
 
   const recentApps = useRecentApps(current);
 
