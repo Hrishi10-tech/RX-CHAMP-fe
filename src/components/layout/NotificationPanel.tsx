@@ -101,10 +101,18 @@ export function NotificationPanel({
 
   return (
     <AnimatePresence>
+      {/*
+        `pointer-events-none` on the wrapper below, re-enabled on the two children
+        that need it. The wrapper covers the whole viewport, so if it ever outlives
+        its exit animation it swallows every click on the page — this panel froze
+        Messages and Team Overview exactly that way. Clicks now pass through a
+        lingering layer instead of vanishing into it: the worst case becomes a faint
+        backdrop you can click through, rather than a dead page.
+      */}
       {open && (
-        <div className="fixed inset-0 z-50">
+        <div className="pointer-events-none fixed inset-0 z-50">
           <motion.div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="pointer-events-auto absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -117,7 +125,7 @@ export function NotificationPanel({
             role="dialog"
             aria-modal="true"
             aria-label="Notifications"
-            className="absolute bottom-4 right-4 top-4 flex w-[calc(100%-2rem)] max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5"
+            className="pointer-events-auto absolute bottom-4 right-4 top-4 flex w-[calc(100%-2rem)] max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5"
             initial={{ x: "110%", opacity: 0.6 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "110%", opacity: 0.6 }}
@@ -146,24 +154,32 @@ export function NotificationPanel({
                 </button>
               </div>
 
-              <div className="relative mt-4 inline-flex rounded-full bg-slate-100 p-1">
+              {/*
+                One pill that slides, rather than a `layoutId` pair that is torn out
+                of one button and rebuilt in the other. That shared-layout transition
+                sat inside this panel's AnimatePresence, and clicking a filter while
+                the panel was still animating left the exit unfinished — so the panel
+                never unmounted and its full-screen wrapper kept eating clicks. This
+                pill simply exists and moves, which cannot interact with the exit.
+                Equal-width columns so it lands squarely on either tab.
+              */}
+              <div className="relative mt-4 grid w-fit grid-cols-2 rounded-full bg-slate-100 p-1">
+                <motion.span
+                  aria-hidden
+                  className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm"
+                  animate={{ x: filter === "all" ? "0%" : "100%" }}
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
                 {(["all", "unread"] as const).map((f) => (
                   <button
                     key={f}
                     type="button"
                     onClick={() => setFilter(f)}
-                    className={`relative rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition-colors ${
+                    className={`relative z-10 rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition-colors ${
                       filter === f ? "text-slate-900" : "text-slate-500"
                     }`}
                   >
-                    {filter === f && (
-                      <motion.span
-                        layoutId="notif-filter-pill"
-                        className="absolute inset-0 rounded-full bg-white shadow-sm"
-                        transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                      />
-                    )}
-                    <span className="relative flex items-center gap-1.5">
+                    <span className="relative flex items-center justify-center gap-1.5">
                       {f === "all" ? "All" : "Unread"}
                       {f === "unread" && unreadCount > 0 && (
                         <span
