@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, MoreHorizontal } from "lucide-react";
 
 import { Avatar } from "../../../../companies";
@@ -11,6 +11,7 @@ import { DataTable } from "@/components/ui/DataTable";
 import { getUsers } from "@/features/users/api/getUsers";
 import type { User } from "@/features/users/types";
 import { mapUserToMember, memberColumns } from "@/features/users/lib/memberTable";
+import { resolveReturnTo, withReturnTo } from "@/lib/nav/returnTo";
 import type { TeamMember } from "@/types";
 
 const LIST_ROUTE = "/dashboard/admin/team-management";
@@ -21,13 +22,28 @@ export default function ManagerUsersPage() {
   const params = useParams();
   const router = useRouter();
   const search = useSearchParams();
+  const pathname = usePathname();
   const managerId = String(params.mid);
 
-  function openActivity(m: TeamMember) {
-    router.push(`/dashboard/manager/activity/${m.id}?name=${encodeURIComponent(m.name)}`);
-  }
   const orgName = search.get("org") ?? "Organization";
   const managerName = search.get("manager") ?? "Manager";
+
+  // Where *we* go back to: whoever linked here (the Organization page), falling back
+  // to the team list when this page is opened cold.
+  const back = resolveReturnTo(search, { href: LIST_ROUTE, label: orgName });
+
+  function openActivity(m: TeamMember) {
+    // Hand the activity page this exact URL, so its back link returns to this
+    // manager's list rather than jumping two levels up to Team Management.
+    const here = `${pathname}${search.toString() ? `?${search}` : ""}`;
+    router.push(
+      withReturnTo(
+        `/dashboard/manager/activity/${m.id}?name=${encodeURIComponent(m.name)}`,
+        here,
+        managerName,
+      ),
+    );
+  }
 
   const [page, setPage] = useState(1);
   const [users, setUsers] = useState<User[]>([]);
@@ -64,11 +80,11 @@ export default function ManagerUsersPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <Link
-        href={LIST_ROUTE}
+        href={back.href}
         className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
       >
         <ArrowLeft className="h-4 w-4" />
-        {orgName}
+        {back.label}
       </Link>
 
       <div className="flex flex-col items-center">

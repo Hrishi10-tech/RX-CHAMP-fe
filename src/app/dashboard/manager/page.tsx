@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
 import { MembersSection } from "@/features/users/components/MembersSection";
+import { withReturnTo } from "@/lib/nav/returnTo";
 import type { TeamMember } from "@/types";
 
 export default function ManagerDashboardPage() {
@@ -13,7 +14,13 @@ export default function ManagerDashboardPage() {
   const managerId = user?.id;
 
   function openActivity(m: TeamMember) {
-    router.push(`/dashboard/manager/activity/${m.id}?name=${encodeURIComponent(m.name)}`);
+    router.push(
+      withReturnTo(
+        `/dashboard/manager/activity/${m.id}?name=${encodeURIComponent(m.name)}`,
+        "/dashboard/manager",
+        "My Team",
+      ),
+    );
   }
 
   return (

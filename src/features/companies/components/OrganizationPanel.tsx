@@ -13,6 +13,7 @@ import {
 
 import { Avatar } from "@/app/dashboard/admin/team-management/companies";
 import { getUser } from "@/features/users/api/getUser";
+import { withReturnTo } from "@/lib/nav/returnTo";
 import type { User } from "@/features/users/types";
 import type { Company, CompanyManager } from "@/features/companies/types";
 
@@ -222,9 +223,16 @@ export function OrganizationPanel({
 
   function openManager(m: CompanyManager) {
     if (!selected) return;
+    // Carry this page along, so the manager's list — and the activity view beyond it
+    // — can offer a back link that actually returns here instead of jumping to the
+    // top of Team Management.
     router.push(
-      `/dashboard/admin/team-management/organization/${selected.id}/manager/${m.id}` +
-        `?org=${encodeURIComponent(selected.name)}&manager=${encodeURIComponent(m.name)}`,
+      withReturnTo(
+        `/dashboard/admin/team-management/organization/${selected.id}/manager/${m.id}` +
+          `?org=${encodeURIComponent(selected.name)}&manager=${encodeURIComponent(m.name)}`,
+        "/dashboard/admin/team-management/organization",
+        selected.name,
+      ),
     );
   }
 
