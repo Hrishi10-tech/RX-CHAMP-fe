@@ -4,10 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
 import {
   Camera,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   Loader2,
   Maximize2,
 } from "lucide-react";
@@ -83,36 +81,14 @@ function dedupById(list: Screenshot[]): Screenshot[] {
   return out;
 }
 
-function stepTime(hhmm: string, deltaHours: number): string {
-  const mins = Math.max(0, Math.min(23 * 60 + 59, toMinutes(hhmm) + deltaHours * 60));
-  return `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
-}
-
 function TimeField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex items-center gap-1">
-      <div className="w-[120px]">
-        <TimePicker value={value} onChange={onChange} iconClassName="text-[rgb(34_34_204)]" />
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <button
-          type="button"
-          onClick={() => onChange(stepTime(value, 1))}
-          aria-label="Increase time by an hour"
-          className="flex h-[18px] w-6 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-[rgb(34_34_204)]"
-        >
-          <ChevronUp className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange(stepTime(value, -1))}
-          aria-label="Decrease time by an hour"
-          className="flex h-[18px] w-6 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-[rgb(34_34_204)]"
-        >
-          <ChevronDown className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
+    <TimePicker
+      value={value}
+      onChange={onChange}
+      variant="inline"
+      iconClassName="text-[rgb(34_34_204)]"
+    />
   );
 }
 
@@ -331,7 +307,9 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
             value={range.start}
             onChange={(v) => updateRange({ start: v, end: range.end })}
           />
-          <span className="text-sm text-slate-400">to</span>
+          <span aria-hidden className="px-0.5 text-base font-semibold text-slate-400">
+            &ndash;
+          </span>
           <TimeField
             value={range.end}
             onChange={(v) => updateRange({ start: range.start, end: v })}

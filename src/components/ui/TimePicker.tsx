@@ -46,6 +46,7 @@ export function TimePicker({
   placeholder = "Select time",
   iconClassName = "text-[rgb(34_34_204)]",
   hasError = false,
+  variant = "field",
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"hours" | "minutes">("hours");
@@ -81,32 +82,84 @@ export function TimePicker({
       ? Array.from({ length: 12 }, (_, i) => i + 1)
       : Array.from({ length: 12 }, (_, i) => i * 5);
 
+  const borderClass = hasError
+    ? "border-red-400"
+    : open
+      ? "border-[rgb(34_34_204)]"
+      : "border-slate-200";
+
   return (
     <div className="relative">
-      <button
-        id={id}
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        className={`flex w-full items-center gap-2.5 rounded-lg border bg-white py-2.5 pl-3.5 pr-3 text-left text-sm font-semibold tabular-nums transition-colors focus:outline-none focus:ring-2 ${
-          hasError
-            ? "border-red-400 focus:ring-[rgba(239,68,68,0.15)]"
-            : open
-              ? "border-[rgb(34_34_204)] focus:ring-[rgba(34,34,204,0.15)]"
-              : "border-slate-200 hover:border-slate-300 focus:ring-[rgba(34,34,204,0.15)]"
-        }`}
-      >
-        <Clock className={`h-4 w-4 shrink-0 ${iconClassName}`} />
-        <span className={value ? "text-slate-900" : "text-slate-400"}>
-          {value ? formatTime12(value) : placeholder}
-        </span>
-        <ChevronDown
-          className={`ml-auto h-4 w-4 shrink-0 text-slate-400 transition-transform ${
-            open ? "rotate-180" : ""
+      {variant === "inline" ? (
+        <div
+          className={`inline-flex items-stretch rounded-xl border bg-white shadow-sm transition-colors ${borderClass}`}
+        >
+          <button
+            id={id}
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            className="flex items-center gap-2.5 rounded-l-xl py-2 pl-3 pr-3 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[rgba(34,34,204,0.15)]"
+          >
+            <Clock className={`h-[18px] w-[18px] shrink-0 ${iconClassName}`} />
+            <span
+              className={`text-[15px] font-bold tabular-nums ${
+                value ? "text-slate-900" : "text-slate-400"
+              }`}
+            >
+              {value
+                ? `${String(sel.h12).padStart(2, "0")}:${String(sel.m).padStart(2, "0")}`
+                : placeholder}
+            </span>
+          </button>
+
+          <span aria-hidden className="my-2 w-px shrink-0 bg-slate-200" />
+
+          {/* A native select rather than a popover: two options do not justify one,
+              and this keeps keyboard and touch behaviour the platform's. */}
+          <div className="relative flex items-center">
+            <select
+              aria-label="AM or PM"
+              value={sel.p}
+              onChange={(e) => commit({ p: e.target.value as Parsed["p"] })}
+              className="cursor-pointer appearance-none rounded-r-xl bg-transparent py-2 pl-3 pr-8 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[rgba(34,34,204,0.15)]"
+            >
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+            <ChevronDown
+              aria-hidden
+              className="pointer-events-none absolute right-2.5 h-4 w-4 text-slate-400"
+            />
+          </div>
+        </div>
+      ) : (
+        <button
+          id={id}
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className={`flex w-full items-center gap-2.5 rounded-lg border bg-white py-2.5 pl-3.5 pr-3 text-left text-sm font-semibold tabular-nums transition-colors focus:outline-none focus:ring-2 ${
+            hasError
+              ? "border-red-400 focus:ring-[rgba(239,68,68,0.15)]"
+              : open
+                ? "border-[rgb(34_34_204)] focus:ring-[rgba(34,34,204,0.15)]"
+                : "border-slate-200 hover:border-slate-300 focus:ring-[rgba(34,34,204,0.15)]"
           }`}
-        />
-      </button>
+        >
+          <Clock className={`h-4 w-4 shrink-0 ${iconClassName}`} />
+          <span className={value ? "text-slate-900" : "text-slate-400"}>
+            {value ? formatTime12(value) : placeholder}
+          </span>
+          <ChevronDown
+            className={`ml-auto h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      )}
 
       {open &&
         typeof document !== "undefined" &&

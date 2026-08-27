@@ -90,6 +90,12 @@ export interface TimePickerProps {
   placeholder?: string;
   iconClassName?: string;
   hasError?: boolean;
+  /**
+   * `field` fills its container, for a labelled form row. `inline` is a compact
+   * pill that splits the clock time from AM/PM, for sitting in a toolbar beside
+   * other controls where the full-width field has no room to breathe.
+   */
+  variant?: "field" | "inline";
 }
 
 export interface Parsed {
