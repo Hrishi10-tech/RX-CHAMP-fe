@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Minus, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
 
 import type { ScreenshotLightboxProps } from "@/features/screenshots/types";
 
@@ -11,7 +11,15 @@ const STEP = 0.5;
 
 const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +z.toFixed(2)));
 
-export function ScreenshotLightbox({ src, alt, label, badge, onClose }: ScreenshotLightboxProps) {
+export function ScreenshotLightbox({
+  src,
+  alt,
+  label,
+  badge,
+  onClose,
+  onPrev,
+  onNext,
+}: ScreenshotLightboxProps) {
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -21,6 +29,13 @@ export function ScreenshotLightbox({ src, alt, label, badge, onClose }: Screensh
     ox: number;
     oy: number;
   } | null>(null);
+
+  // Read through a ref inside the key handler: the arrows are fresh closures on
+  // every render of the caller, and the handler is only subscribed once, so
+  // reading them directly would leave it stepping from wherever it first opened.
+  const navRef = useRef({ onPrev, onNext });
+  navRef.current = { onPrev, onNext };
+  const canNavigate = Boolean(onPrev ?? onNext);
 
   const reset = () => {
     setZoom(1);
@@ -34,11 +49,20 @@ export function ScreenshotLightbox({ src, alt, label, badge, onClose }: Screensh
       return next;
     });
 
+  // A new capture starts fresh: staying zoomed into where the last one happened
+  // to be magnified lands the reader somewhere arbitrary.
+  useEffect(() => {
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
+  }, [src]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
       else if (e.key === "+" || e.key === "=") zoomIn();
       else if (e.key === "-" || e.key === "_") zoomOut();
+      else if (e.key === "ArrowLeft") navRef.current.onPrev?.();
+      else if (e.key === "ArrowRight") navRef.current.onNext?.();
     }
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -130,6 +154,35 @@ export function ScreenshotLightbox({ src, alt, label, badge, onClose }: Screensh
           <X className="h-5 w-5" />
         </button>
       </div>
+
+      {canNavigate && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPrev?.();
+            }}
+            disabled={!onPrev}
+            aria-label="Previous screenshot"
+            className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25 disabled:pointer-events-none disabled:opacity-30 sm:left-5"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onNext?.();
+            }}
+            disabled={!onNext}
+            aria-label="Next screenshot"
+            className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25 disabled:pointer-events-none disabled:opacity-30 sm:right-5"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </>
+      )}
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

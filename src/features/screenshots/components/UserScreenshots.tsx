@@ -15,6 +15,7 @@ import type {
 } from "@/features/screenshots/types";
 import { Loader } from "@/components/ui/Loader";
 import { ScreenshotLightbox } from "@/features/screenshots/components/ScreenshotLightbox";
+import { indexOfScreenshot } from "@/features/screenshots/lib/sameScreenshot";
 
 const CAPTURE_POLL_MS = 2500;
 const CAPTURE_POLL_ATTEMPTS = 14;
@@ -163,6 +164,10 @@ export function UserScreenshots({ userId }: { userId: string }) {
       return true;
     });
   }, [items, kind, range, dateVal]);
+
+  // Matched by id rather than held as an index, so the arrows keep pointing at
+  // the right capture when a filter or a refresh reshuffles the list underneath.
+  const previewIndex = useMemo(() => indexOfScreenshot(filtered, preview), [filtered, preview]);
 
   async function handleCapture() {
     setCapturing(true);
@@ -365,6 +370,12 @@ export function UserScreenshots({ userId }: { userId: string }) {
           label={formatTaken(preview.takenAt)}
           badge={<KindBadge kind={preview.kind} />}
           onClose={() => setPreview(null)}
+          onPrev={previewIndex > 0 ? () => setPreview(filtered[previewIndex - 1]) : undefined}
+          onNext={
+            previewIndex >= 0 && previewIndex < filtered.length - 1
+              ? () => setPreview(filtered[previewIndex + 1])
+              : undefined
+          }
         />
       )}
     </section>

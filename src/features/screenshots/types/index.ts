@@ -36,4 +36,11 @@ export interface ScreenshotLightboxProps {
   label: string;
   badge?: ReactNode;
   onClose: () => void;
+  /**
+   * Move to the adjacent capture. Left undefined at either end of the list, which
+   * disables that arrow; undefined for both hides the arrows altogether, for a
+   * caller with nothing to step through.
+   */
+  onPrev?: () => void;
+  onNext?: () => void;
 }

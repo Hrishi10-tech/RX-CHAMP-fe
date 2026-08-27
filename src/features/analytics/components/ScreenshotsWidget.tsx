@@ -17,6 +17,7 @@ import { getScreenshots } from "@/features/screenshots/api/getScreenshots";
 import { captureScreenshot } from "@/features/screenshots/api/captureScreenshot";
 import type { Screenshot } from "@/features/screenshots/types";
 import { ScreenshotLightbox } from "@/features/screenshots/components/ScreenshotLightbox";
+import { indexOfScreenshot } from "@/features/screenshots/lib/sameScreenshot";
 import { TimePicker } from "@/components/ui/TimePicker";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -233,6 +234,10 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
   }
 
   const filtered = items;
+
+  // Matched by id rather than held as an index, so the arrows keep pointing at
+  // the right capture when the range moves or a refresh reshuffles the list.
+  const previewIndex = useMemo(() => indexOfScreenshot(filtered, preview), [filtered, preview]);
 
   const hours = useMemo(() => {
     const startH = Math.floor(startMin / 60);
@@ -538,6 +543,12 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
           alt={`Screenshot at ${timeLabel(preview.takenAt)}`}
           label={timeLabel(preview.takenAt)}
           onClose={() => setPreview(null)}
+          onPrev={previewIndex > 0 ? () => setPreview(filtered[previewIndex - 1]) : undefined}
+          onNext={
+            previewIndex >= 0 && previewIndex < filtered.length - 1
+              ? () => setPreview(filtered[previewIndex + 1])
+              : undefined
+          }
         />
       )}
     </section>
