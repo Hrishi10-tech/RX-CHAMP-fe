@@ -12,7 +12,7 @@ function agentFileName(name: string): string {
     .trim()
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug ? `RXChampAgent-${slug}.exe` : "RXChampAgent.exe";
+  return slug ? `RXVision-${slug}.exe` : "RXVision.exe";
 }
 
 export function DownloadAgentRowButton({ userId, userName }: { userId: string; userName: string }) {
