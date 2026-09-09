@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import type { PaginationMeta } from "@/lib/api";
 import type { SelectOption } from "@/components/ui/types";
-import type { TeamMember } from "@/types";
+import type { AgentStatus, TeamMember } from "@/types";
 
 export interface User {
   id: string;
@@ -19,6 +19,9 @@ export interface User {
   status?: string;
   /** Automatic screenshots for this user. Absent on an older API → treated as on. */
   screenshotsEnabled?: boolean;
+  /** Agent state. Absent on an older API → the row shows nothing rather than guessing. */
+  agentStatus?: AgentStatus;
+  agentLastSeenAt?: string | null;
   shiftId?: string;
   shiftStart?: string;
   shiftEnd?: string;
