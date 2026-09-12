@@ -23,6 +23,13 @@ async function loadPdfLibs() {
 export const REPORT_PAGE_WIDTH = 1122;
 
 /**
+ * Matching A4 landscape height. The timesheet is a table rather than a variable-height
+ * dashboard, so every sheet is pinned to the same size and a short last page still
+ * prints as a full page instead of a stub.
+ */
+export const REPORT_PAGE_HEIGHT = 794;
+
+/**
  * Rendering multiplier. Cost grows with its square, so long exports drop to 1.5 —
  * still ~144 DPI, and the difference is invisible on screen.
  */
@@ -108,12 +115,12 @@ export function finishReportPdf(pdf: ReportPdf | null, fileName: string): void {
   pdf.doc.save(fileName);
 }
 
-/** `lakshman-s-report-2026-08-01-to-2026-08-06.pdf` */
+/** `lakshman-s-timesheet-2026-08-01-to-2026-08-06.pdf` */
 export function reportFileName(userName: string | undefined, from: string, to: string): string {
   const who = (userName ?? "user")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
   const range = from === to ? from : `${from}-to-${to}`;
-  return `${who || "user"}-report-${range}.pdf`;
+  return `${who || "user"}-timesheet-${range}.pdf`;
 }

@@ -43,8 +43,8 @@ import { ReportPdfBuilder } from "@/features/analytics/components/ReportPdfBuild
 import {
   MAX_REPORT_DAYS,
   datesBetween,
-  fetchReportRange,
-  type ReportDay,
+  fetchTimesheet,
+  type TimesheetReport,
 } from "@/features/analytics/lib/reportRange";
 
 const KPI_META: Record<string, { icon: LucideIcon; color: string }> = {
@@ -110,7 +110,7 @@ export function ProductivityDashboard({
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(
     null,
   );
-  const [report, setReport] = useState<ReportDay[] | null>(null);
+  const [report, setReport] = useState<TimesheetReport | null>(null);
   const [reportRange, setReportRange] = useState<{ from: string; to: string } | null>(null);
 
   const greeting = useMemo(() => greetingFor(new Date().getHours()), []);
@@ -177,12 +177,12 @@ export function ProductivityDashboard({
 
     setExportProgress({ done: 0, total: dates.length });
     try {
-      const days = await fetchReportRange(userId, dates, (done, total) =>
+      const sheet = await fetchTimesheet(userId, dates, userName, (done, total) =>
         setExportProgress({ done, total }),
       );
       setExportOpen(false);
       setReportRange({ from, to });
-      setReport(days); // mounts the builder, which renders the PDF and downloads it
+      setReport(sheet); // mounts the builder, which renders the PDF and downloads it
     } catch {
       toast.error("Couldn't build the report. Please try again.");
     } finally {
@@ -271,8 +271,7 @@ export function ProductivityDashboard({
       {/* Renders nothing visible — the dashboard stays up while the PDF is built. */}
       {report && reportRange && (
         <ReportPdfBuilder
-          days={report}
-          userName={userName}
+          report={report}
           from={reportRange.from}
           to={reportRange.to}
           onDone={() => {
