@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ListFilter,
+  Loader2,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +16,9 @@ import { toast } from "sonner";
 import { Avatar } from "@/app/dashboard/admin/team-management/companies";
 import { ActionMenu } from "@/components/ui/ActionMenu";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Modal } from "@/components/ui/Modal";
 import { deleteCompany } from "@/features/companies/api/deleteCompany";
+import { updateCompany } from "@/features/companies/api/updateCompany";
 import { getUser } from "@/features/users/api/getUser";
 import { errorMessage } from "@/lib/api";
 import { withReturnTo } from "@/lib/nav/returnTo";
@@ -210,6 +213,10 @@ export function OrganizationPanel({
   const [pendingDelete, setPendingDelete] = useState<Company[] | null>(null);
   const [typedName, setTypedName] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [renaming, setRenaming] = useState<Company | null>(null);
+  const [newName, setNewName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+
 
   const [details, setDetails] = useState<Record<string, User>>({});
 
@@ -326,6 +333,27 @@ export function OrganizationPanel({
     if (done > 0) onDeleted?.();
   }
 
+  // Save is held shut on an unchanged name as well as an empty one: renaming a
+  // company to what it is already called is a round trip that changes nothing.
+  const renameIsSaveable =
+    newName.trim().length > 0 && newName.trim() !== renaming?.name && !savingName;
+
+  async function saveName() {
+    if (!renaming || !renameIsSaveable) return;
+
+    setSavingName(true);
+    try {
+      const saved = await updateCompany(renaming.id, newName.trim());
+      toast.success(`Renamed to ${saved.name}`);
+      setRenaming(null);
+      onDeleted?.();
+    } catch (err) {
+      toast.error("Couldn't rename the company", { description: errorMessage(err) });
+    } finally {
+      setSavingName(false);
+    }
+  }
+
   const pageCount = Math.max(1, Math.ceil(companies.length / LIST_SIZE));
   const clampedPage = Math.min(listPage, pageCount);
   const start = (clampedPage - 1) * LIST_SIZE;
@@ -439,6 +467,10 @@ export function OrganizationPanel({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => {
+                    setNewName(selected.name);
+                    setRenaming(selected);
+                  }}
                   className="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                 >
                   Edit Company
@@ -491,6 +523,53 @@ export function OrganizationPanel({
           </div>
         </div>
       )}
+
+      <Modal
+        open={renaming !== null}
+        onClose={() => setRenaming(null)}
+        title="Edit Company"
+        description="The name is the only detail a company holds of its own."
+        className="max-w-md"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void saveName();
+          }}
+          className="px-6 py-5"
+        >
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-600">Company name</span>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              autoFocus
+              maxLength={200}
+              className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-700 outline-none transition focus:border-[rgb(34_34_204)]"
+            />
+          </label>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setRenaming(null)}
+              disabled={savingName}
+              className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!renameIsSaveable}
+              className="inline-flex items-center gap-2 rounded-lg bg-[rgb(34_34_204)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[rgb(28_28_180)] disabled:opacity-50"
+            >
+              {savingName && <Loader2 className="h-4 w-4 animate-spin" />}
+              {savingName ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <ConfirmDialog
         open={pendingDelete !== null}

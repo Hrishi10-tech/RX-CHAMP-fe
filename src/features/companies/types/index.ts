@@ -48,6 +48,12 @@ export interface CreatedCompany {
   assignments?: CompanyAssignments;
 }
 
+export interface UpdatedCompany {
+  id: string;
+  name: string;
+  createdAt?: string;
+}
+
 export interface DeletedCompany {
   deleted: true;
   id: string;
