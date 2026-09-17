@@ -14,6 +14,9 @@ export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  // Bumped after a delete so the list is re-fetched from the server rather than
+  // patched locally — manager and member counts move with it.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -35,7 +38,7 @@ export default function CompaniesPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -71,7 +74,11 @@ export default function CompaniesPage() {
         </div>
       </div>
 
-      <OrganizationPanel companies={filtered} loading={loading} />
+      <OrganizationPanel
+        companies={filtered}
+        loading={loading}
+        onDeleted={() => setReloadKey((k) => k + 1)}
+      />
     </div>
   );
 }

@@ -48,6 +48,14 @@ export interface CreatedCompany {
   assignments?: CompanyAssignments;
 }
 
+export interface DeletedCompany {
+  deleted: true;
+  id: string;
+  name: string;
+  /** Members that went with the company. Nothing is destroyed — only hidden. */
+  membersRemoved: number;
+}
+
 export interface GetManagerUsersParams {
   page?: number;
   limit?: number;

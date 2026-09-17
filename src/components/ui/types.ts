@@ -128,4 +128,6 @@ export interface ConfirmDialogProps {
   icon?: LucideIcon;
   destructive?: boolean;
   loading?: boolean;
+  /** Holds the confirm button shut until the caller says the dialog is satisfied. */
+  confirmDisabled?: boolean;
 }

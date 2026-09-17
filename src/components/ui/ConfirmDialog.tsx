@@ -16,6 +16,7 @@ export function ConfirmDialog({
   icon: Icon,
   destructive = false,
   loading = false,
+  confirmDisabled = false,
 }: ConfirmDialogProps) {
   return (
     <Modal open={open} onClose={onClose} className="max-w-md">
@@ -51,7 +52,7 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            disabled={loading}
+            disabled={loading || confirmDisabled}
             className={`inline-flex min-w-[128px] items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-[650] text-white shadow-md transition-colors disabled:opacity-70 ${
               destructive
                 ? "bg-[rgb(236_43_120)] shadow-[rgba(236,43,120,0.35)] hover:bg-[rgb(214_31_104)]"

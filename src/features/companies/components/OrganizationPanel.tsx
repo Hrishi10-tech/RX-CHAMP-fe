@@ -8,11 +8,16 @@ import {
   ChevronLeft,
   ChevronRight,
   ListFilter,
-  MoreHorizontal,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Avatar } from "@/app/dashboard/admin/team-management/companies";
+import { ActionMenu } from "@/components/ui/ActionMenu";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { deleteCompany } from "@/features/companies/api/deleteCompany";
 import { getUser } from "@/features/users/api/getUser";
+import { errorMessage } from "@/lib/api";
 import { withReturnTo } from "@/lib/nav/returnTo";
 import type { User } from "@/features/users/types";
 import type { Company, CompanyManager } from "@/features/companies/types";
@@ -67,38 +72,56 @@ function StatTile({ value, label }: { value: string; label: string }) {
 function CompanyRow({
   company,
   active,
+  checked,
   onSelect,
+  onCheck,
 }: {
   company: Company;
   active: boolean;
+  checked: boolean;
   onSelect: () => void;
+  onCheck: (checked: boolean) => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition ${
+    <div
+      className={`flex items-center gap-2 rounded-2xl border pl-3 pr-1 transition ${
         active
           ? "border-[rgba(34,34,204,0.4)] bg-[rgba(34,34,204,0.04)] ring-1 ring-[rgba(34,34,204,0.15)]"
-          : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+          : checked
+            ? "border-[rgba(34,34,204,0.25)] bg-slate-50"
+            : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
       }`}
     >
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-          active ? "bg-[rgb(34_34_204)] text-white" : "bg-slate-100 text-slate-400"
-        }`}
+      {/* Outside the button: a checkbox nested in one could never be clicked on its own. */}
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onCheck(e.target.checked)}
+        aria-label={`Select ${company.name}`}
+        className="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-[rgb(34_34_204)] accent-[rgb(34_34_204)] focus:ring-[rgba(34,34,204,0.35)]"
+      />
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 items-center gap-3 py-3 pr-2 text-left"
       >
-        <Building2 className="h-5 w-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900">{company.name}</p>
-        <p className="text-xs text-slate-400">
-          {company.managerCount ?? company.managers?.length ?? 0} managers ·{" "}
-          {company.userCount ?? 0} users
-        </p>
-      </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
-    </button>
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+            active ? "bg-[rgb(34_34_204)] text-white" : "bg-slate-100 text-slate-400"
+          }`}
+        >
+          <Building2 className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900">{company.name}</p>
+          <p className="text-xs text-slate-400">
+            {company.managerCount ?? company.managers?.length ?? 0} managers ·{" "}
+            {company.userCount ?? 0} users
+          </p>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+      </button>
+    </div>
   );
 }
 
@@ -173,13 +196,20 @@ function ManagersTable({
 export function OrganizationPanel({
   companies,
   loading,
+  onDeleted,
 }: {
   companies: Company[];
   loading: boolean;
+  /** Reload the list after a delete, so the page owning the data stays the source. */
+  onDeleted?: () => void;
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [listPage, setListPage] = useState(1);
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<Company[] | null>(null);
+  const [typedName, setTypedName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const [details, setDetails] = useState<Record<string, User>>({});
 
@@ -236,6 +266,66 @@ export function OrganizationPanel({
     );
   }
 
+  const checkedCompanies = useMemo(
+    () => companies.filter((c) => checkedIds.includes(c.id)),
+    [companies, checkedIds],
+  );
+
+  // A company with people in it takes more than a click to delete: the confirm box
+  // makes you type its name. Empty ones — the test companies this mostly exists for
+  // — just ask once.
+  const membersAtRisk = useMemo(
+    () => (pendingDelete ?? []).reduce((sum, c) => sum + (c.userCount ?? 0), 0),
+    [pendingDelete],
+  );
+  const needsTyping = membersAtRisk > 0 && (pendingDelete?.length ?? 0) === 1;
+  const typingSatisfied = !needsTyping || typedName.trim() === pendingDelete?.[0]?.name;
+
+  function askDelete(targets: Company[]) {
+    if (targets.length === 0) return;
+    setTypedName("");
+    setPendingDelete(targets);
+  }
+
+  async function confirmDelete() {
+    const targets = pendingDelete;
+    if (!targets?.length) return;
+
+    setDeleting(true);
+    // Settled, not all: one failure must not hide the ones that did go.
+    const results = await Promise.allSettled(targets.map((c) => deleteCompany(c.id)));
+    setDeleting(false);
+
+    const done = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.length - done;
+    const members = results.reduce(
+      (sum, r) => sum + (r.status === "fulfilled" ? r.value.membersRemoved : 0),
+      0,
+    );
+
+    if (done > 0) {
+      toast.success(done === 1 ? `Deleted ${targets[0].name}` : `Deleted ${done} companies`, {
+        description:
+          members > 0
+            ? `${members} ${members === 1 ? "member" : "members"} removed with it. Records are kept.`
+            : undefined,
+      });
+    }
+    if (failed > 0) {
+      const first = results.find((r) => r.status === "rejected") as
+        | PromiseRejectedResult
+        | undefined;
+      toast.error(failed === 1 ? "Couldn't delete the company" : `${failed} companies failed`, {
+        description: first ? errorMessage(first.reason) : undefined,
+      });
+    }
+
+    setPendingDelete(null);
+    setTypedName("");
+    setCheckedIds((ids) => ids.filter((id) => !targets.some((t) => t.id === id)));
+    if (done > 0) onDeleted?.();
+  }
+
   const pageCount = Math.max(1, Math.ceil(companies.length / LIST_SIZE));
   const clampedPage = Math.min(listPage, pageCount);
   const start = (clampedPage - 1) * LIST_SIZE;
@@ -252,13 +342,24 @@ export function OrganizationPanel({
               {companies.length}
             </span>
           </div>
-          <button
-            type="button"
-            aria-label="Sort companies"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-          >
-            <ListFilter className="h-4 w-4" />
-          </button>
+          {checkedCompanies.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => askDelete(checkedCompanies)}
+              className="flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete ({checkedCompanies.length})
+            </button>
+          ) : (
+            <button
+              type="button"
+              aria-label="Sort companies"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <ListFilter className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
@@ -272,7 +373,13 @@ export function OrganizationPanel({
                 key={c.id}
                 company={c}
                 active={c.id === selectedId}
+                checked={checkedIds.includes(c.id)}
                 onSelect={() => setSelectedId(c.id)}
+                onCheck={(on) =>
+                  setCheckedIds((ids) =>
+                    on ? [...ids, c.id] : ids.filter((id) => id !== c.id),
+                  )
+                }
               />
             ))
           )}
@@ -336,13 +443,17 @@ export function OrganizationPanel({
                 >
                   Edit Company
                 </button>
-                <button
-                  type="button"
-                  aria-label="More actions"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50"
-                >
-                  <MoreHorizontal className="h-5 w-5" />
-                </button>
+                <ActionMenu
+                  label="Company actions"
+                  items={[
+                    {
+                      label: "Delete company",
+                      icon: Trash2,
+                      destructive: true,
+                      onSelect: () => askDelete([selected]),
+                    },
+                  ]}
+                />
               </div>
             </div>
 
@@ -380,6 +491,70 @@ export function OrganizationPanel({
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onClose={() => {
+          setPendingDelete(null);
+          setTypedName("");
+        }}
+        onConfirm={confirmDelete}
+        title={
+          (pendingDelete?.length ?? 0) === 1
+            ? `Delete ${pendingDelete?.[0]?.name}?`
+            : `Delete ${pendingDelete?.length ?? 0} companies?`
+        }
+        destructive
+        icon={Trash2}
+        loading={deleting}
+        confirmDisabled={!typingSatisfied}
+        confirmLabel={deleting ? "Deleting…" : "Delete"}
+        description={
+          <div className="space-y-3 text-left">
+            {membersAtRisk > 0 ? (
+              <p>
+                <span className="font-semibold text-slate-700">
+                  {membersAtRisk} {membersAtRisk === 1 ? "member" : "members"}
+                </span>{" "}
+                will be removed from the app along with{" "}
+                {(pendingDelete?.length ?? 0) === 1 ? "it" : "them"}. Their records are kept
+                and can be restored.
+              </p>
+            ) : (
+              <p>
+                {(pendingDelete?.length ?? 0) === 1 ? "It has" : "They have"} no members. The
+                record is kept and can be restored.
+              </p>
+            )}
+
+            {(pendingDelete?.length ?? 0) > 1 && (
+              <ul className="list-inside list-disc text-slate-600">
+                {pendingDelete?.map((c) => (
+                  <li key={c.id}>
+                    {c.name}
+                    {(c.userCount ?? 0) > 0 ? ` — ${c.userCount} members` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {needsTyping && (
+              <label className="block">
+                <span className="text-xs font-semibold text-slate-600">
+                  Type {pendingDelete?.[0]?.name} to confirm
+                </span>
+                <input
+                  type="text"
+                  value={typedName}
+                  onChange={(e) => setTypedName(e.target.value)}
+                  autoComplete="off"
+                  className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-[rgb(34_34_204)]"
+                />
+              </label>
+            )}
+          </div>
+        }
+      />
     </div>
   );
 }
