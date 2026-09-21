@@ -111,7 +111,6 @@ export default function ManagerUsersPage() {
           data={members}
           columns={memberColumns}
           getRowKey={(m) => m.id}
-          selectable
           onRowClick={openActivity}
           countNoun="user"
           emptyMessage="No users assigned to this manager yet."
