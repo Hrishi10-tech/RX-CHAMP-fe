@@ -1,28 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Info,
-  MessageSquare,
-  Paperclip,
-  Phone,
-  Pin,
-  Send,
-  ShieldCheck,
-  Smile,
-  Video,
-} from "lucide-react";
+import { MessageSquare, Paperclip, Send, ShieldCheck, Smile } from "lucide-react";
 
 import { Avatar } from "@/app/dashboard/admin/team-management/companies";
 import { ChatBubble } from "@/features/chat/components/ChatBubble";
 import type { ConversationViewProps } from "@/features/chat/types";
-
-const HEADER_ACTIONS = [
-  { icon: Phone, label: "Call" },
-  { icon: Video, label: "Video call" },
-  { icon: Pin, label: "Pinned messages" },
-  { icon: Info, label: "Conversation details" },
-];
 
 export function ConversationView({
   contact,
@@ -57,7 +40,7 @@ export function ConversationView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+      <header className="flex items-center border-b border-slate-100 px-5 py-3.5">
         <div className="flex items-center gap-3">
           <div className="relative">
             <Avatar name={contact.name} className="h-10 w-10 text-xs" />
@@ -70,19 +53,6 @@ export function ConversationView({
               Online
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-1">
-          {HEADER_ACTIONS.map(({ icon: Icon, label }) => (
-            <button
-              key={label}
-              type="button"
-              aria-label={label}
-              title={label}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-            >
-              <Icon className="h-[18px] w-[18px]" />
-            </button>
-          ))}
         </div>
       </header>
 
