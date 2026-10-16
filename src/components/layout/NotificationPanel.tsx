@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlarmClock,
   Bell,
   Building2,
+  ChevronRight,
+  ClipboardCheck,
+  Coffee,
   FileText,
+  Hourglass,
+  ListChecks,
+  MessageSquareText,
+  Moon,
+  SkipForward,
   TriangleAlert,
   UserPlus,
   Users,
@@ -13,6 +23,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { notificationHref } from "@/features/notifications/lib/links";
+import { useDialogFocus } from "@/lib/hooks/useDialogFocus";
 import type { NotificationFilter, NotificationPanelProps } from "./types";
 
 const TYPE_STYLE: Record<string, { icon: LucideIcon; tint: string }> = {
@@ -36,6 +48,40 @@ const TYPE_STYLE: Record<string, { icon: LucideIcon; tint: string }> = {
     icon: TriangleAlert,
     tint: "bg-amber-50 text-amber-600 ring-amber-100",
   },
+  BREAK_APPROVAL_REQUESTED: {
+    icon: Coffee,
+    tint: "bg-amber-50 text-amber-600 ring-amber-100",
+  },
+  BREAK_APPROVALS_DIGEST: {
+    icon: ListChecks,
+    tint: "bg-amber-50 text-amber-600 ring-amber-100",
+  },
+  BREAK_DECIDED: {
+    icon: ClipboardCheck,
+    tint: "bg-emerald-50 text-emerald-600 ring-emerald-100",
+  },
+  SKIP_REQUESTED: { icon: SkipForward, tint: "bg-violet-50 text-violet-600 ring-violet-100" },
+  AUTO_SKIP_REQUESTED: {
+    icon: SkipForward,
+    tint: "bg-slate-50 text-slate-600 ring-slate-100",
+  },
+  SKIP_COMMENT_ADDED: {
+    icon: MessageSquareText,
+    tint: "bg-violet-50 text-violet-600 ring-violet-100",
+  },
+  MEETING_REQUESTED: { icon: Users, tint: "bg-indigo-50 text-indigo-600 ring-indigo-100" },
+  MEETING_DECIDED: {
+    icon: ClipboardCheck,
+    tint: "bg-emerald-50 text-emerald-600 ring-emerald-100",
+  },
+  APPROVALS_DUE_SOON: { icon: Hourglass, tint: "bg-amber-50 text-amber-600 ring-amber-100" },
+  APPROVALS_OVERDUE: { icon: AlarmClock, tint: "bg-rose-50 text-rose-600 ring-rose-100" },
+  APPROVALS_ESCALATED: { icon: TriangleAlert, tint: "bg-rose-50 text-rose-600 ring-rose-100" },
+  MONTHLY_REPORT_READY: {
+    icon: FileText,
+    tint: "bg-violet-50 text-violet-600 ring-violet-100",
+  },
+  DAY_AUTO_CLOSED: { icon: Moon, tint: "bg-slate-50 text-slate-600 ring-slate-100" },
 };
 const DEFAULT_STYLE = {
   icon: Bell,
@@ -75,6 +121,19 @@ export function NotificationPanel({
   onMarkAllRead,
 }: NotificationPanelProps) {
   const [filter, setFilter] = useState<NotificationFilter>("all");
+  const router = useRouter();
+  const panelRef = useRef<HTMLElement>(null);
+  const titleId = useId();
+  // A real modal: focus moves in, Tab stays inside, and the bell gets it back.
+  useDialogFocus(open, panelRef);
+
+  function openItem(id: string, type: string, unread: boolean) {
+    if (unread) onMarkRead(id);
+    const href = notificationHref(type);
+    if (!href) return;
+    onClose();
+    router.push(href);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -122,10 +181,12 @@ export function NotificationPanel({
           />
 
           <motion.aside
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Notifications"
-            className="pointer-events-auto absolute bottom-4 right-4 top-4 flex w-[calc(100%-2rem)] max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+            className="pointer-events-auto absolute bottom-4 right-4 top-4 flex w-[calc(100%-2rem)] max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl outline-none ring-1 ring-black/5"
             initial={{ x: "110%", opacity: 0.6 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "110%", opacity: 0.6 }}
@@ -138,7 +199,7 @@ export function NotificationPanel({
                     <Bell className="h-5 w-5" />
                   </span>
                   <div>
-                    <h2 className="text-lg font-bold tracking-tight text-slate-900">
+                    <h2 id={titleId} className="text-lg font-bold tracking-tight text-slate-900">
                       Notifications
                     </h2>
                     <p className="text-sm text-slate-400">You have {unreadCount} unread</p>
@@ -148,7 +209,7 @@ export function NotificationPanel({
                   type="button"
                   onClick={onClose}
                   aria-label="Close notifications"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -225,11 +286,12 @@ export function NotificationPanel({
                       {items.map((n) => {
                         const { icon: Icon, tint } = TYPE_STYLE[n.type] ?? DEFAULT_STYLE;
                         const unread = !n.read;
+                        const linked = notificationHref(n.type) !== null;
                         return (
                           <button
                             key={n.id}
                             type="button"
-                            onClick={() => unread && onMarkRead(n.id)}
+                            onClick={() => openItem(n.id, n.type, unread)}
                             className={`group relative flex w-full cursor-pointer items-start gap-3 overflow-hidden rounded-2xl px-3 py-3 text-left transition-colors hover:bg-slate-50 ${
                               unread ? "bg-slate-50/70" : ""
                             }`}
@@ -246,11 +308,21 @@ export function NotificationPanel({
                               <p className="text-sm font-semibold leading-snug text-slate-900">
                                 {n.title}
                               </p>
-                              <p className="mt-0.5 text-sm leading-snug text-slate-600">{n.body}</p>
+                              {n.body && (
+                                <p className="mt-0.5 text-sm leading-snug text-slate-600">
+                                  {n.body}
+                                </p>
+                              )}
                               <p className="mt-1 text-xs text-slate-400">{timeAgo(n.createdAt)}</p>
                             </div>
                             {unread && (
                               <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[rgb(34_34_204)]" />
+                            )}
+                            {linked && (
+                              <ChevronRight
+                                aria-hidden
+                                className="mt-1 h-4 w-4 shrink-0 text-slate-300 group-hover:text-slate-500"
+                              />
                             )}
                           </button>
                         );

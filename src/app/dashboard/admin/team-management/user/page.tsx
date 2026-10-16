@@ -23,16 +23,18 @@ import {
   Plus,
   ShieldCheck,
   UserRound,
+  UserRoundCheck,
   UserRoundPlus,
-  UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { errorMessage } from "@/lib/api";
 
-import { ROLES } from "@/constants/roles";
+import { ROLES, ROLE_LABEL } from "@/constants/roles";
 import { withDepartment } from "@/constants/departments";
 import { useSession } from "@/features/auth/hooks/useSession";
+import { MIN_PASSWORD_LENGTH, PASSWORD_RULE } from "@/features/auth/lib/passwordRules";
+import { useReportsToOptions } from "@/features/users/hooks/useReportsToOptions";
 import { getCompanies } from "@/features/companies/api/getCompanies";
 import type { Company } from "@/features/companies/types";
 import { createUser } from "@/features/users/api/createUser";
@@ -68,8 +70,11 @@ function buildMemberFields(isEdit: boolean) {
     firstName: z.string().trim().min(1, "First name is required"),
     lastName: z.string().trim().min(1, "Last name is required"),
     email: z.string().trim().min(1, "Email is required").email("Enter a valid email"),
-    password: isEdit ? z.string() : z.string().min(8, "Use at least 8 characters"),
+    password: isEdit
+      ? z.string()
+      : z.string().min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters`),
     role: isEdit ? z.string() : z.string().min(1, "Select a role"),
+    managerId: z.string().optional(),
     company: z.string().optional(),
     department: z.string().trim().min(1, "Department is required"),
     designation: z.string().trim().min(1, "Designation is required"),
@@ -99,26 +104,20 @@ type AssignOption = {
 const ROLE_OPTIONS: AssignOption[] = [
   {
     value: ROLES.SUPER_ADMIN,
-    label: "Super Admin",
-    description: "Full access to all modules and settings",
-    icon: Crown,
-  },
-  {
-    value: ROLES.ADMIN,
-    label: "Admin",
-    description: "Full workspace access",
+    label: ROLE_LABEL.SUPER_ADMIN,
+    description: "Everything, every team",
     icon: ShieldCheck,
   },
   {
     value: ROLES.MANAGER,
-    label: "Manager",
-    description: "Manage teams, members and projects",
-    icon: UsersRound,
+    label: ROLE_LABEL.MANAGER,
+    description: "Their own staff, shifts and break approvals",
+    icon: Crown,
   },
   {
     value: ROLES.USER,
-    label: "Member",
-    description: "Access to assigned teams and tasks",
+    label: ROLE_LABEL.USER,
+    description: "Their own work and breaks",
     icon: UserRound,
   },
 ];
@@ -256,7 +255,7 @@ function CompanyCard({
 function AddMemberForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { role: currentRole } = useSession();
+  const { role: currentRole, user: currentUser } = useSession();
   const [showPassword, setShowPassword] = useState(false);
 
   const editId = searchParams.get("id");
@@ -264,6 +263,7 @@ function AddMemberForm() {
   const [loadingUser, setLoadingUser] = useState(isEdit);
 
   const isManager = currentRole === ROLES.MANAGER;
+  const isSuperAdmin = currentRole === ROLES.SUPER_ADMIN;
   const listRoute = isManager ? "/dashboard/manager" : LIST_ROUTE;
   const backLabel = isManager ? "Team Overview" : "Team Management";
 
@@ -288,6 +288,7 @@ function AddMemberForm() {
       email: "",
       password: "",
       role: "",
+      managerId: "",
       company: "",
       department: "",
       designation: "",
@@ -310,6 +311,7 @@ function AddMemberForm() {
           email: u.email ?? "",
           password: "",
           role: u.role ?? "",
+          managerId: u.managerId ?? "",
           company: u.companyId ?? "",
           department: u.department ?? "",
           designation: u.designation ?? "",
@@ -343,12 +345,25 @@ function AddMemberForm() {
     }
   }, [isEdit, shiftStart, setValue]);
 
+  // A Super Admin may create any role; a Manager creates Staff only.
   const roleOptions = useMemo(() => {
-    if (currentRole === ROLES.SUPER_ADMIN)
-      return ROLE_OPTIONS.filter((r) => r.value === ROLES.MANAGER);
+    if (currentRole === ROLES.SUPER_ADMIN) return ROLE_OPTIONS;
     if (currentRole === ROLES.MANAGER) return ROLE_OPTIONS.filter((r) => r.value === ROLES.USER);
-    return ROLE_OPTIONS;
+    return [];
   }, [currentRole]);
+
+  // "Reports to": a Super Admin picks any active Manager or Super Admin (defaults
+  // to themselves, as the server does); a Manager's staff always report to them.
+  const showReportsTo = isSuperAdmin && !isEdit;
+  const reportsTo = useReportsToOptions(showReportsTo);
+  const managerIdValue = watch("managerId");
+  const myId = currentUser?.id;
+  const meListed = Boolean(myId && reportsTo.options.some((o) => o.value === myId));
+  useEffect(() => {
+    // Only once the list holds them, so the select never shows an id it can't name.
+    if (!showReportsTo || managerIdValue || !myId || !meListed) return;
+    setValue("managerId", myId);
+  }, [showReportsTo, managerIdValue, myId, meListed, setValue]);
 
   const roleValue = watch("role");
   const roleSelectOptions = useMemo(() => {
@@ -437,6 +452,7 @@ function AddMemberForm() {
           lastName: values.lastName,
           password: values.password,
           role: values.role,
+          managerId: isSuperAdmin ? values.managerId || undefined : undefined,
           companyId: values.company || undefined,
           department: values.department,
           designation: values.designation,
@@ -547,6 +563,7 @@ function AddMemberForm() {
                     className={inputClass(!!errors.password, "pr-10")}
                     placeholder="Create password"
                     autoComplete="new-password"
+                    aria-describedby="password-rule"
                     {...register("password")}
                   />
                   <button
@@ -558,7 +575,15 @@ function AddMemberForm() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.password && <p className={errorClass}>{errors.password.message}</p>}
+                {errors.password ? (
+                  <p id="password-rule" className={errorClass}>
+                    {errors.password.message}
+                  </p>
+                ) : (
+                  <p id="password-rule" className={lockedClass}>
+                    {PASSWORD_RULE} Share it with them privately.
+                  </p>
+                )}
               </div>
             )}
             <div>
@@ -629,7 +654,50 @@ function AddMemberForm() {
               />
             </div>
             {errors.role && <p className={errorClass}>{errors.role.message}</p>}
-            {isEdit && <p className={lockedClass}>Role changes aren&apos;t supported yet.</p>}
+            {isEdit && <p className={lockedClass}>Change the role from the member list (Edit).</p>}
+
+            {showReportsTo && (
+              <div className="mt-5">
+                <FieldLabel htmlFor="managerId" required>
+                  Reports to
+                </FieldLabel>
+                <p className="mt-1 text-sm text-slate-500">
+                  Their manager sees their activity and approves their off-schedule breaks.
+                </p>
+                <div className="mt-3">
+                  <Controller
+                    name="managerId"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        id="managerId"
+                        value={field.value ?? ""}
+                        onValueChange={field.onChange}
+                        options={reportsTo.options}
+                        placeholder={reportsTo.isLoading ? "Loading managers…" : "Select a person"}
+                        aria-label="Reports to"
+                        disabled={reportsTo.isLoading}
+                        searchable
+                        searchPlaceholder="Search managers…"
+                        leadingIcon={UserRoundCheck}
+                      />
+                    )}
+                  />
+                </div>
+                {reportsTo.isError && (
+                  <p className={errorClass}>
+                    Couldn&apos;t load managers. Reload the page to try again.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {isManager && !isEdit && (
+              <p className="mt-4 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">
+                <UserRoundCheck className="h-4 w-4 shrink-0 text-[rgb(34_34_204)]" aria-hidden />
+                They will report to you.
+              </p>
+            )}
           </Card>
 
           {!isManager && !isEdit && (
@@ -693,8 +761,8 @@ function AddMemberForm() {
         <Card icon={Clock} title="Shift Timing" badge={isEdit ? undefined : "(Optional)"}>
           <p className="text-sm text-slate-500">
             {isEdit
-              ? "This member's assigned shift. Shift changes aren't supported yet."
-              : `Pick a shift start — the end is set automatically to ${SHIFT_HOURS} hours later.`}
+              ? "Working hours shown in older desktop apps. Break times follow the shift set under Assign shifts."
+              : `Pick a start time; the end is set ${SHIFT_HOURS} hours later. Break times follow the shift set under Assign shifts.`}
           </p>
 
           <div className="mt-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_1fr]">

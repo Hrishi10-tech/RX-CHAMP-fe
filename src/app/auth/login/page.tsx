@@ -4,14 +4,14 @@ import { useState } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Lock, Mail, Loader2 } from "lucide-react";
+import { Clock, Eye, EyeOff, Lock, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { login } from "@/features/auth/api/login";
 import { loginErrorCopy } from "@/features/auth/lib/loginErrors";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/login.schema";
 import { saveSession } from "@/lib/auth/session";
-import { resolveHomeRoute } from "@/constants/roles";
+import { REDIRECT_PARAM, afterLoginPath } from "@/features/auth/lib/loginRedirect";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -42,7 +42,10 @@ export default function LoginPage() {
       toast.success("Login successful", {
         description: "Redirecting you to your dashboard…",
       });
-      window.location.href = resolveHomeRoute(data.user?.role);
+      // Back to the page that asked for a sign-in (?redirect=), when it is a
+      // dashboard page this role may open; otherwise home.
+      const redirect = new URLSearchParams(window.location.search).get(REDIRECT_PARAM);
+      window.location.href = afterLoginPath(redirect, data.user?.role);
     } catch {
       setServerError("Something went wrong. Please try again.");
       toast.error("Something went wrong", {
@@ -55,21 +58,18 @@ export default function LoginPage() {
     <main className="min-h-screen w-full bg-white">
       <div className="grid min-h-screen w-full bg-white lg:grid-cols-2">
         <div className="flex flex-col px-8 py-10 sm:px-14 sm:py-12 lg:order-2">
-          <div className="flex items-center lg:hidden">
-            <Image
-              src="/brand/logo.png"
-              alt="Rx Vision logo"
-              width={1476}
-              height={720}
-              priority
-              className="h-20 w-auto object-contain"
-            />
+          {/* The dashboard's brand mark: public/brand has no logo image to load. */}
+          <div className="flex items-center gap-2.5 lg:hidden">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[rgb(74_74_230)] to-[rgb(34_34_204)] text-white shadow-sm shadow-[rgba(34,34,204,0.35)]">
+              <Clock className="h-6 w-6" aria-hidden />
+            </span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">Rx Vision</span>
           </div>
 
           <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
             <h1 className="text-4xl font-bold tracking-tight text-slate-900">Sign in</h1>
             <p className="mt-4 text-sm leading-6 text-slate-600">
-              Welcome back! Please enter your credentials 
+              Welcome back! Please enter your credentials
               <br />
               to access your account.
             </p>

@@ -1,17 +1,22 @@
 import { apiClient } from "@/lib/api";
+import type { AgentPlatform } from "@/features/agent/types";
 
 /**
- * The name is set here, not taken from the response: this reads the body as a blob
- * and saves it with `a.download`, which overrides the server's Content-Disposition
- * entirely. So the backend's agent.fileName never reaches the user through this
- * path — the two have to be kept in step by hand.
+ * Downloads the agent for one person and saves it as `fileName`.
+ *
+ * The name is set here, not taken from the response: this reads the body as a
+ * blob and saves it with `a.download`, which overrides the server's
+ * Content-Disposition entirely. Windows downloads have that person's sign-in
+ * baked in; the Mac app is the same for everyone (it signs in with a setup code),
+ * but the request still names the person so the server checks they are yours.
  */
 export async function downloadAgentForUser(
   userId: string,
   fileName = "RXVision.exe",
+  platform: AgentPlatform = "windows",
 ): Promise<void> {
   const res = await apiClient.get<Blob>("/api/v1/agent/download", {
-    params: { userId },
+    params: { userId, platform },
     responseType: "blob",
   });
 
@@ -24,6 +29,8 @@ export async function downloadAgentForUser(
     a.click();
     a.remove();
   } finally {
-    URL.revokeObjectURL(url);
+    // Revoked on the next tick: some browsers start reading the blob after click()
+    // returns, and an immediate revoke can cancel the download.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 }

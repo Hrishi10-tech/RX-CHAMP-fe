@@ -1,49 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Download } from "lucide-react";
 
-import { downloadAgentForUser } from "@/features/agent/api/downloadAgent";
 import { rowActionButtonClass, rowActionHover } from "@/components/ui/rowAction";
+import { DownloadAgentDialog } from "@/features/agent/components/DownloadAgentDialog";
 
-function agentFileName(name: string): string {
-  const slug = name
-    .trim()
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return slug ? `RXVision-${slug}.exe` : "RXVision.exe";
-}
-
+/** Row action: opens the desktop-app dialog (Windows installer, or Mac app + setup code). */
 export function DownloadAgentRowButton({ userId, userName }: { userId: string; userName: string }) {
-  const [loading, setLoading] = useState(false);
-
-  async function handleDownload(e: React.MouseEvent) {
-    e.stopPropagation();
-    const fileName = agentFileName(userName);
-    setLoading(true);
-    try {
-      await downloadAgentForUser(userId, fileName);
-      toast.success("Download started", { description: fileName });
-    } catch {
-      toast.error("Couldn't download the agent", {
-        description: "Please try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [open, setOpen] = useState(false);
 
   return (
-    <button
-      type="button"
-      onClick={handleDownload}
-      disabled={loading}
-      title={`Download agent for ${userName}`}
-      aria-label={`Download agent for ${userName}`}
-      className={`${rowActionButtonClass} ${rowActionHover.primary}`}
-    >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+        title={`Get the desktop app for ${userName}`}
+        aria-label={`Get the desktop app for ${userName}`}
+        aria-haspopup="dialog"
+        className={`${rowActionButtonClass} ${rowActionHover.primary}`}
+      >
+        <Download className="h-4 w-4" />
+      </button>
+      {open && (
+        // The dialog sits inside a clickable table row: keep its clicks there.
+        <div onClick={(e) => e.stopPropagation()}>
+          <DownloadAgentDialog
+            open={open}
+            onClose={() => setOpen(false)}
+            userId={userId}
+            userName={userName}
+          />
+        </div>
+      )}
+    </>
   );
 }

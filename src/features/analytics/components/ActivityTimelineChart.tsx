@@ -22,7 +22,7 @@ export function ActivityTimelineChart({ data }: { data: HourActivity[] }) {
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+        <BarChart data={rows} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
           <XAxis
             dataKey="label"

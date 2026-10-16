@@ -7,7 +7,7 @@ import { Check, ChevronDown, Search } from "lucide-react";
 import type { SelectProps } from "./types";
 
 const triggerBase =
-  "group mt-1.5 flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-3.5 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:border-slate-300 hover:shadow focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 data-[placeholder]:font-normal data-[placeholder]:text-slate-400";
+  "group mt-1.5 flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-3.5 py-3 text-left text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:border-slate-300 hover:shadow focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 data-[placeholder]:font-normal data-[placeholder]:text-slate-400";
 
 export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(
   {
@@ -42,8 +42,18 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
 
   return (
     <RadixSelect.Root
-      value={value || undefined}
-      onValueChange={onValueChange}
+      // Always controlled ("" shows the placeholder): flipping between controlled
+      // and uncontrolled as a value arrives makes React warn and Radix re-sync.
+      value={value ?? ""}
+      onValueChange={(next) => {
+        // Inside a <form> Radix mirrors the value into a hidden native <select> and
+        // reports "" back when that value has no option yet, e.g. while the options
+        // are still loading. No item may have the value "", so it is never a real
+        // choice; passing it on would wipe the field (and, with a default that
+        // re-applies itself, loop forever).
+        if (next === "") return;
+        onValueChange?.(next);
+      }}
       disabled={disabled}
       name={name}
       onOpenChange={(open) => {

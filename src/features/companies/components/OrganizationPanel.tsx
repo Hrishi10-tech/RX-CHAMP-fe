@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { Avatar } from "@/app/dashboard/admin/team-management/companies";
+import { roleLabel } from "@/constants/roles";
 import { ActionMenu } from "@/components/ui/ActionMenu";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
@@ -37,21 +38,6 @@ function formatDate(iso?: string): string {
         month: "short",
         year: "numeric",
       });
-}
-
-function roleLabel(role?: string): string {
-  switch (role?.toUpperCase()) {
-    case "SUPER_ADMIN":
-      return "Super Admin";
-    case "ADMIN":
-      return "Admin";
-    case "MANAGER":
-      return "Manager";
-    case "USER":
-      return "Member";
-    default:
-      return role ?? "—";
-  }
 }
 
 function RolePill({ role }: { role?: string }) {
@@ -611,7 +597,7 @@ export function OrganizationPanel({
                 {pendingDelete?.map((c) => (
                   <li key={c.id}>
                     {c.name}
-                    {(c.userCount ?? 0) > 0 ? ` — ${c.userCount} members` : ""}
+                    {(c.userCount ?? 0) > 0 ? `, ${c.userCount} members` : ""}
                   </li>
                 ))}
               </ul>

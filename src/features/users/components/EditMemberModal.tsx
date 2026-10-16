@@ -11,9 +11,9 @@ import {
   Loader2,
   Lock,
   Mail,
-  Shield,
   ShieldCheck,
   User as UserIcon,
+  UserRoundCheck,
   UsersRound,
   X,
 } from "lucide-react";
@@ -21,19 +21,46 @@ import type { LucideIcon } from "lucide-react";
 
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
+import type { SelectOption } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
 import { withDepartment } from "@/constants/departments";
+import { ROLE_LABEL, normalizeRole, type Role } from "@/constants/roles";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { getUser } from "@/features/users/api/getUser";
 import { updateUser } from "@/features/users/api/updateUser";
+import { useReportsToOptions } from "@/features/users/hooks/useReportsToOptions";
 import { formatJoined } from "@/features/users/lib/memberTable";
-import type { EditMemberModalProps } from "@/features/users/types";
+import type { EditMemberModalProps, UpdateUserInput } from "@/features/users/types";
 
-const ROLE_LABELS: Record<string, { label: string; icon: LucideIcon }> = {
-  SUPER_ADMIN: { label: "Super Admin", icon: ShieldCheck },
-  ADMIN: { label: "Admin", icon: Shield },
-  MANAGER: { label: "Manager", icon: Crown },
-  USER: { label: "Member", icon: UserIcon },
+const ROLE_ICON: Record<Role, LucideIcon> = {
+  SUPER_ADMIN: ShieldCheck,
+  MANAGER: Crown,
+  USER: UserIcon,
 };
+
+const ROLE_OPTIONS: SelectOption[] = [
+  {
+    value: "SUPER_ADMIN",
+    label: ROLE_LABEL.SUPER_ADMIN,
+    description: "Everything, every team",
+    icon: ShieldCheck,
+  },
+  {
+    value: "MANAGER",
+    label: ROLE_LABEL.MANAGER,
+    description: "Their own staff and their breaks",
+    icon: Crown,
+  },
+  {
+    value: "USER",
+    label: ROLE_LABEL.USER,
+    description: "Their own work and breaks",
+    icon: UserIcon,
+  },
+];
+
+/** "Reports to" value for nobody (clears it; their breaks go to the Super Admins). */
+const NO_MANAGER = "__none__";
 
 const STATUS_META: Record<string, { label: string; dot: string }> = {
   ACTIVE: { label: "Active", dot: "fill-emerald-500 text-emerald-500" },
@@ -62,22 +89,24 @@ function IconField({
   );
 }
 
-/** A field the PATCH route can't change — shown for context, never submitted. */
+/** A field this person may not change here: shown for context, never submitted. */
 function ReadOnlyField({
   icon: Icon,
   value,
   iconClassName = "text-slate-400",
+  label,
 }: {
   icon: LucideIcon;
   value: string;
   iconClassName?: string;
+  label: string;
 }) {
   return (
     <div className="relative mt-1.5">
       <Icon
         className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${iconClassName}`}
       />
-      <input readOnly value={value} className={readOnlyClass} />
+      <input readOnly aria-label={label} value={value} className={readOnlyClass} />
     </div>
   );
 }
@@ -85,6 +114,7 @@ function ReadOnlyField({
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberModalProps) {
+  const { user: me, role: myRole } = useSession();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -92,8 +122,11 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
   const [designation, setDesignation] = useState("");
 
   const [role, setRole] = useState("");
+  const [initialRole, setInitialRole] = useState("");
+  const [managerId, setManagerId] = useState(NO_MANAGER);
+  const [initialManagerId, setInitialManagerId] = useState(NO_MANAGER);
   const [status, setStatus] = useState("");
-  const [joined, setJoined] = useState("—");
+  const [joined, setJoined] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -101,9 +134,13 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
   const [emailError, setEmailError] = useState<string | null>(null);
 
   const memberId = member ? String(member.id) : null;
+  const isSelf = memberId !== null && memberId === me?.id;
+  // Only a Super Admin changes roles and reporting lines, and nobody their own.
+  const canChangeAccess = myRole === "SUPER_ADMIN" && !isSelf;
+  const reportsTo = useReportsToOptions(open && canChangeAccess, memberId ?? undefined);
 
-  // Seed from the row we already have, then replace with the full record —
-  // designation isn't part of the list projection.
+  // Seed from the row we already have, then replace with the full record:
+  // designation and manager aren't part of the list projection.
   useEffect(() => {
     if (!open || !member) return;
     const [first, ...rest] = (member.name ?? "").split(" ");
@@ -112,9 +149,13 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
     setDepartment(member.team && member.team !== "—" ? member.team : "");
     setDesignation("");
     setEmail(member.email ?? "");
-    setRole((member.role ?? "").toUpperCase());
+    const r = normalizeRole(member.role) ?? "";
+    setRole(r);
+    setInitialRole(r);
+    setManagerId(NO_MANAGER);
+    setInitialManagerId(NO_MANAGER);
     setStatus((member.status ?? "").toUpperCase());
-    setJoined(member.joined ?? "—");
+    setJoined(member.joined ?? "");
     setNameError(null);
     setEmailError(null);
   }, [open, member]);
@@ -132,7 +173,11 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
         setDepartment(u.department ?? "");
         setDesignation(u.designation ?? "");
         setEmail(u.email ?? "");
-        setRole((u.role ?? "").toUpperCase());
+        const r = normalizeRole(u.role) ?? "";
+        setRole(r);
+        setInitialRole(r);
+        setManagerId(u.managerId || NO_MANAGER);
+        setInitialManagerId(u.managerId || NO_MANAGER);
         setStatus((u.status ?? "").toUpperCase());
         if (u.createdAt) setJoined(formatJoined(u.createdAt));
       })
@@ -151,9 +196,23 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
   }, [open, memberId]);
 
   const departmentOptions = withDepartment(department);
-
-  const roleMeta = ROLE_LABELS[role];
+  const roleKey = normalizeRole(role);
+  const RoleIcon = roleKey ? ROLE_ICON[roleKey] : UserIcon;
   const statusMeta = STATUS_META[status];
+
+  // The current manager may not be in the list (blocked, or beyond the first 100):
+  // keep them visible rather than showing an empty select.
+  const managerOptions: SelectOption[] = [
+    {
+      value: NO_MANAGER,
+      label: "No one",
+      description: "Their off-schedule breaks go to the Super Admins",
+    },
+    ...reportsTo.options,
+  ];
+  if (managerId !== NO_MANAGER && !managerOptions.some((o) => o.value === managerId)) {
+    managerOptions.push({ value: managerId, label: "Current manager", icon: UserRoundCheck });
+  }
 
   async function handleSave() {
     if (!memberId) return;
@@ -166,38 +225,52 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
     } else {
       setNameError(null);
     }
-    if (!trimmedEmail) {
-      setEmailError("Email is required");
-      invalid = true;
-    } else if (!EMAIL_PATTERN.test(trimmedEmail)) {
-      setEmailError("Enter a valid email");
-      invalid = true;
-    } else {
-      setEmailError(null);
+    if (!isSelf) {
+      if (!trimmedEmail) {
+        setEmailError("Email is required");
+        invalid = true;
+      } else if (!EMAIL_PATTERN.test(trimmedEmail)) {
+        setEmailError("Enter a valid email");
+        invalid = true;
+      } else {
+        setEmailError(null);
+      }
     }
     if (invalid) return;
 
+    // Your own record takes names only; the server refuses the rest.
+    const input: UpdateUserInput = isSelf
+      ? { firstName: firstName.trim(), lastName: lastName.trim() }
+      : {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: trimmedEmail,
+          department: department.trim() || undefined,
+          designation: designation.trim() || undefined,
+        };
+    if (canChangeAccess) {
+      const nextRole = normalizeRole(role);
+      if (nextRole && role !== initialRole) input.role = nextRole;
+      if (managerId !== initialManagerId) {
+        input.managerId = managerId === NO_MANAGER ? "" : managerId;
+      }
+    }
+
     setSaving(true);
     try {
-      const updated = await updateUser(memberId, {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: trimmedEmail,
-        department: department.trim() || undefined,
-        designation: designation.trim() || undefined,
-      });
+      const updated = await updateUser(memberId, input);
 
       const savedName = updated.name ?? `${firstName} ${lastName}`.trim();
-      // The server has no email update path yet — if it echoed back the old
-      // address, say so rather than reporting a save that didn't happen.
+      // If the server echoed back the old address, say so rather than reporting
+      // a save that didn't happen.
       const emailApplied =
-        !updated.email || updated.email.toLowerCase() === trimmedEmail.toLowerCase();
+        isSelf || !updated.email || updated.email.toLowerCase() === trimmedEmail.toLowerCase();
 
       if (emailApplied) {
         toast.success("Member updated", { description: `${savedName} has been saved.` });
       } else {
         toast.warning("Saved, but the email didn't change", {
-          description: `Still ${updated.email}. The server doesn't support email updates yet.`,
+          description: `Still ${updated.email}.`,
         });
       }
 
@@ -213,7 +286,12 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
   }
 
   return (
-    <Modal open={open} onClose={saving ? () => {} : onClose} className="max-w-2xl">
+    <Modal
+      open={open}
+      onClose={saving ? () => {} : onClose}
+      className="max-w-2xl"
+      ariaLabel="Edit member"
+    >
       <div className="flex max-h-[85vh] flex-col">
         <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -223,7 +301,9 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
             <div>
               <h2 className="text-lg font-bold tracking-tight text-slate-900">Edit Member</h2>
               <p className="text-sm text-slate-400">
-                Update this member&apos;s name and team info.
+                {canChangeAccess
+                  ? "Update their details, role and who they report to."
+                  : "Update this member's name and team info."}
               </p>
             </div>
           </div>
@@ -232,6 +312,7 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
             onClick={onClose}
             disabled={saving}
             aria-label="Close"
+            data-modal-close="true"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
           >
             <X className="h-5 w-5" />
@@ -240,7 +321,10 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
 
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
           {loading && (
-            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-500">
+            <div
+              role="status"
+              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-500"
+            >
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading member details…
             </div>
@@ -253,6 +337,7 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
               </label>
               <IconField
                 id="edit-first-name"
+                data-autofocus
                 icon={UserIcon}
                 value={firstName}
                 disabled={saving}
@@ -285,7 +370,7 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
               icon={Mail}
               type="email"
               value={email}
-              disabled={saving}
+              disabled={saving || isSelf}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@company.com"
             />
@@ -304,7 +389,7 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
                 options={departmentOptions}
                 placeholder="Select a department"
                 aria-label="Department"
-                disabled={saving}
+                disabled={saving || isSelf}
                 leadingIcon={Briefcase}
               />
             </div>
@@ -316,12 +401,57 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
                 id="edit-designation"
                 icon={Briefcase}
                 value={designation}
-                disabled={saving}
+                disabled={saving || isSelf}
                 onChange={(e) => setDesignation(e.target.value)}
                 placeholder="e.g. Team Lead"
               />
             </div>
           </div>
+          {isSelf && (
+            <p className={hintClass}>
+              You can change your own name here. Ask another Super Admin to change the rest.
+            </p>
+          )}
+
+          {canChangeAccess && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass} htmlFor="edit-role">
+                  Role
+                </label>
+                <Select
+                  id="edit-role"
+                  value={role}
+                  onValueChange={setRole}
+                  options={ROLE_OPTIONS}
+                  placeholder="Select a role"
+                  aria-label="Role"
+                  disabled={saving || loading}
+                  leadingIcon={ShieldCheck}
+                />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="edit-manager">
+                  Reports to
+                </label>
+                <Select
+                  id="edit-manager"
+                  value={managerId}
+                  onValueChange={setManagerId}
+                  options={managerOptions}
+                  placeholder={reportsTo.isLoading ? "Loading…" : "Select a person"}
+                  aria-label="Reports to"
+                  disabled={saving || loading || reportsTo.isLoading}
+                  searchable
+                  searchPlaceholder="Search managers…"
+                  leadingIcon={UserRoundCheck}
+                />
+                {reportsTo.isError && (
+                  <p className={errorClass}>Couldn&apos;t load managers. Close and try again.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
             <div className="flex items-center gap-2">
@@ -332,39 +462,45 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {!canChangeAccess && (
+                <div>
+                  <span className={labelClass}>Role</span>
+                  <ReadOnlyField
+                    label="Role"
+                    icon={RoleIcon}
+                    value={roleKey ? ROLE_LABEL[roleKey] : role || "Unknown"}
+                  />
+                </div>
+              )}
               <div>
-                <label className={labelClass}>Role</label>
+                <span className={labelClass}>Status</span>
                 <ReadOnlyField
-                  icon={roleMeta?.icon ?? UserIcon}
-                  value={roleMeta?.label ?? role ?? "—"}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Status</label>
-                <ReadOnlyField
+                  label="Status"
                   icon={Circle}
                   iconClassName={`h-2.5 w-2.5 ${statusMeta?.dot ?? "fill-slate-300 text-slate-300"}`}
-                  value={statusMeta?.label ?? status ?? "—"}
+                  value={statusMeta?.label ?? (status || "Unknown")}
                 />
               </div>
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Joined Date</label>
+              <div className={canChangeAccess ? "" : "sm:col-span-2"}>
+                <span className={labelClass}>Joined Date</span>
                 <ReadOnlyField
+                  label="Joined date"
                   icon={CalendarDays}
                   iconClassName="text-[rgb(34_34_204)]"
-                  value={joined}
+                  value={joined || "Not recorded"}
                 />
               </div>
             </div>
 
             <p className={hintClass}>
-              Role and shift have no update route yet, and status changes go through its own action
-              — editing them here would look saved without changing anything.
+              {canChangeAccess
+                ? "Block or unblock from the member list. Shifts are set under Assign shifts."
+                : "Only a Super Admin can change roles and reporting lines. Block or unblock from the member list."}
             </p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -377,7 +513,7 @@ export function EditMemberModal({ open, member, onClose, onSaved }: EditMemberMo
             type="button"
             onClick={handleSave}
             disabled={saving || loading}
-            className="flex items-center gap-2 rounded-lg bg-[rgb(34_34_204)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[rgb(28_28_180)] disabled:opacity-70"
+            className="flex items-center justify-center gap-2 rounded-lg bg-[rgb(34_34_204)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[rgb(28_28_180)] disabled:opacity-70"
           >
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />

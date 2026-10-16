@@ -26,14 +26,33 @@ export function withReturnTo(href: string, from: string, label: string): string 
   );
 }
 
+/** A stand-in origin to resolve paths against: only "does it stay here?" matters. */
+const PROBE_ORIGIN = "https://rx-vision.invalid";
+
 /**
- * Only same-origin, absolute-path returns are honoured. The value comes off the URL,
- * so anyone can put anything in it — without this check a crafted link could point
- * the back button at another site, which is an open redirect wearing a breadcrumb.
- * `//evil.com` is rejected too: browsers read it as protocol-relative.
+ * `value` if it is a path on this site, else null. Only same-origin,
+ * absolute-path values are honoured: the value comes off the URL, so anyone can
+ * put anything in it, and without this check a crafted link could send the back
+ * button (or the page after sign-in) to another site, an open redirect wearing a
+ * breadcrumb. Refused:
+ * - anything not starting with a single "/" (`//evil.test` is protocol-relative);
+ * - any backslash, plain or encoded: browsers read `/\evil.test` as `//evil.test`;
+ * - tabs, line breaks and other control characters, which URL parsing drops
+ *   (`/<tab>/evil.test` is `//evil.test` too);
+ * - anything that, resolved against this site, lands anywhere else.
  */
-function isInternalPath(value: string): boolean {
-  return value.startsWith("/") && !value.startsWith("//");
+export function safeInternalPath(value: string | null | undefined): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
+  // eslint-disable-next-line no-control-regex
+  if (/[\\\u0000-\u001f\u007f]|%5c/i.test(value)) return null;
+  let url: URL;
+  try {
+    url = new URL(value, PROBE_ORIGIN);
+  } catch {
+    return null;
+  }
+  if (url.origin !== PROBE_ORIGIN || url.pathname.startsWith("//")) return null;
+  return value;
 }
 
 /**
@@ -47,6 +66,7 @@ export function resolveReturnTo(
   const href = params.get(RETURN_TO);
   const label = params.get(RETURN_LABEL);
 
-  if (!href || !isInternalPath(href)) return fallback;
-  return { href, label: label?.trim() || fallback.label };
+  const safe = safeInternalPath(href);
+  if (!safe) return fallback;
+  return { href: safe, label: label?.trim() || fallback.label };
 }

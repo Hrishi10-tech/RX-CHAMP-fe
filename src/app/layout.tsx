@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import { StoreProvider } from "@/store/StoreProvider";
+import { QueryProvider } from "@/lib/query/QueryProvider";
 import { Toaster } from "@/components/ui/Toaster";
 import "./globals.css";
 
@@ -18,8 +19,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body>
         <StoreProvider>
-          {children}
-          <Toaster />
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
         </StoreProvider>
       </body>
     </html>

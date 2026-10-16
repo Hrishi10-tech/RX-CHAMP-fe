@@ -16,7 +16,8 @@ import type {
 import { acquireActivitySocket, releaseActivitySocket } from "@/features/activity/lib/socket";
 import { acquirePresenceSocket, releasePresenceSocket } from "@/features/presence/lib/socket";
 import { getUserCurrent } from "@/features/activity/api/getUserCurrent";
-import { getTeamLive } from "@/features/presence/api/getTeamLive";
+import { getMemberPresence } from "@/features/presence/api/getMemberPresence";
+import { useAppSelector } from "@/store/hooks";
 
 function combine(
   activity: ActivityStatus | null,
@@ -40,9 +41,14 @@ export function useLiveStatus(userId: string): {
 } {
   const [activity, setActivity] = useState<ActivityStatus | null>(null);
   const [presence, setPresence] = useState<PresenceStatus | null>(null);
+  // Until the first presence answer lands, the activity status alone would read
+  // "Active" for someone who is on a break: show no status rather than a wrong one.
+  const [presenceKnown, setPresenceKnown] = useState(false);
   const [connected, setConnected] = useState(false);
   const [current, setCurrent] = useState<CurrentApp | null>(null);
   const [presenceVersion, setPresenceVersion] = useState(0);
+  const myId = useAppSelector((state) => state.auth.user?.id ?? null);
+  const self = myId !== null && myId === userId;
   const [live, setLive] = useState<LiveActivityData>({
     activeSec: null,
     idleSec: null,
@@ -57,6 +63,7 @@ export function useLiveStatus(userId: string): {
     setCurrent(null);
     setActivity(null);
     setPresence(null);
+    setPresenceKnown(false);
 
     const seedActivity = () =>
       getUserCurrent(userId)
@@ -68,15 +75,19 @@ export function useLiveStatus(userId: string): {
         .catch(() => {});
 
     // `presence:update` only fires on a change, so a break already running when
-    // the page opens would never show. Seed it from the manager's live team board.
+    // the page opens would never show. Seed it from this person's current status
+    // (your own for My Dashboard, so Staff never call a manager-only endpoint).
     const seedPresence = () =>
-      getTeamLive()
-        .then((rows) => {
+      getMemberPresence(userId, self)
+        .then((p) => {
           if (!active) return;
-          const row = rows.find((r) => r.userId === userId);
-          if (row) setPresence(row.status);
+          if (p?.status) setPresence(p.status);
+          setPresenceKnown(true);
         })
-        .catch(() => {});
+        .catch(() => {
+          // Unknown presence falls back to the activity status.
+          if (active) setPresenceKnown(true);
+        });
 
     void seedActivity();
     void seedPresence();
@@ -124,6 +135,7 @@ export function useLiveStatus(userId: string): {
     const onPresenceUpdate = (u: PresenceUpdate) => {
       if (u.userId !== userId) return;
       setPresence(u.status);
+      setPresenceKnown(true);
       // Signal callers that the day's break/lunch/meeting totals have moved on.
       setPresenceVersion((v) => v + 1);
     };
@@ -148,7 +160,13 @@ export function useLiveStatus(userId: string): {
       releaseActivitySocket();
       releasePresenceSocket();
     };
-  }, [userId]);
+  }, [userId, self]);
 
-  return { status: combine(activity, presence), connected, live, current, presenceVersion };
+  return {
+    status: presenceKnown ? combine(activity, presence) : null,
+    connected,
+    live,
+    current,
+    presenceVersion,
+  };
 }

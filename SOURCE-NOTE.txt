@@ -1,0 +1,21 @@
+RX VISION — WEB PORTAL SOURCE
+=============================
+
+Next.js + TypeScript + Tailwind.
+This is the dashboard people open in a browser - admin, manager
+and employee screens.
+
+To run it:
+  1. npm install
+  2. copy .env.example to .env.local and point it at your API
+  3. npm run dev
+
+Not included, on purpose:
+  node_modules   dependencies - npm install restores them
+  .next, .swc    build cache - recreated on build
+  .env.local and the other .env files
+                 live settings. Use .env.example as the template.
+
+Everything else is here: package.json, tsconfig, next.config.mjs,
+Tailwind and PostCSS config, Dockerfile, the full src tree, public
+assets, the Jest and Playwright tests, and the docs.

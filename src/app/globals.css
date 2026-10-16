@@ -159,3 +159,45 @@
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/*
+ * Print (Download PDF on the reports): A4, nothing but the report. The nav,
+ * header and controls carry `print:hidden`; toasts are hidden here.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+  /* Wide report tables print whole instead of scrolling off the page edge. */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+  table {
+    font-size: 10.5px;
+  }
+  th,
+  td {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    white-space: normal !important;
+  }
+  tr,
+  [role="img"] {
+    break-inside: avoid;
+  }
+  [data-print-hide] {
+    display: none !important;
+  }
+}

@@ -95,9 +95,13 @@ export interface DashboardAnalytics {
   goals: Goal[];
 }
 
-export type PresenceStatus = "WORKING" | "BREAK" | "LUNCH" | "MEETING";
+/**
+ * NOT_STARTED (3.1): no open work session and none today. The 3.1 agent does not
+ * track before Start Day, so this is a normal morning state, not a fault.
+ */
+export type PresenceStatus = "WORKING" | "BREAK" | "LUNCH" | "MEETING" | "NOT_STARTED";
 
-export type LiveStatus = ActivityStatus | "BREAK" | "LUNCH" | "MEETING";
+export type LiveStatus = ActivityStatus | "BREAK" | "LUNCH" | "MEETING" | "NOT_STARTED";
 
 export interface CurrentAppFields {
   app?: string | null;

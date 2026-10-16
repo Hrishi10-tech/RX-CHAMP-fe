@@ -34,7 +34,13 @@ export function ActivityStatusBadge({
   status: ActivityStatus;
   className?: string;
 }) {
-  const s = STYLES[status];
+  // 3.1 can report NOT_STARTED (before Start Day); anything else unknown reads as it came.
+  const raw: string = status;
+  const s =
+    (STYLES as Record<string, (typeof STYLES)[ActivityStatus]>)[raw] ??
+    (raw === "NOT_STARTED"
+      ? { ...STYLES.OFFLINE, text: "text-slate-600", label: "Not started" }
+      : { ...STYLES.OFFLINE, label: raw || "Unknown" });
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${s.bg} ${s.text} ${className}`}

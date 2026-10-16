@@ -11,24 +11,27 @@ export interface User {
   name?: string;
   email?: string;
   role?: string;
-  department?: string;
-  designation?: string;
+  /** null when not set (the API sends null, not an absent field). */
+  department?: string | null;
+  designation?: string | null;
   company?: string;
   companyId?: string;
-  managerId?: string;
+  /** null for someone who reports to nobody (a Super Admin). */
+  managerId?: string | null;
   status?: string;
   /** Automatic screenshots for this user. Absent on an older API → treated as on. */
   screenshotsEnabled?: boolean;
   /** Agent state. Absent on an older API → the row shows nothing rather than guessing. */
   agentStatus?: AgentStatus;
   agentLastSeenAt?: string | null;
-  shiftId?: string;
+  /** The shift override, or null when the person follows their department or the default. */
+  shiftId?: string | null;
   shiftStart?: string;
   shiftEnd?: string;
   createdAt?: string;
 }
 
-export type UserRoleFilter = "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "USER";
+export type UserRoleFilter = "SUPER_ADMIN" | "MANAGER" | "USER";
 
 export type UserStatus = "ACTIVE" | "DISABLED";
 
@@ -135,8 +138,11 @@ export interface CreateUserInput {
   email: string;
   firstName: string;
   lastName: string;
+  /** At least 8 characters (the API refuses shorter ones). */
   password: string;
   role: string;
+  /** Super Admin only: who the new person reports to (defaults to the creator). */
+  managerId?: string;
   companyId?: string;
   department?: string;
   designation?: string;
@@ -145,14 +151,10 @@ export interface CreateUserInput {
 }
 
 /**
- * Server's UpdateUserDto covers firstName, lastName, department and designation.
- *
- * email is sent by the edit form but is NOT in the DTO yet — the server drops it,
- * so callers must verify it round-tripped rather than assume success. Remove this
- * note once UpdateUserDto/UpdateUserUseCase handle it.
- *
- * Still unsupported: role, managerId, companyId and shift have no update route;
- * status has its own (POST /users/:id/status); password has none at all.
+ * The server's UpdateUserDto. A Manager may change their own staff's name, email,
+ * designation and department; only a Super Admin may change `role` or `managerId`
+ * (who they report to; "" clears it). Company and shift have no update route here
+ * (shifts are assigned under Assign shifts); status and password have their own.
  */
 export interface UpdateUserInput {
   firstName?: string;
@@ -160,6 +162,8 @@ export interface UpdateUserInput {
   department?: string;
   designation?: string;
   email?: string;
+  role?: "SUPER_ADMIN" | "MANAGER" | "USER";
+  managerId?: string;
 }
 
 export interface UsersResult {

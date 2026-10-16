@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { sessionCleared } from "@/features/auth/store/authSlice";
@@ -15,6 +16,7 @@ export function useSession(): UseSessionResult {
   const user = useAppSelector((state) => state.auth.user);
   const role = useAppSelector((state) => state.auth.role);
   const ready = useAppSelector((state) => state.auth.ready);
+  const queryClient = useQueryClient();
 
   const logout = useCallback(() => {
     // Fired, not awaited: the server clears the auth cookies while the UI moves
@@ -22,8 +24,11 @@ export function useSession(): UseSessionResult {
     void logoutRequest();
     clearSession();
     dispatch(sessionCleared());
+    // Cached server data belongs to this person; the next one to sign in on this
+    // tab must not see it, even for a moment.
+    queryClient.clear();
     router.replace("/auth/login");
-  }, [dispatch, router]);
+  }, [dispatch, router, queryClient]);
 
   return { user, role, ready, logout };
 }

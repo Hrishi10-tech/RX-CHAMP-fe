@@ -25,9 +25,19 @@ function looksBlocked(status: number | undefined, code?: string, message?: strin
 function readBody(data: unknown): { message?: string; code?: string } {
   if (!data || typeof data !== "object") return {};
   const { message, code, error } = data as Record<string, unknown>;
+  // The API's errors are { message, error: { code, message } }.
+  const nested =
+    error && typeof error === "object" ? (error as Record<string, unknown>).code : undefined;
   return {
     message: typeof message === "string" ? message : undefined,
-    code: typeof code === "string" ? code : typeof error === "string" ? error : undefined,
+    code:
+      typeof code === "string"
+        ? code
+        : typeof nested === "string"
+          ? nested
+          : typeof error === "string"
+            ? error
+            : undefined,
   };
 }
 
@@ -40,6 +50,12 @@ function classify(error: unknown): { reason: LoginFailureReason; message?: strin
   const status = error.response.status;
   const { message, code } = readBody(error.response.data);
 
+  // 429 TOO_MANY_ATTEMPTS: this account had too many wrong passwords and sign-in
+  // is paused ("... paused for 15 minutes"), worth showing as it came. Any other
+  // 429 is the per-network limit, whose message is not for people.
+  if (status === 429) {
+    return { reason: "rate_limited", message: code === "TOO_MANY_ATTEMPTS" ? message : undefined };
+  }
   if (looksBlocked(status, code, message)) return { reason: "account_blocked", message };
   if (status === 401 || status === 400 || status === 404) {
     return { reason: "invalid_credentials", message };

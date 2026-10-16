@@ -38,7 +38,25 @@ const STYLES: Record<LiveStatus, { dot: string; text: string; bg: string; label:
     bg: "bg-indigo-50 ring-indigo-200",
     label: "Meeting",
   },
+  NOT_STARTED: {
+    dot: "bg-slate-300",
+    text: "text-slate-600",
+    bg: "bg-white ring-slate-200",
+    label: "Not started",
+  },
 };
+
+/** A status this portal does not know yet still renders, as it came. */
+function styleOf(status: string) {
+  return (
+    (STYLES as Record<string, (typeof STYLES)[LiveStatus]>)[status] ?? {
+      ...STYLES.OFFLINE,
+      label: status
+        ? status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, " ")
+        : "Unknown",
+    }
+  );
+}
 
 export function LiveStatusBadge({
   status,
@@ -49,7 +67,7 @@ export function LiveStatusBadge({
   live?: boolean;
   className?: string;
 }) {
-  const s = STYLES[status];
+  const s = styleOf(status);
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${s.bg} ${s.text} ${className}`}

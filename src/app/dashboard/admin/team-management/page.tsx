@@ -24,11 +24,14 @@ export default function TeamManagementPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Team Management" subtitle="Manage teams, members, and role assignments." />
+      <PageHeader
+        title="Team Management"
+        subtitle="Everyone in the organization: roles, reporting lines and access."
+      />
 
       <MembersSection
-        // This screen lists managers unless a Role filter says otherwise.
-        defaultRole="MANAGER"
+        // Everyone, every role: a Super Admin creates Managers and Staff here and
+        // sets who reports to whom. The Role filter narrows it down.
         pending={!ready}
         enabled={role === "SUPER_ADMIN"}
         addMemberHref="/dashboard/admin/team-management/user"

@@ -1,3 +1,5 @@
+import { initialsOf } from "@/lib/text/initials";
+
 export type Status = "Active" | "Invited" | "Inactive";
 
 export interface ManagerAssignment {
@@ -129,12 +131,7 @@ export function totalUsers(c: Company) {
 }
 
 export function initials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
+  return initialsOf(name);
 }
 
 export function Avatar({

@@ -23,8 +23,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # without these the config fell back to localhost and every /api/* call 500'd.
 ARG BACKEND_URL
 ARG NEXT_PUBLIC_SOCKET_URL
+# The business time zone the portal shows break times in; must match the
+# backend's APP_TIMEZONE.
+ARG NEXT_PUBLIC_BUSINESS_TIMEZONE=Asia/Kolkata
 ENV BACKEND_URL=${BACKEND_URL}
 ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
+ENV NEXT_PUBLIC_BUSINESS_TIMEZONE=${NEXT_PUBLIC_BUSINESS_TIMEZONE}
 
 RUN npm run build
 

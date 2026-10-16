@@ -4,6 +4,7 @@ export interface DailyProductivity {
   focusSec: number;
   meetingSec: number;
   idleSec: number;
+  onlineSec?: number;
 }
 
 export interface TimelineBucket {
@@ -16,6 +17,7 @@ export interface TimelineBucket {
 }
 
 export interface ActivityTimeline {
+  userId?: string;
   date: string;
   buckets: TimelineBucket[];
 }

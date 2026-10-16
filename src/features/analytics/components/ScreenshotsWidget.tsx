@@ -302,12 +302,16 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Wraps on a phone: two time fields and Capture are wider than 390px. */}
+        <div className="flex flex-wrap items-center gap-2">
           <TimeField
             value={range.start}
             onChange={(v) => updateRange({ start: v, end: range.end })}
           />
-          <span aria-hidden className="px-0.5 text-base font-semibold text-slate-400">
+          <span
+            aria-hidden
+            className="hidden px-0.5 text-base font-semibold text-slate-400 sm:inline"
+          >
             &ndash;
           </span>
           <TimeField

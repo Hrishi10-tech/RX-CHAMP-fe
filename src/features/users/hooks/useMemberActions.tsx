@@ -1,17 +1,23 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Camera, CameraOff, Lock, LockOpen, Pencil, Trash2 } from "lucide-react";
+import { Camera, CameraOff, KeyRound, Lock, LockOpen, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ActionMenu } from "@/components/ui/ActionMenu";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { rowActionButtonClass, rowActionHover } from "@/components/ui/rowAction";
 import { errorMessage } from "@/lib/api";
 import { DownloadAgentRowButton } from "@/features/agent/components/DownloadAgentRowButton";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { deleteUser } from "@/features/users/api/deleteUser";
 import { setUserScreenshots } from "@/features/users/api/setUserScreenshots";
 import { setUserStatus } from "@/features/users/api/setUserStatus";
 import { EditMemberModal } from "@/features/users/components/EditMemberModal";
+import {
+  SetPasswordModal,
+  type SetPasswordTarget,
+} from "@/features/users/components/SetPasswordModal";
 import type {
   MemberScreenshotsTarget,
   MemberStatusTarget,
@@ -19,35 +25,6 @@ import type {
   UseMemberActionsResult,
 } from "@/features/users/types";
 import type { TeamMember } from "@/types";
-
-
-function BlockMemberButton({
-  member,
-  onSelect,
-}: {
-  member: TeamMember;
-  onSelect: (target: MemberStatusTarget) => void;
-}) {
-  const blocked = member.status === "Inactive";
-  const Icon = blocked ? Lock : LockOpen;
-
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect({ member, block: !blocked });
-      }}
-      title={blocked ? "Unblock member" : "Block member"}
-      aria-label={`${blocked ? "Unblock" : "Block"} ${member.name}`}
-      className={`${rowActionButtonClass} ${
-        blocked ? rowActionHover.success : rowActionHover.warning
-      }`}
-    >
-      <Icon className="h-4 w-4" />
-    </button>
-  );
-}
 
 
 /**
@@ -76,7 +53,7 @@ function ScreenshotsMemberButton({
         e.stopPropagation();
         onSelect({ member, enable: !enabled });
       }}
-      title={enabled ? "Screenshots on — click to turn off" : "Screenshots off — click to turn on"}
+      title={enabled ? "Screenshots on. Click to turn off." : "Screenshots off. Click to turn on."}
       aria-label={`${enabled ? "Turn off" : "Turn on"} automatic screenshots for ${member.name}`}
       aria-pressed={enabled}
       className={`${rowActionButtonClass} ${
@@ -91,7 +68,10 @@ function ScreenshotsMemberButton({
 }
 
 export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMemberActionsResult {
+  const { user: me } = useSession();
+  const myId = me?.id;
   const [editing, setEditing] = useState<TeamMember | null>(null);
+  const [passwordTarget, setPasswordTarget] = useState<SetPasswordTarget | null>(null);
 
   const [statusTarget, setStatusTarget] = useState<MemberStatusTarget | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
@@ -182,22 +162,43 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
         >
           <Pencil className="h-4 w-4" />
         </button>
-        <BlockMemberButton member={m} onSelect={setStatusTarget} />
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setDeleteTarget(m);
-          }}
-          title="Delete member"
-          aria-label={`Delete ${m.name}`}
-          className={`${rowActionButtonClass} ${rowActionHover.danger}`}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        {/* Rarer actions live in the menu so the row fits a laptop screen. */}
+        <ActionMenu
+          label={`More actions for ${m.name}`}
+          triggerClassName={`${rowActionButtonClass} ${rowActionHover.primary} data-[state=open]:bg-slate-50`}
+          items={[
+            // Your own password is changed from the user menu (it needs the current one).
+            ...(String(m.id) !== myId
+              ? [
+                  {
+                    label: "Set password",
+                    icon: KeyRound,
+                    onSelect: () => setPasswordTarget({ id: String(m.id), name: m.name }),
+                  },
+                ]
+              : []),
+            m.status === "Inactive"
+              ? {
+                  label: "Unblock member",
+                  icon: LockOpen,
+                  onSelect: () => setStatusTarget({ member: m, block: false }),
+                }
+              : {
+                  label: "Block member",
+                  icon: Lock,
+                  onSelect: () => setStatusTarget({ member: m, block: true }),
+                },
+            {
+              label: "Delete member",
+              icon: Trash2,
+              destructive: true,
+              onSelect: () => setDeleteTarget(m),
+            },
+          ]}
+        />
       </div>
     ),
-    [],
+    [myId],
   );
 
   const dialogs = (
@@ -208,6 +209,8 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
         onClose={() => setEditing(null)}
         onSaved={() => onChanged("updated")}
       />
+
+      <SetPasswordModal target={passwordTarget} onClose={() => setPasswordTarget(null)} />
 
       <ConfirmDialog
         open={screenshotsTarget !== null}

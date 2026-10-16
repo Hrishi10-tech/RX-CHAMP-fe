@@ -13,7 +13,7 @@ const COPY: Record<LoginFailureReason, LoginErrorCopy> = {
     description: "Double-check your details and try again.",
   },
   account_blocked: {
-    title: " blocked",
+    title: "Account blocked",
     description:
       "An administrator has disabled your access. Contact them to have your account unblocked.",
     duration: 10000,
@@ -24,7 +24,12 @@ const COPY: Record<LoginFailureReason, LoginErrorCopy> = {
   },
   server: {
     title: "Something went wrong on our end",
-    description: "This isn't your fault — please try again in a moment.",
+    description: "This isn't your fault. Please try again in a moment.",
+  },
+  rate_limited: {
+    title: "Sign-in paused",
+    description: "Too many sign-in attempts. Wait a minute, then try again.",
+    duration: 10000,
   },
   unknown: {
     title: "Couldn't sign you in",
@@ -32,10 +37,9 @@ const COPY: Record<LoginFailureReason, LoginErrorCopy> = {
   },
 };
 
-
 export function loginErrorCopy(reason: LoginFailureReason, serverMessage?: string): LoginErrorCopy {
   const base = COPY[reason];
-  if (reason === "account_blocked" && serverMessage) {
+  if ((reason === "account_blocked" || reason === "rate_limited") && serverMessage) {
     return { ...base, description: serverMessage };
   }
   return base;

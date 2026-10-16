@@ -1,4 +1,4 @@
-import { resolveReturnTo, withReturnTo } from "./returnTo";
+import { resolveReturnTo, safeInternalPath, withReturnTo } from "./returnTo";
 
 /** Stands in for the URLSearchParams a page gets from useSearchParams(). */
 function params(query: string) {
@@ -65,7 +65,33 @@ describe("resolveReturnTo", () => {
     ["protocol-relative", "//evil.test/phish"],
     ["scheme-relative javascript", "javascript:alert(1)"],
     ["not a path", "dashboard/manager"],
+    ["a backslash, which browsers read as a slash", "/\\evil.test"],
+    ["backslashes only", "\\\\evil.test"],
+    ["an encoded backslash", "/%5Cevil.test"],
+    ["a tab that URL parsing drops", "/\t/evil.test"],
+    ["a line break", "/\n/evil.test"],
+    ["a path that resolves to two slashes", "/.//evil.test"],
   ])("refuses %s and falls back", (_label, from) => {
     expect(resolveReturnTo(params(`from=${encodeURIComponent(from)}`), FALLBACK)).toEqual(FALLBACK);
+  });
+
+  it("refuses the audit's example, from=/%5Cexample.org", () => {
+    // URLSearchParams decodes it to "/\example.org": http://example.org in a browser.
+    expect(resolveReturnTo(params("from=/%5Cexample.org"), FALLBACK)).toEqual(FALLBACK);
+  });
+});
+
+describe("safeInternalPath", () => {
+  it("keeps internal paths exactly as given, query and hash included", () => {
+    expect(safeInternalPath("/dashboard/reports/team?month=2026-09#top")).toBe(
+      "/dashboard/reports/team?month=2026-09#top",
+    );
+    expect(safeInternalPath("/")).toBe("/");
+  });
+
+  it("refuses nothing at all", () => {
+    expect(safeInternalPath(null)).toBeNull();
+    expect(safeInternalPath(undefined)).toBeNull();
+    expect(safeInternalPath("")).toBeNull();
   });
 });

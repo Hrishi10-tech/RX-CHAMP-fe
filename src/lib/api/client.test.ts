@@ -101,6 +101,21 @@ describe("apiClient 401 handling", () => {
     expect(window.location.href).toBe("/auth/login");
   });
 
+  it("sends a dead session to sign in, remembering the page it was on", async () => {
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: {
+        href: "http://localhost/dashboard/approvals?page=2",
+        pathname: "/dashboard/approvals",
+        search: "?page=2",
+      },
+    });
+    const { apiClient } = await loadHarness(() => 401);
+
+    await expect(apiClient.get("/api/v1/approvals")).rejects.toBeDefined();
+    expect(window.location.href).toBe("/auth/login?redirect=%2Fdashboard%2Fapprovals%3Fpage%3D2");
+  });
+
   it("retries a request at most once", async () => {
     const { apiClient, calls } = await loadHarness((url) => (url === REFRESH ? 200 : 401));
 

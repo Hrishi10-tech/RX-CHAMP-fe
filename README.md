@@ -1,57 +1,60 @@
-# Time Champ — Frontend Demo (Throwaway)
+# RX Vision portal
 
-> ⚠️ **This is a demo build with mock data.** It exists so the manager can see
-> the dashboard vision in real UI while the backend is still being built. The
-> whole `frontend-demo/` folder is safe to delete once the real `frontend/`
-> is connected to the real backend.
+The web portal of RX Vision: Next.js 15, React 19, React Query and Tailwind. Super Admins, managers and staff use it in a browser. It has no data of its own: everything comes from the RX Vision API in [`../backend`](../backend/README.md). Version 3.1.0 (tag `v3.1.0`).
 
-## Quick start
+Start with the 3.1 documentation set in [`../docs/3.1/`](../docs/3.1/README.md). Deploying: [`docs/3.1/DEPLOY.md`](../docs/3.1/DEPLOY.md) section 8. `ARCHITECTURE.md` in this folder predates 3.x and describes a mock-data demo; use [`docs/3.1/ARCHITECTURE.md`](../docs/3.1/ARCHITECTURE.md) section 3 instead.
 
-```bash
-cd frontend-demo
-npm install
-npm run dev
-```
+## Run locally
 
-Open <http://localhost:3000> → you'll be redirected to the login page.
+1. Start the API on your machine first ([`../backend/README.md`](../backend/README.md), "Run locally"). It listens on `http://localhost:4000`, and its `.env.example` already allows `http://localhost:3000` (`CORS_ORIGINS`).
+2. Install and configure:
 
-**Demo login:**
-- Email: `admin@timechamp.test`
-- Password: `admin123`
+   ```bash
+   cd web-portal
+   npm ci --legacy-peer-deps
+   cp .env.example .env.local
+   ```
 
-## What's in this demo
+   `.env.example` already points at the local API: `BACKEND_URL=http://localhost:4000`, `NEXT_PUBLIC_SOCKET_URL=http://localhost:4000`, `NEXT_PUBLIC_BUSINESS_TIMEZONE=Asia/Kolkata`.
+3. Start the portal:
 
-| Page | Path | Notes |
-|---|---|---|
-| Login | `/login` | Super-admin only. Hardcoded credentials. |
-| Dashboard | `/admin/dashboard` | 4 KPI cards + recent-activity table |
-| User listing | `/admin/users` | The "users tab" your manager described — sortable, searchable, filterable by department |
-| User detail | `/admin/users/[id]` | Click any user → see their day: total/active/idle/productive + top apps + top websites + timeline |
+   ```bash
+   npm run dev
+   ```
 
-Disabled sidebar links (Departments / Reports / Screenshots / Settings) are
-the planned pages — they'll wire up when the backend exists.
+   Open `http://localhost:3000`: it sends you to sign in. Use a demo account from [`../backend/README.md`](../backend/README.md) (local databases only).
 
-## What's mock vs what's real
+## Build-time values
 
-| Layer | Status |
+Read when the portal is built (`next build`), not when it starts. Changing one needs a rebuild.
+
+| Name | What it is |
 |---|---|
-| UI components, layout, styling | **Real** — copy-paste into `frontend/` later |
-| Routing, role gating | **Real** — uses the locked route-group structure |
-| Auth | Mock — single hardcoded super admin |
-| Data | Mock — see `src/lib/mockData.ts` |
+| `BACKEND_URL` | The API origin. The portal server proxies `/api/*` to it, so the browser only talks to the portal's own origin (and the sign-in cookie belongs to it). Baked into the route table |
+| `NEXT_PUBLIC_SOCKET_URL` | Where the browser opens Socket.IO for live updates, usually the API origin. Empty means the portal's own origin, which needs a websocket proxy to the API |
+| `NEXT_PUBLIC_BUSINESS_TIMEZONE` | The API's `APP_TIMEZONE` (default `Asia/Kolkata`). Times are shown in it, whatever the viewer's clock says |
 
-When the backend ships, only **2 files change**:
-1. `src/lib/demoAuth.ts` → replace with real JWT auth
-2. `src/lib/mockData.ts` → replace with API calls to the real endpoints
+## Tests
 
-Everything else (pages, layouts, components) is the production code.
+| Suite | Command | Result on 14 Oct |
+|---|---|---|
+| Unit | `npx jest` | 50 suites, 444 tests, all pass |
+| Types | `npm run typecheck` | No errors |
+| Build | `npm run build` (with the three values) | `Compiled successfully` |
 
-## Deletion / cleanup
+`npm run e2e` (Playwright) runs the projects and tasks tests of the original scaffold. They do not cover RX Vision and are not a release gate. Details: [`docs/3.1/TESTING.md`](../docs/3.1/TESTING.md) section (a).
 
-When the real `frontend/` is up:
+## Scripts
 
 ```bash
-rm -rf frontend-demo
+npm run dev         # development server on port 3000
+npm run build       # production build
+npm start           # serve the build on port 3000
+npm run typecheck   # tsc --noEmit
+npx jest            # unit tests
+npm run lint        # next lint
 ```
 
-Done. Nothing else in the project touches this folder.
+## Deploying
+
+Node on a host (`npm ci --legacy-peer-deps`, `npm run build`, then start it the way the server runs it) or Docker (the `Dockerfile` here takes the three values as `--build-arg` and serves on port 3000). The production steps, checks and rollback are in [`docs/3.1/DEPLOY.md`](../docs/3.1/DEPLOY.md) sections 8, 9 and 14.4.

@@ -4,17 +4,22 @@ import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
+  KeyRound,
   LogOut,
   Settings,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
 
+import { ROLE_LABEL } from "@/constants/roles";
+import { initialsOf } from "@/lib/text/initials";
 import { useSession } from "@/features/auth/hooks/useSession";
+import { ChangePasswordModal } from "@/features/auth/components/ChangePasswordModal";
 
 export function UserMenu() {
   const { user, role, logout } = useSession();
   const [open, setOpen] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,14 +42,8 @@ export function UserMenu() {
 
   if (!user) return null;
 
-  const initials =
-    (user.name ?? user.email)
-      .split(/[\s@.]+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase())
-      .join("") || "U";
-  const roleLabel = role ? role.replace(/_/g, " ").toLowerCase() : undefined;
+  const initials = initialsOf(user.name ?? user.email);
+  const roleLabel = role ? ROLE_LABEL[role] : undefined;
 
   return (
     <div className="relative" ref={ref}>
@@ -76,7 +75,7 @@ export function UserMenu() {
             <p className="mt-3 text-sm font-semibold text-slate-900">{user.name ?? user.email}</p>
             <p className="max-w-full truncate text-xs text-slate-500">{user.email}</p>
             {roleLabel && (
-              <span className="mt-2 inline-flex items-center rounded-full bg-[rgba(34,34,204,0.08)] px-2.5 py-0.5 text-[11px] font-semibold capitalize text-[rgb(34_34_204)]">
+              <span className="mt-2 inline-flex items-center rounded-full bg-[rgba(34,34,204,0.08)] px-2.5 py-0.5 text-[11px] font-semibold text-[rgb(34_34_204)]">
                 {roleLabel}
               </span>
             )}
@@ -87,6 +86,14 @@ export function UserMenu() {
           <div className="p-1.5">
             <MenuRow icon={UserRound} label="My Profile" onClick={() => setOpen(false)} />
             <MenuRow icon={Settings} label="Settings" onClick={() => setOpen(false)} />
+            <MenuRow
+              icon={KeyRound}
+              label="Change password"
+              onClick={() => {
+                setOpen(false);
+                setChangingPassword(true);
+              }}
+            />
           </div>
 
           <div className="h-px bg-slate-100" />
@@ -107,6 +114,8 @@ export function UserMenu() {
           </div>
         </div>
       )}
+
+      <ChangePasswordModal open={changingPassword} onClose={() => setChangingPassword(false)} />
     </div>
   );
 }

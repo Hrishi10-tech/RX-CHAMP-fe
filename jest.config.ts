@@ -13,6 +13,9 @@ const config: Config = {
   testMatch: ["**/?(*.)+(test|spec).[jt]s?(x)"],
   // Playwright specs live in /e2e and run with their own runner.
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/e2e/", "<rootDir>/.next/"],
+  // A production build leaves .next/standalone/package.json, a second package with
+  // the same name, which jest's module map otherwise warns about on every run.
+  modulePathIgnorePatterns: ["<rootDir>/.next/"],
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!src/**/*.d.ts",

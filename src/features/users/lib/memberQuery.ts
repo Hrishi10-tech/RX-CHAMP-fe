@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { ROLES } from "@/constants/roles";
+import { ROLES, ROLE_LABEL } from "@/constants/roles";
 import type { SelectOption } from "@/components/ui/types";
 import type { MemberFilters, MemberSortKey, UserRoleFilter } from "@/features/users/types";
 
@@ -20,10 +20,9 @@ export const EMPTY_MEMBER_FILTERS: MemberFilters = {
 };
 
 export const roleFilterOptions: SelectOption[] = [
-  { value: ROLES.SUPER_ADMIN, label: "Super Admin" },
-  { value: ROLES.ADMIN, label: "Admin" },
-  { value: ROLES.MANAGER, label: "Manager" },
-  { value: ROLES.USER, label: "Member" },
+  { value: ROLES.SUPER_ADMIN, label: ROLE_LABEL.SUPER_ADMIN },
+  { value: ROLES.MANAGER, label: ROLE_LABEL.MANAGER },
+  { value: ROLES.USER, label: ROLE_LABEL.USER },
 ];
 
 /** Keys are the tokens GET /users?sort= accepts, so they're sent through as-is. */

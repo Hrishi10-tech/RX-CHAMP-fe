@@ -1,10 +1,10 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 
 import { clearSession } from "@/lib/auth/session";
+import { loginHref } from "@/features/auth/lib/loginRedirect";
 import type { RetryableConfig } from "./types";
 
 const REFRESH_URL = "/api/v1/auth/refresh";
-const LOGIN_ROUTE = "/auth/login";
 
 /**
  * A 401 from one of these is a rejected credential — a wrong password, or a
@@ -51,7 +51,9 @@ export function refreshAccessToken(): Promise<void> {
 function redirectToLogin(): void {
   clearSession();
   if (typeof window !== "undefined") {
-    window.location.href = LOGIN_ROUTE;
+    // Remember the page, so signing in again comes back to it.
+    const { pathname = "", search = "" } = window.location;
+    window.location.href = loginHref(pathname + search);
   }
 }
 

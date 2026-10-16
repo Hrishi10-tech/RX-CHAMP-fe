@@ -19,7 +19,7 @@ export function ConfirmDialog({
   confirmDisabled = false,
 }: ConfirmDialogProps) {
   return (
-    <Modal open={open} onClose={onClose} className="max-w-md">
+    <Modal open={open} onClose={onClose} className="max-w-md" ariaLabel={title}>
       <div className="relative px-8 pb-8 pt-10 text-center">
         {Icon && (
           <span

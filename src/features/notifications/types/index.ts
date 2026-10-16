@@ -2,7 +2,10 @@ export interface NotificationView {
   id: string;
   type: string;
   title: string;
-  body: string;
+  /** Null when the server raised it with a title only. */
+  body: string | null;
+  /** The person behind it (a chat sender, an approver); null for system notices. */
+  fromUserId?: string | null;
   read: boolean;
   readAt: string | null;
   createdAt: string;

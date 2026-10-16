@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import type { Column, DataTableProps } from "./types";
@@ -102,6 +102,13 @@ export function DataTable<T>({
   const total = serverPagination ? serverPagination.total : filtered.length;
   const noun = total === 1 ? countNoun : `${countNoun}s`;
   const colCount = columns.length + (selectable ? 1 : 0) + (rowActions ? 1 : 0);
+  const cellOf = (col: (typeof columns)[number], row: T, index: number): ReactNode =>
+    col.render ? col.render(row, index) : String((row as Record<string, unknown>)[col.key] ?? "");
+  // Phones: one card a row, the first column as its heading, every other column
+  // as a labelled line, "actions" last. The table needs more room than a phone has.
+  const [headColumn, ...otherColumns] = columns;
+  const actionsColumn = otherColumns.find((c) => c.key === "actions");
+  const detailColumns = otherColumns.filter((c) => c !== actionsColumn);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -148,7 +155,68 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <ul className="divide-y divide-slate-100 sm:hidden">
+        {paged.length === 0 ? (
+          <li className="px-4 py-10 text-center text-sm text-slate-400">{emptyMessage}</li>
+        ) : (
+          paged.map((row, i) => {
+            const globalIndex = paginated ? (currentPage - 1) * effSize + i : i;
+            const k = keyOf(row, globalIndex);
+            const isSelected = selected.has(k);
+            return (
+              <li
+                key={k}
+                data-selected={isSelected || undefined}
+                onClick={onRowClick ? () => onRowClick(row, globalIndex) : undefined}
+                className={`space-y-2.5 px-4 py-3.5 data-[selected]:bg-[rgba(34,34,204,0.04)] ${
+                  onRowClick ? "cursor-pointer active:bg-slate-50" : ""
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {selectable && (
+                    <label
+                      className="-m-3 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        className={CHECKBOX}
+                        checked={isSelected}
+                        onChange={() => toggleRow(k)}
+                        aria-label="Select row"
+                      />
+                    </label>
+                  )}
+                  {headColumn && (
+                    <div className="min-w-0 flex-1 text-sm font-medium text-slate-700 [overflow-wrap:anywhere]">
+                      {cellOf(headColumn, row, globalIndex)}
+                    </div>
+                  )}
+                </div>
+                {detailColumns.length > 0 && (
+                  <dl className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
+                    {detailColumns.map((col) => (
+                      <Fragment key={col.key}>
+                        <dt className="pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          {col.header}
+                        </dt>
+                        <dd className="min-w-0 break-words text-slate-700">
+                          {cellOf(col, row, globalIndex)}
+                        </dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                )}
+                {actionsColumn && (
+                  <div className="flex justify-end">{cellOf(actionsColumn, row, globalIndex)}</div>
+                )}
+              </li>
+            );
+          })
+        )}
+      </ul>
+
+      <div className="relative hidden overflow-x-auto sm:block">
         <table className="w-full border-collapse text-sm" style={{ minWidth }}>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/70">

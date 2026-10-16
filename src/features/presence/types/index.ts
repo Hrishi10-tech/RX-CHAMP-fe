@@ -24,6 +24,8 @@ export interface PresenceDayTotals {
 export interface PresenceDay {
   date: string;
   totals: PresenceDayTotals;
+  focusSec?: number;
+  teamAvgOnlineSec?: number;
 }
 
 export interface UserPresenceHistory {

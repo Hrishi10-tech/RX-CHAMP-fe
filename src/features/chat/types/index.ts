@@ -6,6 +6,8 @@ export interface ChatContact {
   email: string;
   role: string;
   department: string | null;
+  /** How they relate to the caller: MANAGER, REPORT, PEER, ... */
+  relation?: string;
 }
 
 export interface ChatMessage {

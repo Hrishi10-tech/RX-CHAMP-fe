@@ -20,6 +20,8 @@ export interface LoginData {
 export type LoginFailureReason =
   | "invalid_credentials"
   | "account_blocked"
+  /** 429: too many wrong passwords for this account, or too many sign-ins from this network. */
+  | "rate_limited"
   | "network"
   | "server"
   | "unknown";

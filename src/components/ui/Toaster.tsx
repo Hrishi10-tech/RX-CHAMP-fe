@@ -35,6 +35,10 @@ export function Toaster() {
             "!border-0 !bg-transparent !text-slate-400 !opacity-100",
             "transition hover:!bg-slate-100 hover:!text-slate-700",
           ].join(" "),
+          actionButton: [
+            "!ml-auto !h-8 !shrink-0 !self-center !rounded-lg !bg-[rgb(34_34_204)] !px-3",
+            "!text-xs !font-semibold !text-white hover:!bg-[rgb(28_28_180)]",
+          ].join(" "),
           success: "border-l-4 !border-l-emerald-500",
           error: "border-l-4 !border-l-rose-500",
           info: "border-l-4 !border-l-[rgb(34_34_204)]",

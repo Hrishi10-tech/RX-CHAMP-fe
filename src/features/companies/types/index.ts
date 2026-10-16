@@ -13,6 +13,7 @@ export interface Company {
   name: string;
   status?: string;
   createdAt?: string;
+  joinedOn?: string;
   managerCount?: number;
   userCount?: number;
   managers?: CompanyManager[];

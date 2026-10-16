@@ -5,7 +5,10 @@ import { MoreHorizontal } from "lucide-react";
 
 import type { ActionMenuProps } from "./types";
 
-export function ActionMenu({ items, label = "Row actions" }: ActionMenuProps) {
+const DEFAULT_TRIGGER =
+  "inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 outline-none hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.3)] data-[state=open]:bg-slate-100 data-[state=open]:text-slate-600";
+
+export function ActionMenu({ items, label = "Row actions", triggerClassName }: ActionMenuProps) {
   return (
     <Dropdown.Root>
       <Dropdown.Trigger asChild>
@@ -13,9 +16,9 @@ export function ActionMenu({ items, label = "Row actions" }: ActionMenuProps) {
           type="button"
           aria-label={label}
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 outline-none hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.3)] data-[state=open]:bg-slate-100 data-[state=open]:text-slate-600"
+          className={triggerClassName ?? DEFAULT_TRIGGER}
         >
-          <MoreHorizontal className="h-5 w-5" />
+          <MoreHorizontal className={triggerClassName ? "h-4 w-4" : "h-5 w-5"} />
         </button>
       </Dropdown.Trigger>
 

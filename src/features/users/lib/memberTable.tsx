@@ -1,4 +1,5 @@
 import { Avatar, type Status } from "@/app/dashboard/admin/team-management/companies";
+import { roleLabel } from "@/constants/roles";
 import type { Column } from "@/components/ui/types";
 import type { User } from "@/features/users/types";
 import type { AgentStatus, TeamMember } from "@/types";
@@ -50,8 +51,8 @@ export function mapUserToMember(u: User): TeamMember {
 
 export function RolePill({ role }: { role: string }) {
   return (
-    <span className="inline-flex items-center rounded-md border border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.06)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[rgb(34_34_204)]">
-      {role}
+    <span className="inline-flex items-center whitespace-nowrap rounded-md border border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.06)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[rgb(34_34_204)]">
+      {roleLabel(role)}
     </span>
   );
 }
@@ -70,19 +71,19 @@ const AGENT_STATUS_STYLE: Record<
     label: "End day",
     className: "border-sky-200 bg-sky-50 text-sky-700",
     dot: "bg-sky-500",
-    hint: "They ended their working day — nothing more is recorded today",
+    hint: "They ended their working day. Nothing more is recorded today.",
   },
   NOT_SIGNED_IN: {
     label: "Not signed in",
     className: "border-rose-200 bg-rose-50 text-rose-700",
     dot: "bg-rose-500",
-    hint: "Signed out, or the saved session expired — they need to sign in again",
+    hint: "Signed out, or the saved session expired. They need to sign in again.",
   },
   OFFLINE: {
     label: "Offline",
     className: "border-amber-200 bg-amber-50 text-amber-700",
     dot: "bg-amber-500",
-    hint: "Signed in but not reporting — the machine may be asleep, closed or the agent stopped",
+    hint: "Signed in but not reporting. The computer may be asleep or closed, or the app stopped.",
   },
   NOT_ACTIVATED: {
     label: "Not activated",
@@ -109,7 +110,19 @@ export function AgentStatusPill({
   status: AgentStatus;
   lastSeenAt: string | null;
 }) {
-  const { label, className, dot, hint } = AGENT_STATUS_STYLE[status];
+  // A value this portal does not know yet (3.1 may report NOT_STARTED) must not crash the table.
+  const raw: string = status;
+  const { label, className, dot, hint } =
+    (AGENT_STATUS_STYLE as Record<string, (typeof AGENT_STATUS_STYLE)[AgentStatus]>)[raw] ??
+    (raw === "NOT_STARTED"
+      ? {
+          ...AGENT_STATUS_STYLE.DAY_ENDED,
+          label: "Not started",
+          className: "border-slate-200 bg-white text-slate-600",
+          dot: "bg-slate-300",
+          hint: "Signed in, but has not pressed Start Day yet. Nothing is recorded before that.",
+        }
+      : { ...AGENT_STATUS_STYLE.OFFLINE, label: raw || "Unknown" });
   // The last report turns "quiet" into something you can judge — a lunch break
   // reads very differently from five days.
   const seen =

@@ -8,6 +8,8 @@ export interface ModalProps {
   description?: string;
   children: ReactNode;
   className?: string;
+  /** Accessible name when there is no visible `title` (dialogs that draw their own header). */
+  ariaLabel?: string;
 }
 
 export interface SelectOption {
@@ -115,6 +117,8 @@ export interface ActionMenuItem {
 export interface ActionMenuProps {
   items: ActionMenuItem[];
   label?: string;
+  /** Replaces the default borderless trigger, e.g. to match a row of bordered buttons. */
+  triggerClassName?: string;
 }
 
 export interface ConfirmDialogProps {

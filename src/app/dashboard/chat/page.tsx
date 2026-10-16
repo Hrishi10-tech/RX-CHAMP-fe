@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 
+import { isApprover } from "@/constants/roles";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
 import { MemberChat } from "@/features/chat/components/MemberChat";
@@ -27,7 +28,7 @@ export default function ChatPage() {
   const enabled = ready && !!user;
   const [query, setQuery] = useState("");
 
-  const isManager = role === "MANAGER" || role === "ADMIN" || role === "SUPER_ADMIN";
+  const isManager = isApprover(role);
 
   return (
     <div className="space-y-5">
