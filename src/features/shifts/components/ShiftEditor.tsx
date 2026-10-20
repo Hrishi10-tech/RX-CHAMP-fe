@@ -193,7 +193,7 @@ function BreakCard({
           <span className="font-semibold">Allow Skip button</span>
           <span id={`${base}-skip-help`} className="block text-xs text-slate-500">
             {brk.allowSkip
-              ? "The desktop app offers Skip break. A skip needs a reason and the manager's decision; it counts as focus time unless rejected."
+              ? "The desktop app offers Skip break. A skip needs a reason and a manager's decision; it counts as focus time unless rejected."
               : "No Skip break button. If the break is not taken, it is skipped automatically when its window closes."}
           </span>
         </span>
@@ -652,7 +652,7 @@ export function ShiftEditor({ shiftId }: { shiftId?: string }) {
               </div>
               <p className="mt-1.5 text-sm text-slate-500">
                 Back within the grace counts as break time. Later than that, the desktop app asks
-                whether to count the extra minutes, and the manager decides.
+                whether to count the extra minutes, and a manager decides.
               </p>
             </div>
             <label className="flex cursor-pointer items-start gap-2.5 text-sm text-slate-700">
@@ -668,7 +668,8 @@ export function ShiftEditor({ shiftId }: { shiftId?: string }) {
           </div>
           <p className="text-sm text-slate-500">
             Breaks started early or late, skipped breaks, and minutes over a break that someone asks
-            to count go to the person&apos;s manager, who decides them in Approvals.
+            to count go to the managers of the person&apos;s department (or the Admin), who decide
+            them in Approvals.
           </p>
         </Section>
 

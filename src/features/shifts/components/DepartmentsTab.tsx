@@ -90,7 +90,7 @@ export function DepartmentsTab({
           <p className="text-sm text-slate-500">
             {canEdit
               ? "Everyone in a department works its shift unless they have a personal override."
-              : "Set by a Super Admin. You can override the shift for your own staff under People."}
+              : "Set by the Admin."}
           </p>
         </div>
         {canEdit && (

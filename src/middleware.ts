@@ -1,12 +1,41 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { canAccess, normalizeRole, resolveHomeRoute } from "@/constants/roles";
+import { STAFF_REFUSED_ROUTE, canAccess, normalizeRole, resolveHomeRoute } from "@/constants/roles";
 import { SESSION_COOKIE, decodeSession } from "@/lib/auth/session";
 
-/** Old addresses that live on elsewhere; bookmarks and 3.0 notifications still open. */
-const MOVED: Record<string, string> = {
+/**
+ * Old addresses that live on elsewhere, so bookmarks and older notifications
+ * still open something useful (SPEC 7.1).
+ */
+export const MOVED: Record<string, string> = {
   "/dashboard/breaks/approvals": "/dashboard/approvals",
+  "/dashboard/team-today": "/dashboard/team",
+  "/dashboard/me": "/dashboard/overview",
+  "/dashboard/admin": "/dashboard/overview",
+  "/dashboard/manager": "/dashboard/overview",
+  "/dashboard/admin/team-management": "/dashboard/people",
+  "/dashboard/admin/team-management/user": "/dashboard/people",
+  "/dashboard/admin/team-management/organization": "/dashboard/organisations",
+  "/dashboard/admin/team-management/company": "/dashboard/organisations",
 };
+
+/** Prefix moves that keep the rest of the path (a person's id). */
+const MOVED_PREFIX: [string, string][] = [
+  ["/dashboard/manager/activity/", "/dashboard/team/"],
+  ["/dashboard/admin/team-management/organization/", "/dashboard/organisations"],
+];
+
+/** Where an old address lives now, or null when it has not moved. */
+export function movedTo(pathname: string): string | null {
+  const path = pathname.replace(/\/$/, "");
+  if (MOVED[path]) return MOVED[path];
+  for (const [from, to] of MOVED_PREFIX) {
+    if (path.startsWith(from)) {
+      return to.endsWith("/") ? `${to}${path.slice(from.length).split("/")[0]}` : to;
+    }
+  }
+  return null;
+}
 
 function toLogin(req: NextRequest): NextResponse {
   const { pathname, search } = req.nextUrl;
@@ -23,29 +52,34 @@ export function middleware(req: NextRequest) {
 
   const role = normalizeRole(session.user?.role);
   if (!role) {
-    // A role this app no longer knows (a cookie from before ADMIN was folded into
-    // MANAGER, say). Every route would refuse it, and sending it "home" would
-    // bounce forever, so drop the stale cookie and ask for a fresh sign-in.
+    // A role this app does not know. Every route would refuse it, and sending it
+    // "home" would bounce forever, so drop the cookie and ask for a fresh sign-in.
     const res = toLogin(req);
     res.cookies.delete(SESSION_COOKIE);
     return res;
   }
 
-  const home = resolveHomeRoute(role);
+  if (role === "USER") {
+    // Staff use the agent (SPEC 1.1): the sign-in page says so.
+    const res = NextResponse.redirect(new URL(STAFF_REFUSED_ROUTE, req.url));
+    res.cookies.delete(SESSION_COOKIE);
+    return res;
+  }
 
-  // 3.1 moved break approvals into /dashboard/approvals (breaks and meetings).
-  const moved = MOVED[pathname.replace(/\/$/, "")];
+  const moved = movedTo(pathname);
   if (moved) {
     const url = req.nextUrl.clone();
     url.pathname = moved;
     return NextResponse.redirect(url);
   }
 
+  const home = resolveHomeRoute(role);
+
   if (pathname === "/dashboard" || pathname === "/dashboard/") {
     return NextResponse.redirect(new URL(home, req.url));
   }
 
-  if (!canAccess(role, pathname)) {
+  if (!canAccess(role, pathname, { grants: session.user?.grants })) {
     return NextResponse.redirect(new URL(home, req.url));
   }
 

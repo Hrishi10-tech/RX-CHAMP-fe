@@ -15,7 +15,8 @@ import {
 import { cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage, errorStatus } from "@/lib/api";
 import { formatDuration, formatSignedAmount } from "@/lib/format/duration";
-import { formatMinutes, hmOf, todayKey } from "@/lib/time/businessTime";
+import { formatMinutes, todayKey } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 import { formatMonth, monthOfDate } from "@/lib/time/months";
 import { roleLabel } from "@/constants/roles";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
@@ -26,7 +27,9 @@ import { focusSum } from "@/features/reports/lib/focusSum";
 import {
   APPROVAL_LABEL,
   APPROVAL_TONE,
+  isQuickBreak,
   overrunLabel,
+  recordLabel,
   timingLabel,
   timingTone,
 } from "@/features/breaks/lib/labels";
@@ -40,10 +43,14 @@ import { NO_COMMENT_TEXT, decidedLine } from "@/features/approvals/lib/labels";
 import { HourlyActivityChart } from "@/features/reports/components/HourlyActivityChart";
 import { TimelineBar } from "@/features/reports/components/TimelineBar";
 import {
+  ActivityGate,
   Kpi,
   KpiGrid,
   ManagersOnly,
   ReportSection,
+  TimelineGate,
+  paidTimeSub,
+  unverifiedNote,
 } from "@/features/reports/components/ReportParts";
 import { PrintButton, ReportShell, type Crumb } from "@/features/reports/components/ReportShell";
 import type { ApprovalItemView } from "@/features/approvals/types";
@@ -57,9 +64,8 @@ function personLine(report: PersonDayReport): string {
     roleLabel(p.role),
     p.department,
     report.shift
-      ? `${report.shift.name} shift, ${report.shift.start} to ${report.shift.end}`
+      ? `${report.shift.name} shift, ${formatTime12(report.shift.start)} to ${formatTime12(report.shift.end)}`
       : "No shift",
-    p.managerName ? `Manager ${p.managerName}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -111,23 +117,30 @@ function breakRows(report: PersonDayReport): BreakRow[] {
     const approval = effectFor(report.approvals, "BREAK", r.id);
     const over = overrunLabel(r);
     const reasonText = r.reason?.trim() || r.overrunReason?.trim();
+    const quick = isQuickBreak(r);
     return {
       key: r.id,
-      name: r.label,
+      name: recordLabel(r),
       scheduled:
         r.scheduledStart && r.durationMin
-          ? `Due ${hmOf(r.scheduledStart)}, ${r.durationMin} min`
-          : "Not on the schedule",
+          ? `Due ${formatTime12(r.scheduledStart)}, ${r.durationMin} min`
+          : quick
+            ? "Any time, from the break buffer"
+            : "Not on the schedule",
       when: skip
-        ? `${r.outcome === "AUTO_SKIPPED" ? "Auto-skipped" : "Skipped"} at ${hmOf(r.startedAt)}`
-        : `${hmOf(r.startedAt)} to ${r.endedAt ? hmOf(r.endedAt) : "now"} · ${formatMinutes(r.tookSec ?? 0)}`,
+        ? `${r.outcome === "AUTO_SKIPPED" ? "Auto-skipped" : "Skipped"} at ${formatTime12(r.startedAt)}`
+        : `${formatTime12(r.startedAt)} to ${r.endedAt ? formatTime12(r.endedAt) : "now"} · ${formatMinutes(r.tookSec ?? 0)}`,
       result: skip ? (
         <Chip tone={r.outcome === "SKIPPED" ? "violet" : "neutral"}>
           {r.outcome === "SKIPPED" ? "Skipped" : "Auto-skipped"}
         </Chip>
       ) : (
         <span className="flex flex-wrap gap-1">
-          <Chip tone={timingTone(r.timing)}>{timingLabel(r)}</Chip>
+          {quick ? (
+            !over && <Chip tone="success">Within its length</Chip>
+          ) : (
+            <Chip tone={timingTone(r.timing)}>{timingLabel(r)}</Chip>
+          )}
           {over && <Chip tone="danger">{over}</Chip>}
         </span>
       ),
@@ -160,7 +173,7 @@ function breakRows(report: PersonDayReport): BreakRow[] {
         key: `skip-${s.kind}-${s.at}`,
         name: s.label,
         scheduled: "",
-        when: `${s.outcome === "AUTO_SKIPPED" ? "Auto-skipped" : "Skipped"} at ${hmOf(s.at)}`,
+        when: `${s.outcome === "AUTO_SKIPPED" ? "Auto-skipped" : "Skipped"} at ${formatTime12(s.at)}`,
         result: (
           <Chip tone={s.outcome === "SKIPPED" ? "violet" : "neutral"}>
             {s.outcome === "SKIPPED" ? "Skipped" : "Auto-skipped"}
@@ -269,7 +282,7 @@ function MeetingsList({
           >
             <div>
               <p className="text-sm font-semibold tabular-nums text-slate-900">
-                {hmOf(m.startedAt)} to {m.endedAt ? hmOf(m.endedAt) : "now"}
+                {formatTime12(m.startedAt)} to {m.endedAt ? formatTime12(m.endedAt) : "now"}
               </p>
               <p className="text-xs text-slate-500">{formatDuration(m.durationSec)}</p>
             </div>
@@ -441,14 +454,15 @@ export function PersonDayView({
 
   const s = report.summary;
   const look = dayClassLook(s.dayClass);
-  const expected = Math.max(0, s.expectedSec);
+  // 4.0: the day's target (shift minus the paid break allowance, SPEC 2.4).
+  const expected = Math.max(0, s.targetSec || s.expectedSec);
   const pct = expected ? Math.round((s.focusSec / expected) * 100) : 0;
   const fullPct = settings.data?.fullDayPct ?? 80;
   const spanText =
     s.startedAt && s.endedAt
-      ? `${hmOf(s.startedAt)} to ${hmOf(s.endedAt)}`
+      ? `${formatTime12(s.startedAt)} to ${formatTime12(s.endedAt)}`
       : s.startedAt
-        ? `${hmOf(s.startedAt)} to now`
+        ? `${formatTime12(s.startedAt)} to now`
         : "Did not start";
   const pendingApprovals = report.approvals.filter((a) => a.status === "PENDING");
   const quietBelow = settings.data?.quietHourActiveMin ?? 20;
@@ -508,16 +522,26 @@ export function PersonDayView({
         </div>
       ) : null}
 
-      <KpiGrid>
+      <KpiGrid wide>
         <Kpi
-          label="Focus time, for payroll"
+          label="Focus time"
           value={formatDuration(s.focusSec)}
           meter={expected ? Math.min(100, pct) : undefined}
-          sub={
+          sub={[
             expected
-              ? `${pct}% of ${formatDuration(expected)} expected`
-              : "No shift: nothing expected"
-          }
+              ? `${pct}% of the ${formatDuration(expected)} target`
+              : s.label
+                ? `${s.label}: no target`
+                : "Not a working day: no target",
+            unverifiedNote(s.unverifiedSec) && `${unverifiedNote(s.unverifiedSec)}, not counted`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        />
+        <Kpi
+          label="Paid time, for payroll"
+          value={formatDuration(s.paidSec)}
+          sub={paidTimeSub(s.paidBreakSec)}
         />
         <Kpi
           label="Attendance"
@@ -552,9 +576,28 @@ export function PersonDayView({
           sub={`${s.meetings} logged · counted as focus time unless rejected`}
         />
         <Kpi
-          label="Break time"
-          value={formatDuration(s.breakSec)}
-          sub={`${s.breaksTaken} taken · ${s.skipped + s.autoSkipped} skipped${s.overruns ? ` · ${s.overruns} ran over` : ""}`}
+          label="Breaks"
+          value={`${formatDuration(s.paidBreakSec)} paid`}
+          tone={s.unpaidBreakSec > 0 ? "warning" : "default"}
+          sub={`${formatDuration(s.unpaidBreakSec)} unpaid · ${formatDuration(s.breakSec)} in all · ${s.breaksTaken} taken · ${s.skipped + s.autoSkipped} skipped${s.overruns ? ` · ${s.overruns} ran over` : ""}`}
+        />
+        <Kpi
+          label="Away with a reason"
+          value={`${formatDuration(s.awayApprovedSec)} approved`}
+          tone={s.awayPendingSec > 0 ? "warning" : "default"}
+          sub={
+            [
+              s.awayPendingSec > 0
+                ? `${formatDuration(s.awayPendingSec)} waiting for a decision`
+                : null,
+              s.awayRejectedSec > 0 ? `${formatDuration(s.awayRejectedSec)} rejected` : null,
+              s.awayUnexplainedSec > 0
+                ? `${formatDuration(s.awayUnexplainedSec)} not explained`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "Approved time away counts as focus"
+          }
         />
         <Kpi
           label="Activity"
@@ -567,9 +610,12 @@ export function PersonDayView({
 
       <ReportSection
         title="The day, start to end"
-        subtitle={`Focus time for payroll: ${focusSum(s)}. Meetings count as focus time unless rejected.`}
+        subtitle={`Focus time: ${focusSum(s)}. Paid time adds the paid breaks: ${formatDuration(s.paidSec)}. Meetings count as focus time unless rejected.`}
       >
-        <TimelineBar timeline={report.timeline} skips={report.skips} />
+        {/* The work and break spans are the timeline grant's (SPEC 1.2). */}
+        <TimelineGate>
+          <TimelineBar timeline={report.timeline} skips={report.skips} />
+        </TimelineGate>
       </ReportSection>
 
       <ReportSection
@@ -610,14 +656,16 @@ export function PersonDayView({
         subtitle="Active minutes in each hour. It never changes focus time."
         aside={<ManagersOnly />}
       >
-        <HourlyActivityChart
-          hours={report.hourly}
-          name={name}
-          startedAt={s.startedAt}
-          // A day still running ends now: a night shift past midnight wraps.
-          endedAt={s.endedAt ?? (s.startedAt && date === today ? new Date().toISOString() : null)}
-          quietBelow={quietBelow}
-        />
+        <ActivityGate>
+          <HourlyActivityChart
+            hours={report.hourly}
+            name={name}
+            startedAt={s.startedAt}
+            // A day still running ends now: a night shift past midnight wraps.
+            endedAt={s.endedAt ?? (s.startedAt && date === today ? new Date().toISOString() : null)}
+            quietBelow={quietBelow}
+          />
+        </ActivityGate>
       </ReportSection>
     </div>,
   );

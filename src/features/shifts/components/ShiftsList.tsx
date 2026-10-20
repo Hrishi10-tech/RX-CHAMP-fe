@@ -131,8 +131,7 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
       {!canEdit && (
         <p className="flex items-start gap-2 text-sm text-slate-500">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          Only a Super Admin can change shifts. You can override the shift of your own staff under
-          Assign shifts.
+          Only the Admin changes shifts and who works them. Ask them under Messages.
         </p>
       )}
 
@@ -153,7 +152,7 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
             message={
               canEdit
                 ? "Create the first one. It becomes the default for everyone."
-                : "A Super Admin hasn't set up any shifts yet."
+                : "The Admin hasn't set up any shifts yet."
             }
             action={
               canEdit ? (

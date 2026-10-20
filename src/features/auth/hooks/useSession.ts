@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -8,6 +8,8 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { sessionCleared } from "@/features/auth/store/authSlice";
 import { logout as logoutRequest } from "@/features/auth/api/logout";
 import { clearSession } from "@/lib/auth/session";
+import { setOrgSwitching } from "@/lib/org/selection";
+import { viewerGrants } from "@/constants/roles";
 import type { UseSessionResult } from "@/features/auth/types";
 
 export function useSession(): UseSessionResult {
@@ -16,6 +18,7 @@ export function useSession(): UseSessionResult {
   const user = useAppSelector((state) => state.auth.user);
   const role = useAppSelector((state) => state.auth.role);
   const ready = useAppSelector((state) => state.auth.ready);
+  const me = useAppSelector((state) => state.auth.me);
   const queryClient = useQueryClient();
 
   const logout = useCallback(() => {
@@ -23,6 +26,7 @@ export function useSession(): UseSessionResult {
     // on. Local state goes first so the menu can't act on a dead session.
     void logoutRequest();
     clearSession();
+    setOrgSwitching(false);
     dispatch(sessionCleared());
     // Cached server data belongs to this person; the next one to sign in on this
     // tab must not see it, even for a moment.
@@ -30,5 +34,8 @@ export function useSession(): UseSessionResult {
     router.replace("/auth/login");
   }, [dispatch, router, queryClient]);
 
-  return { user, role, ready, logout };
+  // A Manager: the sections GET /me's permissions name (the server's own rule).
+  const grants = useMemo(() => viewerGrants(role, me), [role, me]);
+
+  return { user, role, ready, me, grants, logout };
 }

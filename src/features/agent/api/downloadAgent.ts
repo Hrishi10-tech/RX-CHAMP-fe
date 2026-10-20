@@ -8,15 +8,35 @@ import type { AgentPlatform } from "@/features/agent/types";
  * blob and saves it with `a.download`, which overrides the server's
  * Content-Disposition entirely. Windows downloads have that person's sign-in
  * baked in; the Mac app is the same for everyone (it signs in with a setup code),
- * but the request still names the person so the server checks they are yours.
+ * but the request still names the person so the server checks they may.
+ *
+ * 4.0: only an Admin (their organisation's Managers and Staff) or a Super Admin
+ * (also an organisation's Admin) may, and never for themselves (403): for your
+ * own computer use `downloadAgentInstaller`.
  */
 export async function downloadAgentForUser(
   userId: string,
   fileName = "RXVision.exe",
   platform: AgentPlatform = "windows",
 ): Promise<void> {
+  await saveAgent({ userId, platform }, fileName);
+}
+
+/**
+ * The plain installer, the same for everyone (`GET /agent/download` without a
+ * `userId`): it opens the sign-in screen, where the person signs in with their
+ * email and password.
+ */
+export async function downloadAgentInstaller(
+  fileName = "RXVision.exe",
+  platform: AgentPlatform = "windows",
+): Promise<void> {
+  await saveAgent({ platform }, fileName);
+}
+
+async function saveAgent(params: Record<string, string>, fileName: string): Promise<void> {
   const res = await apiClient.get<Blob>("/api/v1/agent/download", {
-    params: { userId, platform },
+    params,
     responseType: "blob",
   });
 

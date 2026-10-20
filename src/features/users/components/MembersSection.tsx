@@ -1,316 +1,285 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { CalendarDays, MoreHorizontal, Plus, Search, UsersRound } from "lucide-react";
-import { toast } from "sonner";
+import { useCallback, useMemo, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Crown, Layers, Plus, Search, UserRound, UsersRound } from "lucide-react";
 
 import { DataTable } from "@/components/ui/DataTable";
-import { LoadingOverlay } from "@/components/ui/Loader";
+import { Select } from "@/components/ui/Select";
+import { ErrorState } from "@/components/ui/StatePanel";
+import { btnPrimary, cardBase } from "@/components/ui/classes";
 import type { Column, SelectOption } from "@/components/ui/types";
-import { getCompanies } from "@/features/companies/api/getCompanies";
+import { errorMessage } from "@/lib/api";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
+import { useOrgScope } from "@/lib/org/selection";
+import { departmentIcon } from "@/features/departments/lib/icons";
+import { useDepartments } from "@/features/departments/hooks/useDepartments";
 import { getUsers } from "@/features/users/api/getUsers";
 import {
+  ANY,
   EMPTY_MEMBER_FILTERS,
+  asDepartmentFilter,
   asRoleFilter,
+  asStatusFilter,
   countActiveFilters,
+  roleFilterOptions,
+  statusFilterOptions,
 } from "@/features/users/lib/memberQuery";
-import {
-  formatJoined,
-  mapUserToMember,
-  memberColumns,
-  toStatus,
-} from "@/features/users/lib/memberTable";
+import { mapUserToMember, memberColumns } from "@/features/users/lib/memberTable";
 import { useMemberActions } from "@/features/users/hooks/useMemberActions";
-import { MemberFiltersModal } from "@/features/users/components/MemberFiltersModal";
+import { canChangeMember } from "@/features/users/lib/memberAccess";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { MemberFormDialog } from "@/features/users/components/MemberFormDialog";
 import { MemberSortPopover } from "@/features/users/components/MemberSortPopover";
-import type {
-  MemberFilters,
-  MemberSortKey,
-  MembersSectionProps,
-  User,
-} from "@/features/users/types";
+import type { GetUsersParams, MemberFilters, MemberSortKey } from "@/features/users/types";
 import type { TeamMember } from "@/types";
 
 const MEMBERS_PAGE_SIZE = 10;
 
-function StatItem({
-  icon,
-  iconBg,
+export const userKeys = {
+  all: ["users"] as const,
+  list: (org: string, params: GetUsersParams) => [...userKeys.all, org, "list", params] as const,
+};
+
+function Stat({
+  icon: Icon,
   value,
   label,
-  caption,
-  valueClass = "text-xl",
 }: {
-  icon: ReactNode;
-  iconBg: string;
-  value: string;
+  icon: typeof UsersRound;
+  value: number | string;
   label: string;
-  caption: ReactNode;
-  valueClass?: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5 px-5 py-3.5">
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
-        {icon}
+    <div className="flex items-center gap-3 px-5 py-3.5">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]">
+        <Icon className="h-4 w-4" aria-hidden />
       </span>
-      <div className="min-w-0">
-        <p className={`font-bold leading-tight text-slate-900 ${valueClass}`}>{value}</p>
-        <p className="text-[13px] font-medium text-slate-600">{label}</p>
-        <p className="text-[11px] text-slate-400">{caption}</p>
+      <div>
+        <p className="text-xl font-bold leading-tight text-slate-900">{value}</p>
+        <p className="text-[13px] font-medium text-slate-500">{label}</p>
       </div>
     </div>
   );
 }
 
 /**
- * Note: total comes from the server, but active/newest are computed from the
- * loaded page only — so on a multi-page list they describe this page, not everyone.
+ * Team management (SPEC 7.2): everyone in the organisation, with filters and
+ * the row actions only an Admin or Super Admin has. One request per page of
+ * the table (React Query, cached per organisation).
  */
-function MembersStats({ total, users }: { total: number; users: User[] }) {
-  const active = users.filter((u) => toStatus(u.status) === "Active").length;
-  const newest = users.reduce<string | undefined>((latest, u) => {
-    if (!u.createdAt) return latest;
-    if (!latest) return u.createdAt;
-    return new Date(u.createdAt) > new Date(latest) ? u.createdAt : latest;
-  }, undefined);
-
-  return (
-    <div className="grid grid-cols-1 divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-      <StatItem
-        icon={<UsersRound className="h-4 w-4 text-[rgb(34_34_204)]" />}
-        iconBg="bg-[rgba(34,34,204,0.1)]"
-        value={String(total)}
-        label="Total Members"
-        caption="All members"
-      />
-      <StatItem
-        icon={<span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />}
-        iconBg="bg-emerald-50"
-        value={String(active)}
-        label="Active Members"
-        caption="Currently active"
-      />
-      <StatItem
-        icon={<CalendarDays className="h-4 w-4 text-[rgb(34_34_204)]" />}
-        iconBg="bg-[rgba(34,34,204,0.1)]"
-        value={formatJoined(newest)}
-        label="Newest Member"
-        caption="Joined recently"
-        valueClass="text-base"
-      />
-    </div>
-  );
+/** How many people of one role match the filters (the server's `meta.total`). */
+function useRoleTotal(
+  org: string,
+  role: "MANAGER" | "USER",
+  filters: Pick<GetUsersParams, "q" | "departmentId" | "status">,
+): number | undefined {
+  const params: GetUsersParams = { ...filters, role, page: 1, limit: 1 };
+  const query = useQuery({
+    queryKey: userKeys.list(org, params),
+    queryFn: () => getUsers(params),
+    placeholderData: keepPreviousData,
+    select: (r) => r.meta?.total ?? r.users.length,
+  });
+  return query.data;
 }
 
-/**
- * The members list — stat cards, search, add button, filter/sort, table and the
- * row-action dialogs. Shared so the admin and manager screens stay in step; only
- * the query scope and the add-member route differ.
- */
-export function MembersSection({
-  managerId,
-  defaultRole,
-  pending = false,
-  enabled = true,
-  addMemberHref,
-  tableTitle = "Members",
-  emptyMessage = "No team members found.",
-  showCompanyFilter = false,
-  onRowClick,
-}: MembersSectionProps) {
+export function MembersSection() {
+  const org = useOrgScope();
+  const { user: me, role } = useSession();
+  const myId = me?.id;
+  const queryClient = useQueryClient();
+  const departments = useDepartments();
   const [query, setQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [refreshIndex, setRefreshIndex] = useState(0);
-
+  const q = useDebouncedValue(query.trim(), 300);
   const [filters, setFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const [sort, setSort] = useState<MemberSortKey | null>(null);
-  const [companyOptions, setCompanyOptions] = useState<SelectOption[]>([]);
-  const [companiesLoading, setCompaniesLoading] = useState(showCompanyFilter);
-
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [pageCount, setPageCount] = useState(1);
+  const [form, setForm] = useState<{ open: boolean; member: TeamMember | null }>({
+    open: false,
+    member: null,
+  });
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedSearch(query.trim());
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [query]);
-
-  useEffect(() => {
-    if (pending) {
-      setLoading(true);
-      return;
-    }
-    if (!enabled) {
-      setUsers([]);
-      setTotal(0);
-      setPageCount(1);
-      setLoading(false);
-      return;
-    }
-    let active = true;
-    setLoading(true);
-    getUsers({
+  const params: GetUsersParams = useMemo(
+    () => ({
       page,
       limit: MEMBERS_PAGE_SIZE,
-      managerId,
-      // An explicit Role filter overrides the screen's default scope.
-      role: asRoleFilter(filters.role) ?? defaultRole,
-      search: debouncedSearch,
-      department: filters.department || undefined,
-      companyId: filters.companyId || undefined,
-      joinedFrom: filters.joinedFrom || undefined,
-      joinedTo: filters.joinedTo || undefined,
-      // Omitted when null, which gives the server default (joined_desc).
+      q: q || undefined,
+      role: asRoleFilter(filters.role),
+      departmentId: asDepartmentFilter(filters.departmentId),
+      status: asStatusFilter(filters.status),
       sort: sort ?? undefined,
-    })
-      .then((res) => {
-        if (!active) return;
-        setUsers(res.users);
-        setTotal(res.meta?.total ?? res.users.length);
-        setPageCount(res.meta?.totalPages ?? 1);
-      })
-      .catch(() => {
-        if (!active) return;
-        setUsers([]);
-        setTotal(0);
-        setPageCount(1);
-        toast.error("Couldn't load members", { description: "Please try again." });
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [
-    pending,
-    enabled,
-    managerId,
-    defaultRole,
-    page,
-    debouncedSearch,
-    refreshIndex,
-    filters,
-    sort,
-  ]);
+    }),
+    [page, q, filters, sort],
+  );
 
-  useEffect(() => {
-    if (!showCompanyFilter || pending || !enabled) return;
-    let active = true;
-    setCompaniesLoading(true);
-    getCompanies({ page: 1, limit: 100 })
-      .then((res) => {
-        if (!active) return;
-        setCompanyOptions(res.companies.map((c) => ({ value: c.id, label: c.name })));
-      })
-      .catch(() => {
-        if (active) setCompanyOptions([]);
-      })
-      .finally(() => {
-        if (active) setCompaniesLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [showCompanyFilter, pending, enabled]);
-
-  const members = useMemo<TeamMember[]>(() => users.map(mapUserToMember), [users]);
-
-  const { renderActions, dialogs } = useMemberActions({
-    onChanged: (change) => {
-      // Deleting the last row on a page would otherwise leave it empty.
-      if (change === "deleted") {
-        setPage((p) => (members.length <= 1 && p > 1 ? p - 1 : p));
-      }
-      setRefreshIndex((i) => i + 1);
-    },
+  const list = useQuery({
+    queryKey: userKeys.list(org, params),
+    queryFn: () => getUsers(params),
+    placeholderData: keepPreviousData,
   });
+
+  const users = useMemo(() => list.data?.users ?? [], [list.data]);
+  const members = useMemo<TeamMember[]>(() => users.map(mapUserToMember), [users]);
+  const total = list.data?.meta?.total ?? users.length;
+  const pageCount = list.data?.meta?.totalPages ?? 1;
+
+  const refresh = useCallback(
+    (change: "updated" | "deleted") => {
+      // Deleting the last row on a page would otherwise leave it empty.
+      if (change === "deleted") setPage((p) => (members.length <= 1 && p > 1 ? p - 1 : p));
+      void queryClient.invalidateQueries({ queryKey: userKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["departments"] });
+      void queryClient.invalidateQueries({ queryKey: ["team"] });
+    },
+    [members.length, queryClient],
+  );
+
+  const openEdit = useCallback((member: TeamMember) => setForm({ open: true, member }), []);
+  const { renderActions, dialogs } = useMemberActions({ onChanged: refresh, onEdit: openEdit });
 
   const columns = useMemo<Column<TeamMember>[]>(
     () => [
       ...memberColumns,
-      {
-        key: "actions",
-        header: "Actions",
-        align: "right",
-        render: renderActions,
-      },
+      { key: "actions", header: "Actions", align: "right", render: renderActions },
     ],
     [renderActions],
   );
 
-  function applyFilters(next: MemberFilters) {
-    setFilters(next);
+  const departmentOptions: SelectOption[] = useMemo(
+    () => [
+      { value: ANY, label: "All departments", icon: Layers },
+      ...(departments.data ?? []).map((d) => ({
+        value: d.id,
+        label: d.name,
+        icon: departmentIcon(d.icon),
+      })),
+    ],
+    [departments.data],
+  );
+
+  function filter<K extends keyof MemberFilters>(key: K, value: string) {
+    setFilters((f) => ({ ...f, [key]: value }));
     setPage(1);
   }
 
-  function applySort(next: MemberSortKey | null) {
-    setSort(next);
-    setPage(1);
-  }
+  // The role counts come from the server (`meta.total` of a one-row page per
+  // role, with the same search, department and status), not from this page.
+  const countParams = useMemo(
+    () => ({ q: params.q, departmentId: params.departmentId, status: params.status }),
+    [params.q, params.departmentId, params.status],
+  );
+  const managerCount = useRoleTotal(org, "MANAGER", countParams);
+  const staffCount = useRoleTotal(org, "USER", countParams);
+  const narrowed = Boolean(countParams.q || countParams.departmentId || countParams.status);
 
   return (
     <>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search members…"
-              className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgb(34_34_204)] sm:w-72"
-            />
-          </div>
-          <Link
-            href={addMemberHref}
-            className="flex shrink-0 items-center gap-2 rounded-lg bg-gradient-to-br from-[rgb(74_74_230)] to-[rgb(34_34_204)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
-          >
-            <Plus className="h-4 w-4" />
-            Add member
-          </Link>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative sm:w-80">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search name or email"
+            aria-label="Search members"
+            className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgb(34_34_204)]"
+          />
         </div>
+        <button
+          type="button"
+          className={btnPrimary}
+          onClick={() => setForm({ open: true, member: null })}
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+          Add member
+        </button>
       </div>
 
-      {loading ? <LoadingOverlay label="Loading members…" /> : null}
+      <div className="grid grid-cols-1 divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <Stat
+          icon={UsersRound}
+          value={total}
+          label={countActiveFilters(filters) || q ? "Matching" : "Members"}
+        />
+        <Stat
+          icon={Crown}
+          value={managerCount ?? "…"}
+          label={narrowed ? "Managers matching" : "Managers"}
+        />
+        <Stat
+          icon={UserRound}
+          value={staffCount ?? "…"}
+          label={narrowed ? "Staff matching" : "Staff"}
+        />
+      </div>
 
-      <div className="space-y-5">
-        <MembersStats total={total} users={users} />
+      {list.isError && !list.data ? (
+        <div className={cardBase}>
+          <ErrorState
+            message={errorMessage(list.error)}
+            onRetry={() => void list.refetch()}
+            retrying={list.isFetching}
+          />
+        </div>
+      ) : (
         <DataTable
           data={members}
           columns={columns}
           getRowKey={(m) => m.id}
-          onRowClick={onRowClick}
+          onRowClick={(m) => {
+            if (canChangeMember(role, myId, m)) openEdit(m);
+          }}
           countNoun="member"
+          minWidth={980}
           emptyMessage={
-            countActiveFilters(filters) > 0 ? "No members match these filters." : emptyMessage
+            list.isPending
+              ? "Loading members…"
+              : countActiveFilters(filters) > 0 || q
+                ? "No members match these filters."
+                : "No members yet. Add the first one."
           }
-          title={`${tableTitle} (${total})`}
+          title={`Members (${total})`}
           action={
-            <div className="flex items-center gap-2">
-              <MemberFiltersModal
-                value={filters}
-                onApply={applyFilters}
-                companyOptions={companyOptions}
-                companiesLoading={companiesLoading}
-                showCompanyFilter={showCompanyFilter}
+            <div className="flex flex-wrap items-center gap-2 [&_button[role=combobox]]:mt-0 [&_button[role=combobox]]:whitespace-nowrap [&_button[role=combobox]]:py-2">
+              <div className="w-36">
+                <Select
+                  value={filters.role}
+                  onValueChange={(v) => filter("role", v)}
+                  options={roleFilterOptions}
+                  aria-label="Role"
+                />
+              </div>
+              <div className="w-52">
+                <Select
+                  value={filters.departmentId}
+                  onValueChange={(v) => filter("departmentId", v)}
+                  options={departmentOptions}
+                  aria-label="Department"
+                />
+              </div>
+              <div className="w-36">
+                <Select
+                  value={filters.status}
+                  onValueChange={(v) => filter("status", v)}
+                  options={statusFilterOptions}
+                  aria-label="Status"
+                />
+              </div>
+              <MemberSortPopover
+                value={sort}
+                onApply={(next) => {
+                  setSort(next);
+                  setPage(1);
+                }}
               />
-              <MemberSortPopover value={sort} onApply={applySort} />
-              <button
-                type="button"
-                aria-label="More actions"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50"
-              >
-                <MoreHorizontal className="h-5 w-5" />
-              </button>
             </div>
           }
           serverPagination={{
@@ -321,9 +290,15 @@ export function MembersSection({
             onPageChange: setPage,
           }}
         />
-      </div>
+      )}
 
       {dialogs}
+      <MemberFormDialog
+        open={form.open}
+        member={form.member}
+        onClose={() => setForm({ open: false, member: null })}
+        onSaved={() => refresh("updated")}
+      />
     </>
   );
 }

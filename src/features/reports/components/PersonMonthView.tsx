@@ -1,5 +1,6 @@
 "use client";
 
+import { isOrgAdmin } from "@/constants/roles";
 import { type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,7 +20,8 @@ import {
   formatSignedDuration,
   ROUNDING_NOTE,
 } from "@/lib/format/duration";
-import { formatDayWithWeekday, hmOf, todayKey } from "@/lib/time/businessTime";
+import { formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 import { formatMonth } from "@/lib/time/months";
 import { roleLabel } from "@/constants/roles";
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -29,11 +31,15 @@ import { downloadPersonMonthXlsx } from "@/features/reports/api/reports";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
 import { FocusByDayChart, MonthHeatmap } from "@/features/reports/components/MonthCharts";
 import {
+  ActivityGate,
   DayClassChip,
   Kpi,
   KpiGrid,
   ManagersOnly,
   ReportSection,
+  paidTimeSub,
+  unverifiedNote,
+  useCanSeeActivity,
 } from "@/features/reports/components/ReportParts";
 import { MonthLockChip, MonthLockControl } from "@/features/reports/components/MonthLockControl";
 import {
@@ -46,9 +52,7 @@ import type { PersonDaySummary, PersonMonthReport } from "@/features/reports/typ
 
 function personLine(r: PersonMonthReport): string {
   const p = r.person;
-  return [roleLabel(p.role), p.department, p.managerName ? `Manager ${p.managerName}` : null]
-    .filter(Boolean)
-    .join(" · ");
+  return [roleLabel(p.role), p.department].filter(Boolean).join(" · ");
 }
 
 function breaksText(d: PersonDaySummary): string {
@@ -58,6 +62,20 @@ function breaksText(d: PersonDaySummary): string {
   if (d.autoSkipped) parts.push(`${d.autoSkipped} auto-skipped`);
   if (d.overruns) parts.push(`${d.overruns} over`);
   return parts.join(" · ") || "None";
+}
+
+/** "10m paid · 5m unpaid" (SPEC 2.4), or "" with no break time. */
+function breakPayText(d: PersonDaySummary): string {
+  if (d.paidBreakSec <= 0 && d.unpaidBreakSec <= 0) return "";
+  return `${formatDuration(d.paidBreakSec)} paid · ${formatDuration(d.unpaidBreakSec)} unpaid`;
+}
+
+/** "away 20m approved · 5m pending", or null. */
+function awayText(d: PersonDaySummary): string | null {
+  const parts: string[] = [];
+  if (d.awayApprovedSec > 0) parts.push(`${formatDuration(d.awayApprovedSec)} approved`);
+  if (d.awayPendingSec > 0) parts.push(`${formatDuration(d.awayPendingSec)} pending`);
+  return parts.length ? `away ${parts.join(" · ")}` : null;
 }
 
 function pendingText(d: PersonDaySummary): string | null {
@@ -72,10 +90,19 @@ function worked(d: PersonDaySummary): boolean {
 }
 
 /**
- * Every day of the month: a table from xl up, cards below (the seven columns
- * need about 800px, more than the card has beside the sidebar at 1024px).
+ * Every day of the month: a table from xl up, cards below (the eight columns
+ * need about 880px, more than the card has beside the sidebar at 1024px).
  */
-function DaysTable({ days, userId }: { days: PersonDaySummary[]; userId: string }) {
+function DaysTable({
+  days,
+  userId,
+  activity,
+}: {
+  days: PersonDaySummary[];
+  userId: string;
+  /** Whether the viewer sees keyboard and mouse activity (SPEC 2.2). */
+  activity: boolean;
+}) {
   const href = (date: string) =>
     `/dashboard/reports/person/${encodeURIComponent(userId)}?date=${date}`;
   return (
@@ -95,6 +122,7 @@ function DaysTable({ days, userId }: { days: PersonDaySummary[]; userId: string 
                   {formatDayWithWeekday(d.date)}
                 </Link>
                 <DayClassChip dayClass={d.dayClass} />
+                {d.label && <span className="text-xs text-slate-500">{d.label}</span>}
               </span>
               {worked(d) && (
                 <span className="text-sm font-bold tabular-nums text-slate-900">
@@ -105,12 +133,16 @@ function DaysTable({ days, userId }: { days: PersonDaySummary[]; userId: string 
             {worked(d) && (
               <p className="text-xs text-slate-600">
                 {d.startedAt
-                  ? `${hmOf(d.startedAt)} to ${d.endedAt ? hmOf(d.endedAt) : "now"}`
+                  ? `${formatTime12(d.startedAt)} to ${d.endedAt ? formatTime12(d.endedAt) : "now"}`
                   : ""}
                 {d.lateStart && d.lateStart.minutes > 0 ? ` · ${d.lateStart.minutes} min late` : ""}
+                {` · paid time ${formatDuration(d.paidSec)}`}
+                {unverifiedNote(d.unverifiedSec) ? ` · ${unverifiedNote(d.unverifiedSec)}` : ""}
                 {` · breaks ${breaksText(d).toLowerCase()}`}
+                {breakPayText(d) ? ` (${breakPayText(d)})` : ""}
+                {awayText(d) ? ` · ${awayText(d)}` : ""}
                 {d.meetings ? ` · ${d.meetings} ${d.meetings === 1 ? "meeting" : "meetings"}` : ""}
-                {d.quietHours ? ` · ${d.quietHours} quiet` : ""}
+                {activity && d.quietHours ? ` · ${d.quietHours} quiet` : ""}
               </p>
             )}
             {pendingText(d) && (
@@ -135,15 +167,20 @@ function DaysTable({ days, userId }: { days: PersonDaySummary[]; userId: string 
               <th scope="col" className={`${thBase} text-right`}>
                 Focus
               </th>
+              <th scope="col" className={`${thBase} text-right`}>
+                Paid time
+              </th>
               <th scope="col" className={thBase}>
                 Breaks
               </th>
-              <th scope="col" className={`${thBase} text-right`}>
+              <th scope="col" className={`${thBase} ${activity ? "" : "pr-6"} text-right`}>
                 Meetings
               </th>
-              <th scope="col" className={`${thBase} pr-6 text-right`}>
-                Activity
-              </th>
+              {activity && (
+                <th scope="col" className={`${thBase} pr-6 text-right`}>
+                  Activity
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -164,13 +201,14 @@ function DaysTable({ days, userId }: { days: PersonDaySummary[]; userId: string 
                   >
                     {formatDayWithWeekday(d.date)}
                   </Link>
+                  {d.label && <span className="block text-xs text-slate-500">{d.label}</span>}
                 </th>
                 <td className="px-4 py-2.5">
                   <DayClassChip dayClass={d.dayClass} />
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-slate-700">
                   {d.startedAt
-                    ? `${hmOf(d.startedAt)} to ${d.endedAt ? hmOf(d.endedAt) : "now"}`
+                    ? `${formatTime12(d.startedAt)} to ${d.endedAt ? formatTime12(d.endedAt) : "now"}`
                     : ""}
                   {d.lateStart && d.lateStart.minutes > 0 && (
                     <span className="block text-xs font-semibold text-amber-700">
@@ -187,26 +225,48 @@ function DaysTable({ days, userId }: { days: PersonDaySummary[]; userId: string 
                       {formatDuration(d.focusSec)}
                     </span>
                   )}
+                  {d.targetSec > 0 && (
+                    <span className="block text-xs text-slate-500">
+                      of {formatDuration(d.targetSec)}
+                    </span>
+                  )}
+                  {/* Notes wrap, so the column stays narrow and the table fits. */}
+                  {unverifiedNote(d.unverifiedSec) && (
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                      {unverifiedNote(d.unverifiedSec)}
+                    </span>
+                  )}
+                  {awayText(d) && (
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                      {awayText(d)}
+                    </span>
+                  )}
                   {pendingText(d) && (
-                    <span className="block text-xs font-semibold text-amber-700">
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs font-semibold text-amber-700">
                       {pendingText(d)}
                     </span>
                   )}
                 </td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                  {worked(d) ? formatDuration(d.paidSec) : ""}
+                </td>
                 <td className="px-4 py-2.5 text-xs text-slate-600">
                   {worked(d) ? breaksText(d) : ""}
+                  {worked(d) && breakPayText(d) && <span className="block">{breakPayText(d)}</span>}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
                   {d.meetings ? `${d.meetings} · ${formatDuration(d.meetingSec)}` : ""}
                 </td>
-                <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums text-slate-700">
-                  {worked(d) ? `${formatDuration(d.activeMin * 60)}` : ""}
-                  {d.quietHours > 0 && (
-                    <span className="block text-xs font-semibold text-amber-700">
-                      {d.quietHours} quiet
-                    </span>
-                  )}
-                </td>
+                {activity && (
+                  <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums text-slate-700">
+                    {worked(d) ? `${formatDuration(d.activeMin * 60)}` : ""}
+                    {d.quietHours > 0 && (
+                      <span className="block text-xs font-semibold text-amber-700">
+                        {d.quietHours} quiet
+                      </span>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -234,10 +294,11 @@ export function PersonMonthView({
 }) {
   const router = useRouter();
   const { role } = useSession();
-  const isSuperAdmin = role === "SUPER_ADMIN";
+  const isSuperAdmin = isOrgAdmin(role);
   const today = todayKey();
   const query = usePersonMonthReport(userId, month);
   const settings = useAppSettings();
+  const activityAllowed = useCanSeeActivity();
   const report = query.data;
   const name = report?.person.name ?? "Month report";
   const label = periodLabel({ kind: "month", month }, today);
@@ -340,11 +401,13 @@ export function PersonMonthView({
   }
 
   const t = report.totals;
+  // The target up to today (SPEC 2.6): working days from the join date.
   const expected = Math.max(0, t.expectedSec);
   const pct = expected ? Math.round((t.focusSec / expected) * 100) : 0;
   const attendanceDays = t.full + t.half / 2;
   const net = t.approvedPlusSec - t.rejectedMinusSec;
   const flagAt = settings.data?.quietHoursFlag ?? 4;
+  const canSeeActivity = activityAllowed;
   const sorted = [...report.days].sort((a, b) => a.date.localeCompare(b.date));
 
   return shell(
@@ -377,7 +440,7 @@ export function PersonMonthView({
           </Link>
         </div>
       )}
-      {t.needsALook && (
+      {t.needsALook && canSeeActivity && (
         <div
           role="note"
           className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-800"
@@ -391,12 +454,40 @@ export function PersonMonthView({
         </div>
       )}
 
-      <KpiGrid>
+      <KpiGrid wide>
         <Kpi
-          label="Focus time, for payroll"
+          label="Focus time"
           value={formatDuration(t.focusSec)}
           meter={expected ? Math.min(100, pct) : undefined}
-          sub={`${pct}% of ${formatDuration(expected)} expected · ${formatDuration(t.avgFocusSec)} a working day`}
+          sub={[
+            `${pct}% of ${formatDuration(expected)} target so far`,
+            `month target ${formatDuration(t.targetSec)}`,
+            `${formatDuration(t.avgFocusSec)} a working day`,
+            unverifiedNote(t.unverifiedSec) && `${unverifiedNote(t.unverifiedSec)}, not counted`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        />
+        <Kpi
+          label="Paid time, for payroll"
+          value={formatDuration(t.paidSec)}
+          sub={paidTimeSub(t.paidBreakSec)}
+        />
+        <Kpi
+          label="Breaks"
+          value={`${formatDuration(t.paidBreakSec)} paid`}
+          tone={t.unpaidBreakSec > 0 ? "warning" : "default"}
+          sub={`${formatDuration(t.unpaidBreakSec)} unpaid · ${formatDuration(t.breakSec)} in all`}
+        />
+        <Kpi
+          label="Away with a reason"
+          value={`${formatDuration(t.awayApprovedSec)} approved`}
+          tone={t.awayPendingSec > 0 ? "warning" : "default"}
+          sub={
+            t.awayPendingSec > 0
+              ? `${formatDuration(t.awayPendingSec)} waiting: it counts as focus once approved`
+              : "Nothing waiting for a decision"
+          }
         />
         <Kpi
           label="Attendance"
@@ -419,7 +510,7 @@ export function PersonMonthView({
         <Kpi
           label="Meetings and overruns"
           value={`${t.meetings} ${t.meetings === 1 ? "meeting" : "meetings"}`}
-          sub={`${t.overruns} ${t.overruns === 1 ? "break" : "breaks"} ran over`}
+          sub={`${formatDuration(t.meetingSec)} in meetings · ${t.overruns} ${t.overruns === 1 ? "break" : "breaks"} ran over`}
         />
         <Kpi
           label="Quiet hours"
@@ -442,7 +533,7 @@ export function PersonMonthView({
         subtitle={`${t.workdays} working days · times in the business time zone · open a day for its timeline`}
         flush
       >
-        <DaysTable days={sorted} userId={userId} />
+        <DaysTable days={sorted} userId={userId} activity={canSeeActivity} />
         <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:px-6">
           {ROUNDING_NOTE}
         </p>
@@ -453,7 +544,9 @@ export function PersonMonthView({
         subtitle="Active minutes in each hour of each day. It never changes focus time."
         aside={<ManagersOnly />}
       >
-        <MonthHeatmap heatmap={report.heatmap} days={sorted} />
+        <ActivityGate>
+          <MonthHeatmap heatmap={report.heatmap} days={sorted} />
+        </ActivityGate>
       </ReportSection>
     </div>,
   );

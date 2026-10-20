@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,14 +8,35 @@ import { Clock, Eye, EyeOff, Lock, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { login } from "@/features/auth/api/login";
+import { logout } from "@/features/auth/api/logout";
+import { getMe } from "@/features/auth/api/getMe";
 import { loginErrorCopy } from "@/features/auth/lib/loginErrors";
+import { resolveSignIn } from "@/features/auth/lib/signIn";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/login.schema";
-import { saveSession } from "@/lib/auth/session";
-import { REDIRECT_PARAM, afterLoginPath } from "@/features/auth/lib/loginRedirect";
+import { clearSession, saveSession } from "@/lib/auth/session";
+import { REASON_PARAM, REDIRECT_PARAM, afterLoginPath } from "@/features/auth/lib/loginRedirect";
+
+/** What the page says for a Staff account (SPEC 1.1). */
+function staffMessage(): string {
+  const { title, description } = loginErrorCopy("staff");
+  return `${title}. ${description}`;
+}
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  // The page is prerendered: until React has taken over, a press of Login (or
+  // Enter) would submit the bare HTML form and put the password in the address
+  // bar. Login stays disabled until then, which also blocks Enter.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+
+  // Arriving from the portal with a Staff session: say why, once.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get(REASON_PARAM) === "staff") {
+      setServerError(staffMessage());
+    }
+  }, []);
 
   const {
     register,
@@ -38,14 +59,28 @@ export default function LoginPage() {
         return;
       }
 
-      saveSession({ user: data.user });
+      // The role, organisation and grants come from GET /me, not the sign-in answer.
+      const outcome = await resolveSignIn(data.user, getMe);
+      if (!outcome.ok) {
+        // Staff use the RX Vision app: end the session the password just opened.
+        void logout();
+        clearSession();
+        const { title, description, duration } = loginErrorCopy(
+          outcome.reason === "staff" ? "staff" : "unknown",
+        );
+        setServerError(`${title}. ${description}`);
+        toast.error(title, { description, duration });
+        return;
+      }
+
+      saveSession(outcome.session);
       toast.success("Login successful", {
         description: "Redirecting you to your dashboard…",
       });
       // Back to the page that asked for a sign-in (?redirect=), when it is a
       // dashboard page this role may open; otherwise home.
       const redirect = new URLSearchParams(window.location.search).get(REDIRECT_PARAM);
-      window.location.href = afterLoginPath(redirect, data.user?.role);
+      window.location.href = afterLoginPath(redirect, outcome.role, outcome.session.user?.grants);
     } catch {
       setServerError("Something went wrong. Please try again.");
       toast.error("Something went wrong", {
@@ -80,7 +115,12 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-10 space-y-8">
+            <form
+              method="post"
+              onSubmit={handleSubmit(onSubmit)}
+              noValidate
+              className="mt-10 space-y-8"
+            >
               <div>
                 <label htmlFor="email" className="text-xs font-medium text-slate-500">
                   Email
@@ -175,7 +215,7 @@ export default function LoginPage() {
               </div>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !hydrated}
                 className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#2222cc] text-[15px] font-semibold text-white shadow-lg shadow-[#2222cc]/30 transition hover:bg-[#1b1ba6] focus:outline-none focus:ring-4 focus:ring-[#2222cc]/30 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting ? (

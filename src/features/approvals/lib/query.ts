@@ -30,16 +30,16 @@ export function buildApprovalsQuery(
  * How the API names a type in a path and in a bulk-approve item: lower case,
  * `break` or `meeting`. Lists and item views use `BREAK` and `MEETING`.
  */
-export type ApprovalTypeSegment = "break" | "meeting";
+export type ApprovalTypeSegment = "break" | "meeting" | "away";
 
 export function approvalTypeSegment(type: ApprovalType): ApprovalTypeSegment {
-  return type === "MEETING" ? "meeting" : "break";
+  return type === "MEETING" ? "meeting" : type === "AWAY" ? "away" : "break";
 }
 
 /** `break`, `BREAK`, `meeting` or `MEETING` as the portal's type; anything else is null. */
 export function approvalTypeOf(value: unknown): ApprovalType | null {
   const upper = typeof value === "string" ? value.trim().toUpperCase() : "";
-  return upper === "BREAK" || upper === "MEETING" ? upper : null;
+  return upper === "BREAK" || upper === "MEETING" || upper === "AWAY" ? upper : null;
 }
 
 /** Path segment for one item: `/approvals/break/:id` or `/approvals/meeting/:id`. */
@@ -57,7 +57,7 @@ export type DecisionFilter = "ALL" | "APPROVED" | "REJECTED";
  * The "Type" filter: one category, all breaks or all meetings. Kept as one
  * value so the page has a single select; the API takes `type` or `category`.
  */
-export type CategoryFilter = "" | "TYPE_BREAK" | "TYPE_MEETING" | ApprovalCategory;
+export type CategoryFilter = "" | "TYPE_BREAK" | "TYPE_MEETING" | "TYPE_AWAY" | ApprovalCategory;
 
 export interface ApprovalsFilters {
   tab: ApprovalsTab;
@@ -87,6 +87,7 @@ export function paramsForFilters(filters: ApprovalsFilters): GetApprovalsParams 
   };
   if (filters.category === "TYPE_BREAK") params.type = "BREAK";
   else if (filters.category === "TYPE_MEETING") params.type = "MEETING";
+  else if (filters.category === "TYPE_AWAY") params.type = "AWAY";
   else if (filters.category) params.category = filters.category;
   return params;
 }

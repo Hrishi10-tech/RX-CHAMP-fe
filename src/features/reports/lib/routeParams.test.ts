@@ -26,11 +26,16 @@ describe("periodFromParams", () => {
 
 describe("peopleFromParams", () => {
   it("reads a manager and ids", () => {
-    expect(peopleFromParams(params("managerId=m-1&userIds=a,b"))).toEqual({
-      managerId: "m-1",
+    expect(peopleFromParams(params("departmentId=d-1&userIds=a,b"))).toEqual({
+      departmentId: "d-1",
       userIds: ["a", "b"],
     });
-    expect(peopleFromParams(params(""))).toEqual({ managerId: undefined, userIds: undefined });
+    expect(peopleFromParams(params(""))).toEqual({ departmentId: undefined, userIds: undefined });
+    // A 3.x link by manager is read as everyone in scope.
+    expect(peopleFromParams(params("managerId=m-1"))).toEqual({
+      departmentId: undefined,
+      userIds: undefined,
+    });
   });
 });
 

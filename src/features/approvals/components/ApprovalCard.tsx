@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type FormEvent } from "react";
-import { Check, Loader2, Lock, MessageSquarePlus, RotateCcw, Users, X } from "lucide-react";
+import { Check, Loader2, Lock, Mail, MessageSquarePlus, RotateCcw, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -122,8 +122,20 @@ export function ApprovalCard({
     .filter(Boolean)
     .join(" · ");
   const decided = decidedLine(item);
-  const people = (item.participants ?? []).map((p) => p.name).filter(Boolean);
-  const reason = item.reason?.trim();
+  const people = [
+    ...(item.participants ?? []).map((p) => p.name),
+    ...(item.participants?.length ? [] : (item.away?.participants ?? [])).map((p) =>
+      typeof p === "string" ? p : p?.name,
+    ),
+  ].filter((n): n is string => Boolean(n));
+  // SPEC 2.9: who will mail the minutes, for meetings and away meetings.
+  const momSender = (
+    item.momSender ??
+    item.away?.momSender ??
+    item.meeting?.momSender ??
+    ""
+  ).trim();
+  const reason = (item.reason ?? item.away?.comment ?? "").trim();
 
   function closePanel() {
     setMode(null);
@@ -146,7 +158,7 @@ export function ApprovalCard({
       toast.info("The meeting is still running", { description: "Decide it once it ends." });
     } else if (code === "MONTH_LOCKED") {
       toast.error("That month is locked for payroll", {
-        description: "A Super Admin has to unlock it before anything in it can change.",
+        description: "The Admin has to unlock it before anything in it can change.",
       });
     } else if (status === 404) {
       toast.error("This item no longer exists", { description: message });
@@ -258,7 +270,11 @@ export function ApprovalCard({
           {/* What and when */}
           <div className="min-w-0 space-y-1.5 lg:col-start-2 lg:row-start-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <CategoryChip category={item.category} inProgress={live} />
+              <CategoryChip
+                category={item.category}
+                inProgress={live}
+                label={item.type === "AWAY" ? item.away?.reasonLabel : undefined}
+              />
               {live && <LiveMeetingChip durationSec={item.durationSec} fetchedAt={clock} />}
               {item.locked && <LockedChip />}
             </div>
@@ -300,6 +316,12 @@ export function ApprovalCard({
               <p className="mt-1 flex items-start gap-1.5 break-words text-xs text-slate-600">
                 <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
                 With {people.join(", ")}
+              </p>
+            )}
+            {momSender && (
+              <p className="mt-1 flex items-start gap-1.5 break-words text-xs text-slate-600">
+                <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                Minutes mailed by {momSender}
               </p>
             )}
           </div>

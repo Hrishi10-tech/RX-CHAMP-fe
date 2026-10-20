@@ -14,7 +14,7 @@ describe("validateSettings", () => {
     expect(values).toEqual(DEFAULT_SETTINGS);
   });
 
-  it("matches the SPEC 1.10 bounds", () => {
+  it("matches the SPEC 1.10 bounds and the 4.0 break buffer (0..60)", () => {
     const bounds = Object.fromEntries(NUMERIC_SETTINGS.map((m) => [m.key, [m.min, m.max]]));
     expect(bounds).toEqual({
       approvalSlaHours: [12, 168],
@@ -24,6 +24,7 @@ describe("validateSettings", () => {
       quietHourActiveMin: [1, 59],
       quietHoursFlag: [1, 100],
       autoCloseAfterShiftEndMin: [30, 720],
+      breakBufferMin: [0, 60],
     });
   });
 
@@ -35,6 +36,7 @@ describe("validateSettings", () => {
     ["quietHourActiveMin", "0"],
     ["quietHoursFlag", "101"],
     ["autoCloseAfterShiftEndMin", "29"],
+    ["breakBufferMin", "61"],
   ] as const)("refuses %s = %s", (key, value) => {
     const draft = { ...draftFromSettings(DEFAULT_SETTINGS), [key]: value };
     const { values, errors } = validateSettings(draft);
@@ -48,6 +50,7 @@ describe("validateSettings", () => {
       approvalSlaHours: "12",
       lateStartGraceMin: "0",
       autoCloseAfterShiftEndMin: "720",
+      breakBufferMin: "0",
     };
     expect(validateSettings(draft).errors).toEqual({});
   });

@@ -38,7 +38,7 @@ const GROUPS: {
 }[] = [
   {
     title: "Approvals",
-    description: "How long managers have to decide breaks, skips and meetings.",
+    description: "How long managers have to decide breaks, skips, meetings and away time.",
     keys: ["approvalSlaHours"],
     withBlock: true,
   },
@@ -51,8 +51,14 @@ const GROUPS: {
   {
     title: "Activity",
     description:
-      "Quiet hours, seen by managers and Super Admins only. Activity never changes focus time.",
+      "Quiet hours, seen by Admins and managers with activity access only. Activity never changes focus time.",
     keys: ["quietHourActiveMin", "quietHoursFlag"],
+  },
+  {
+    title: "Breaks",
+    description:
+      "Scheduled breaks are paid; this buffer pays a little more each day. Break time beyond it is unpaid.",
+    keys: ["breakBufferMin"],
   },
   {
     title: "Forgotten End Day",
@@ -230,7 +236,7 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
                       Stop managers ending their day while an approval is overdue
                     </span>
                     <span id="block-help" className="mt-0.5 block text-slate-500">
-                      The desktop app asks them to decide it first. Super Admins are never stopped.
+                      The desktop app asks them to decide it first. Admins are never stopped.
                       Default on.
                     </span>
                   </span>

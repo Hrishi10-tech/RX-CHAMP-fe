@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { BREAK_LABEL, BREAK_SHORT_LABEL, deriveBreakTimes } from "@/features/shifts/lib/draft";
 import { buildTimeline, type TimelineInput } from "@/features/shifts/lib/timeline";
 import { formatHmRange } from "@/features/shifts/lib/time";
+import { formatTime12, formatTimeCompact12 } from "@/lib/time/format";
 import type { BreakKind } from "@/features/shifts/types";
 
 const PALETTE: Record<BreakKind, { window: string; slot: string; text: string }> = {
@@ -68,18 +69,18 @@ export function ShiftTimeline({ input }: { input: TimelineInput }) {
         ))}
 
         <div className="absolute left-0 top-[72px] text-[11px] font-semibold tabular-nums text-slate-600">
-          {input.start}
+          {formatTime12(input.start)}
         </div>
         <div className="absolute right-0 top-[72px] text-[11px] font-semibold tabular-nums text-slate-600">
-          {input.end}
+          {formatTime12(input.end)}
         </div>
         {timeline.ticks.map((t) => (
           <div
             key={t.label}
-            className="absolute top-[72px] w-10 -translate-x-1/2 text-center text-[11px] tabular-nums text-slate-400"
+            className="absolute top-[72px] w-12 -translate-x-1/2 whitespace-nowrap text-center text-[11px] tabular-nums text-slate-400"
             style={{ left: `${t.left}%` }}
           >
-            {t.label}
+            {formatTimeCompact12(t.label)}
           </div>
         ))}
       </div>

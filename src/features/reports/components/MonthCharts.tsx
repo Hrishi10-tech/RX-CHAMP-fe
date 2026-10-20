@@ -15,7 +15,8 @@ import {
 } from "recharts";
 
 import { formatDuration } from "@/lib/format/duration";
-import { formatDayWithWeekday, hmOf } from "@/lib/time/businessTime";
+import { formatDayWithWeekday } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 import { HEAT_LEGEND, dayClassLook, heatShade } from "@/features/reports/lib/labels";
 import { heatmapHours } from "@/features/reports/lib/heatmap";
 import { hourLabel } from "@/features/teamToday/lib/hourly";
@@ -78,7 +79,9 @@ export function FocusByDayChart({ days }: { days: PersonDaySummary[] }) {
           d.dayClass === "ABSENT" ? 0.15 : Math.round((Math.max(0, d.focusSec) / 3600) * 100) / 100,
         focusSec: Math.max(0, d.focusSec),
         dayClass: d.dayClass,
-        span: d.startedAt ? `${hmOf(d.startedAt)} to ${d.endedAt ? hmOf(d.endedAt) : "now"}` : "",
+        span: d.startedAt
+          ? `${formatTime12(d.startedAt)} to ${d.endedAt ? formatTime12(d.endedAt) : "now"}`
+          : "",
       })),
     [days],
   );
@@ -214,7 +217,7 @@ export function MonthHeatmap({
                 return (
                   <span
                     key={h}
-                    title={`${formatDayWithWeekday(r.date)}, ${String(h).padStart(2, "0")}:00 · ${m} active min`}
+                    title={`${formatDayWithWeekday(r.date)}, ${hourLabel(h)} · ${m} active min`}
                     className={`h-3.5 rounded-[2px] ${heatShade(m)}`}
                   />
                 );

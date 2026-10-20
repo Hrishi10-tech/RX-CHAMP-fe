@@ -10,13 +10,22 @@ import type { SelectOption } from "@/components/ui/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { btnGhost, cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
-import { addDaysToKey, formatDayWithWeekday, hmOf, todayKey } from "@/lib/time/businessTime";
+import { addDaysToKey, formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
 import { BREAK_KINDS, type BreakKind } from "@/features/shifts/types";
 import { BREAK_SHORT_LABEL } from "@/features/shifts/lib/draft";
 import { SourceChip, shiftRefLabel } from "@/features/shifts/components/ShiftBadges";
-import { useReportsToOptions } from "@/features/users/hooks/useReportsToOptions";
-import { isSkipRecord, overrunLabel, tookLabel } from "@/features/breaks/lib/labels";
+import { useDepartments } from "@/features/departments/hooks/useDepartments";
+import { departmentIcon } from "@/features/departments/lib/icons";
+import {
+  isQuickBreak,
+  isSkipRecord,
+  overrunLabel,
+  recordLabel,
+  tookLabel,
+  unscheduledHeading,
+} from "@/features/breaks/lib/labels";
 import { useTeamBreaks } from "@/features/breaks/hooks/useTeamBreaks";
 import { ApprovalChip, CellStatusChip, TimingChip } from "@/features/breaks/components/BreakChips";
 import type {
@@ -34,7 +43,7 @@ function TakenDetails({ record }: { record: BreakRecordView }) {
       <div className="space-y-1">
         <p className="text-xs text-slate-600">
           {record.outcome === "AUTO_SKIPPED" ? "Auto-skipped" : "Skipped"} at{" "}
-          {hmOf(record.startedAt)}
+          {formatTime12(record.startedAt)}
         </p>
         <div className="flex flex-wrap items-center gap-1">
           <ApprovalChip status={record.approvalStatus} />
@@ -47,10 +56,11 @@ function TakenDetails({ record }: { record: BreakRecordView }) {
   return (
     <div className="space-y-1">
       <p className="text-xs text-slate-600">
-        Started {hmOf(record.startedAt)} · {tookLabel(record)}
+        Started {formatTime12(record.startedAt)} · {tookLabel(record)}
       </p>
       <div className="flex flex-wrap items-center gap-1">
-        <TimingChip record={record} />
+        {/* A quick break is taken any time: "Unscheduled" would say nothing. */}
+        {!isQuickBreak(record) && <TimingChip record={record} />}
         <ApprovalChip status={record.approvalStatus} />
         {overrun && <Chip tone="danger">{overrun}</Chip>}
       </div>
@@ -63,7 +73,9 @@ function Cell({ cell }: { cell: TeamBreakCellView | undefined }) {
   return (
     <div className="min-w-0 space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-sm font-semibold tabular-nums text-slate-900">{cell.localStart}</span>
+        <span className="text-sm font-semibold tabular-nums text-slate-900">
+          {formatTime12(cell.localStart) || cell.localStart}
+        </span>
         <CellStatusChip status={cell.status} />
       </div>
       {cell.record && <TakenDetails record={cell.record} />}
@@ -82,11 +94,11 @@ function Unscheduled({ records }: { records: BreakRecordView[] }) {
   return (
     <div className="space-y-1.5">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Outside the schedule
+        {unscheduledHeading(records)}
       </p>
       {records.map((r) => (
         <div key={r.id} className="rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-xs font-semibold text-slate-700">{r.label}</p>
+          <p className="text-xs font-semibold text-slate-700">{recordLabel(r)}</p>
           <TakenDetails record={r} />
         </div>
       ))}
@@ -136,28 +148,32 @@ function cellOf(row: TeamBreakRowView, kind: BreakKind) {
 }
 
 /** One day of a team's breaks: who took what, when, late or early, skipped, running, pending. */
-export function TeamBreaksView({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+export function TeamBreaksView() {
   const today = todayKey();
   const [date, setDate] = useState(today);
   const [team, setTeam] = useState(EVERYONE);
-  const managers = useReportsToOptions(isSuperAdmin);
+  const departments = useDepartments();
 
   const params = useMemo(
     () => ({
       date: date || undefined,
-      managerId: isSuperAdmin && team !== EVERYONE ? team : undefined,
+      departmentId: team !== EVERYONE ? team : undefined,
     }),
-    [date, team, isSuperAdmin],
+    [date, team],
   );
   const { data, isLoading, isError, error, refetch, isFetching, isPlaceholderData } =
     useTeamBreaks(params);
 
   const teamOptions = useMemo<SelectOption[]>(
     () => [
-      { value: EVERYONE, label: "Everyone", icon: Users },
-      ...managers.options.map((o) => ({ ...o, label: `${o.label}'s team` })),
+      { value: EVERYONE, label: "Every department", icon: Users },
+      ...(departments.data ?? []).map((d) => ({
+        value: d.id,
+        label: d.name,
+        icon: departmentIcon(d.icon),
+      })),
     ],
-    [managers.options],
+    [departments.data],
   );
 
   const rows = data?.rows ?? [];
@@ -170,15 +186,15 @@ export function TeamBreaksView({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           subtitle="Who took which break, when, who skipped one, and what is waiting for approval."
         />
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          {isSuperAdmin && (
+          {(departments.data?.length ?? 0) > 1 && (
             <div className="sm:w-64">
               <Select
                 value={team}
                 onValueChange={setTeam}
                 options={teamOptions}
-                aria-label="Team"
+                aria-label="Department"
                 searchable
-                searchPlaceholder="Search managers…"
+                searchPlaceholder="Search departments…"
                 className="!mt-0 h-11 !py-0"
               />
             </div>
@@ -259,12 +275,8 @@ export function TeamBreaksView({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         ) : rows.length === 0 ? (
           <EmptyState
             icon={Coffee}
-            title="Nobody in this team"
-            message={
-              isSuperAdmin
-                ? "Pick another team, or add people under Team Management."
-                : "Staff who report to you will appear here."
-            }
+            title="Nobody here"
+            message="Pick another department, or add people under Team management."
           />
         ) : (
           <div

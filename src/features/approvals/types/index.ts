@@ -6,7 +6,8 @@
 import type { BreakRecordView } from "@/features/breaks/types";
 import type { MeetingParticipant, MeetingRecordView } from "@/features/meetings/types";
 
-export type ApprovalType = "BREAK" | "MEETING";
+/** AWAY (4.0): time away from the keyboard and mouse with a reason (SPEC 2.5, 5.7). */
+export type ApprovalType = "BREAK" | "MEETING" | "AWAY";
 
 export type ApprovalCategory =
   // A break started off schedule.
@@ -19,7 +20,13 @@ export type ApprovalCategory =
   | "BREAK_SKIP"
   | "BREAK_AUTO_SKIP"
   | "MEETING_LIVE"
-  | "MEETING_PAST";
+  | "MEETING_PAST"
+  // 4.0: away time with a reason other than a break.
+  | "AWAY_THINKING"
+  | "AWAY_MEETING"
+  | "AWAY_HARDWARE"
+  | "AWAY_OTHER"
+  | "AWAY_CUSTOM";
 
 export const APPROVAL_CATEGORIES: ApprovalCategory[] = [
   "BREAK_EARLY",
@@ -31,7 +38,28 @@ export const APPROVAL_CATEGORIES: ApprovalCategory[] = [
   "BREAK_AUTO_SKIP",
   "MEETING_LIVE",
   "MEETING_PAST",
+  "AWAY_THINKING",
+  "AWAY_MEETING",
+  "AWAY_HARDWARE",
+  "AWAY_OTHER",
+  "AWAY_CUSTOM",
 ];
+
+/** An away item's own fields (SPEC 3.1 AwayEvent, 5.7). */
+export interface AwayItemView {
+  id?: string;
+  reasonKey: string | null;
+  reasonKind: string | null;
+  /** "Thinking", "Short meeting", or a custom reason's label. */
+  reasonLabel: string | null;
+  comment: string | null;
+  /** For an away meeting: who was in it (names, or `{ name }`). */
+  participants?: (string | { id?: string; name?: string | null })[] | null;
+  momSender: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  seconds?: number | null;
+}
 
 export type ApprovalEffectMode = "PLUS" | "MINUS" | "NONE";
 
@@ -97,6 +125,10 @@ export interface ApprovalItemView {
   locked: boolean;
   break: BreakRecordView | null;
   meeting: MeetingRecordView | null;
+  /** 4.0: AWAY items. */
+  away?: AwayItemView | null;
+  /** 4.0: who will mail the minutes, for meetings and away meetings (SPEC 2.9). */
+  momSender?: string | null;
   /**
    * Portal only, never sent by the API: when this copy of the item arrived
    * (browser clock, ms). `dueInSec` and a live meeting's `durationSec` were true

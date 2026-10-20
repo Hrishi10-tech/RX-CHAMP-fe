@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { Socket } from "socket.io-client";
 
 import { attachSocketReauth } from "@/lib/socket/reauth";
+import { attachOrgReconnect } from "@/lib/socket/org";
 import { getNotifications } from "@/features/notifications/api/getNotifications";
 import { getUnreadCount } from "@/features/notifications/api/getUnreadCount";
 import {
@@ -102,6 +103,21 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
       });
     });
 
+    // 4.0: the organisation's calendar, input tracking or settings changed
+    // (possibly in another tab or by another Admin): re-read what depends on them.
+    socket.on("config:changed", (e: { kind?: string } | undefined) => {
+      if (!active) return;
+      const qc = queryClientRef.current;
+      const kind = e?.kind;
+      if (!kind || kind === "CALENDAR") void qc.invalidateQueries({ queryKey: ["calendar"] });
+      if (!kind || kind === "IDLE") void qc.invalidateQueries({ queryKey: ["idle-settings"] });
+      if (!kind || kind === "SETTINGS") void qc.invalidateQueries({ queryKey: ["settings"] });
+      if (kind !== "IDLE") void qc.invalidateQueries({ queryKey: ["reports"] });
+    });
+
+    // A Super Admin hears the selected organisation: reconnect when it changes.
+    const detachOrg = attachOrgReconnect(socket);
+
     // Refresh-and-reconnect on `unauthorized`, capped with backoff. Retrying
     // unbounded here turned a handshake that could never authenticate into a
     // refresh loop running several times a second.
@@ -115,6 +131,7 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
 
     return () => {
       active = false;
+      detachOrg();
       socket.off();
       socket.io.off("reconnect");
       socket.disconnect();

@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api";
+import { orgHeaderValue } from "@/lib/org/selection";
 
 interface Ticket {
   token: string;
@@ -74,15 +75,28 @@ export function clearSocketTicket(): void {
   cached = null;
 }
 
+export interface SocketAuthPayload {
+  token?: string;
+  /**
+   * SPEC 1.4: the organisation a Super Admin has selected. The gateways join a
+   * socket to that organisation's rooms at handshake time; everyone else's
+   * rooms come from their account, so nothing is sent for them.
+   */
+  orgId?: string;
+}
+
 /**
  * socket.io calls this before every connection attempt, reconnects included, so
  * each attempt carries a current ticket without anything having to await one.
  *
- * A failure hands over an empty payload rather than blocking the handshake: the
- * gateways still accept the cookie, which is what local dev runs on.
+ * A failure hands over a payload without a token rather than blocking the
+ * handshake: the gateways still accept the cookie, which is what local dev runs on.
  */
-export function socketAuth(cb: (payload: { token?: string }) => void): void {
+export function socketAuth(cb: (payload: SocketAuthPayload) => void): void {
+  const orgId = orgHeaderValue();
+  const withOrg = (payload: SocketAuthPayload): SocketAuthPayload =>
+    orgId ? { ...payload, orgId } : payload;
   void getSocketTicket()
-    .then((token) => cb({ token }))
-    .catch(() => cb({}));
+    .then((token) => cb(withOrg({ token })))
+    .catch(() => cb(withOrg({})));
 }

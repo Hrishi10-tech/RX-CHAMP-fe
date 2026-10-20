@@ -78,7 +78,7 @@ describe("workSpan", () => {
     const order = hourOrder(span);
     expect([0, 6, 12, 18].map((i) => order[i])).toEqual([12, 18, 0, 6]);
     expect(hourlyLabel("Farah K", night, span)).toMatch(
-      /^Farah K, .* from 18:00 to 04:00: 18:00 40 min, .* 03:00 40 min\.$/,
+      /^Farah K, .* from 6 PM to 4 AM: 6 PM 40 min, .* 3 AM 40 min\.$/,
     );
   });
 
@@ -102,7 +102,7 @@ describe("workSpan", () => {
     // Drawn 00 to 23 with the span highlighted, labelled 06:00 to 22:00.
     expect(hourOrder(span)).toEqual(Array.from({ length: 24 }, (_, h) => h));
     expect(hourlyLabel("Rahul V", split, span)).toMatch(
-      /from 06:00 to 22:00: 06:00 30 min, 07:00 30 min, 08:00 0 min/,
+      /from 6 AM to 10 PM: 6 AM 30 min, 7 AM 30 min, 8 AM 0 min/,
     );
     // Without its times it reads the same: no guessing from the gaps.
     expect(workSpan(split)).toEqual({ start: 6, end: 21 });
@@ -162,7 +162,7 @@ describe("bars and labels", () => {
       hour(10, { availableMin: 60, activeMin: 12, quiet: true }),
     ]);
     expect(hourlyLabel("Rahul V", hours, workSpan(hours))).toBe(
-      "Rahul V, keyboard and mouse minutes by hour from 09:00 to 11:00: 09:00 41 min, 10:00 12 min. Quiet hour: 10:00.",
+      "Rahul V, keyboard and mouse minutes by hour from 9 AM to 11 AM: 9 AM 41 min, 10 AM 12 min. Quiet hour: 10 AM.",
     );
     const none = normalizeHours([]);
     expect(hourlyLabel("Rahul V", none, workSpan(none))).toBe("Rahul V: no activity recorded.");
@@ -179,7 +179,7 @@ describe("bars and labels", () => {
       endedAt: ist("2026-09-16", "00:50"),
     });
     expect(hourlyLabel("Divya S", hours, span)).toBe(
-      "Divya S, keyboard and mouse minutes by hour from 22:00 to 01:00: 22:00 50 min, 23:00 45 min, 00:00 30 min.",
+      "Divya S, keyboard and mouse minutes by hour from 10 PM to 1 AM: 10 PM 50 min, 11 PM 45 min, 12 AM 30 min.",
     );
   });
 });

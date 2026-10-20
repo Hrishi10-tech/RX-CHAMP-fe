@@ -16,22 +16,26 @@ import { cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage, errorStatus } from "@/lib/api";
 import { ROUNDING_NOTE, formatDuration, formatSignedAmount } from "@/lib/format/duration";
 import { withReturnTo } from "@/lib/nav/returnTo";
-import { hmOf, todayKey } from "@/lib/time/businessTime";
+import { todayKey } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 import { formatMonth, monthOfDate } from "@/lib/time/months";
 import { useTeamDayReport } from "@/features/reports/hooks/useReports";
+import { useDepartments } from "@/features/departments/hooks/useDepartments";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
 import {
   DayClassChip,
   Kpi,
   KpiGrid,
   ReportSection,
+  paidTimeSub,
+  unverifiedNote,
 } from "@/features/reports/components/ReportParts";
 import { PrintButton, ReportShell, type Crumb } from "@/features/reports/components/ReportShell";
 import type { PersonDaySummary, ReportPerson, TeamDayParams } from "@/features/reports/types";
 
 function span(s: PersonDaySummary): string {
   if (!s.startedAt) return "";
-  return `${hmOf(s.startedAt)} to ${s.endedAt ? hmOf(s.endedAt) : "now"}`;
+  return `${formatTime12(s.startedAt)} to ${s.endedAt ? formatTime12(s.endedAt) : "now"}`;
 }
 
 function pending(s: PersonDaySummary): string | null {
@@ -48,6 +52,30 @@ function breaks(s: PersonDaySummary): string {
   return parts.join(" · ");
 }
 
+/** "9:05 AM to 6:20 PM" for a table cell: each time stays whole when the cell wraps. */
+function SpanText({ s }: { s: PersonDaySummary }) {
+  if (!s.startedAt) return <span className="text-slate-400">Did not start</span>;
+  return (
+    <>
+      <span className="whitespace-nowrap">{formatTime12(s.startedAt)}</span> to{" "}
+      <span className="whitespace-nowrap">{s.endedAt ? formatTime12(s.endedAt) : "now"}</span>
+    </>
+  );
+}
+
+/** "12m paid · 5m unpaid" (SPEC 2.4). */
+function breakPay(s: PersonDaySummary): string {
+  return `${formatDuration(s.paidBreakSec)} paid · ${formatDuration(s.unpaidBreakSec)} unpaid`;
+}
+
+/** "20m approved · 5m pending", or null with no time away explained. */
+function away(s: PersonDaySummary): string | null {
+  const parts: string[] = [];
+  if (s.awayApprovedSec > 0) parts.push(`${formatDuration(s.awayApprovedSec)} approved`);
+  if (s.awayPendingSec > 0) parts.push(`${formatDuration(s.awayPendingSec)} pending`);
+  return parts.length ? parts.join(" · ") : null;
+}
+
 /** Several people, one day: who started when, focus time, breaks and what is still pending. */
 export function TeamDayView({
   params,
@@ -61,6 +89,10 @@ export function TeamDayView({
   const router = useRouter();
   const today = todayKey();
   const query = useTeamDayReport(params);
+  const departments = useDepartments(Boolean(params.departmentId));
+  const department = params.departmentId
+    ? departments.data?.find((d) => d.id === params.departmentId)
+    : undefined;
   const report = query.data;
   const date = params.date;
   const label = periodLabel({ kind: "day", date }, today);
@@ -75,17 +107,21 @@ export function TeamDayView({
     [report],
   );
 
-  function go(d: string) {
-    const search = new URLSearchParams({ date: d });
+  function teamSearch(key: "date" | "month", value: string): string {
+    const search = new URLSearchParams({ [key]: value });
+    if (params.departmentId) search.set("departmentId", params.departmentId);
     if (params.userIds?.length) search.set("userIds", params.userIds.join(","));
-    router.replace(`/dashboard/reports/team?${search.toString()}`, { scroll: false });
+    return search.toString();
+  }
+  function go(d: string) {
+    router.replace(`/dashboard/reports/team?${teamSearch("date", d)}`, { scroll: false });
   }
   const prev = stepPeriod({ kind: "day", date }, -1, today);
   const next = stepPeriod({ kind: "day", date }, 1, today);
   const personHref = (id: string) =>
     withReturnTo(
       `/dashboard/reports/person/${encodeURIComponent(id)}?date=${date}`,
-      `/dashboard/reports/team?date=${date}${params.userIds?.length ? `&userIds=${params.userIds.join(",")}` : ""}`,
+      `/dashboard/reports/team?${teamSearch("date", date)}`,
       "Team day report",
     );
 
@@ -93,7 +129,7 @@ export function TeamDayView({
     { label: "Reports", href: "/dashboard/reports" },
     {
       label: formatMonth(monthOfDate(date)),
-      href: `/dashboard/reports/team?month=${monthOfDate(date)}`,
+      href: `/dashboard/reports/team?${teamSearch("month", monthOfDate(date))}`,
     },
     { label },
   ];
@@ -104,9 +140,11 @@ export function TeamDayView({
       back={back}
       title={label.replace(", today", "")}
       subtitle={
-        params.userIds?.length
-          ? `${params.userIds.length} people · ${label}`
-          : `Everyone in your reports · ${label}`
+        params.departmentId
+          ? `${department?.name ?? "A department"} · ${label}`
+          : params.userIds?.length
+            ? `${params.userIds.length} people · ${label}`
+            : `Everyone in your reports · ${label}`
       }
       stepper={{
         label: label.replace(", today", ""),
@@ -136,7 +174,13 @@ export function TeamDayView({
     const status = errorStatus(query.error);
     return shell(
       <div className={cardBase}>
-        {status === 400 || status === 403 ? (
+        {status === 404 ? (
+          <EmptyState
+            icon={Info}
+            title="Not in your reports"
+            message="That department is not one of yours, or it has been deleted. Pick another from Reports."
+          />
+        ) : status === 400 || status === 403 ? (
           <EmptyState
             icon={Info}
             title="Can't show this day"
@@ -157,9 +201,16 @@ export function TeamDayView({
   const started = rows.filter((r) => r.summary.startedAt).length;
   // Exact seconds, rounded once when shown, like every other payroll total.
   const focus = rows.reduce((s, r) => s + Math.max(0, r.summary.focusSec), 0);
+  const paidTime = rows.reduce((s, r) => s + Math.max(0, r.summary.paidSec), 0);
+  const offline = rows.reduce((s, r) => s + Math.max(0, r.summary.unverifiedSec), 0);
   const late = rows.filter((r) => r.summary.lateStart && r.summary.lateStart.minutes > 0).length;
   const pendingCount = rows.reduce((s, r) => s + Math.max(0, r.summary.pending), 0);
   const quiet = rows.reduce((s, r) => s + Math.max(0, r.summary.quietHours), 0);
+  const target = rows.reduce((s, r) => s + Math.max(0, r.summary.targetSec), 0);
+  const paid = rows.reduce((s, r) => s + Math.max(0, r.summary.paidBreakSec), 0);
+  const unpaid = rows.reduce((s, r) => s + Math.max(0, r.summary.unpaidBreakSec), 0);
+  const awayApproved = rows.reduce((s, r) => s + Math.max(0, r.summary.awayApprovedSec), 0);
+  const awayPending = rows.reduce((s, r) => s + Math.max(0, r.summary.awayPendingSec), 0);
   const cls = (c: string) => rows.filter((r) => r.summary.dayClass === c).length;
 
   return shell(
@@ -182,7 +233,7 @@ export function TeamDayView({
         </div>
       ) : (
         <>
-          <KpiGrid>
+          <KpiGrid wide>
             <Kpi
               label="Started the day"
               value={`${started} of ${rows.length}`}
@@ -191,10 +242,36 @@ export function TeamDayView({
             <Kpi
               label="Focus time"
               value={formatDuration(focus)}
-              sub={
+              meter={target > 0 ? Math.min(100, (focus / target) * 100) : undefined}
+              sub={[
+                target > 0 ? `of ${formatDuration(target)} target` : null,
                 started
                   ? `${formatDuration(focus / started)} a person who started`
-                  : "Nobody started"
+                  : "Nobody started",
+                unverifiedNote(offline) && `${unverifiedNote(offline)}, not counted`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+            <Kpi
+              label="Paid time, for payroll"
+              value={formatDuration(paidTime)}
+              sub={paidTimeSub(paid)}
+            />
+            <Kpi
+              label="Breaks"
+              value={`${formatDuration(paid)} paid`}
+              tone={unpaid > 0 ? "warning" : "default"}
+              sub={`${formatDuration(unpaid)} unpaid`}
+            />
+            <Kpi
+              label="Away with a reason"
+              value={`${formatDuration(awayApproved)} approved`}
+              tone={awayPending > 0 ? "warning" : "default"}
+              sub={
+                awayPending > 0
+                  ? `${formatDuration(awayPending)} waiting for a decision`
+                  : "Nothing waiting"
               }
             />
             <Kpi
@@ -218,7 +295,7 @@ export function TeamDayView({
           </KpiGrid>
 
           <ReportSection
-            title="Everyone"
+            title={department?.name ?? (params.userIds?.length ? "People" : "Everyone")}
             subtitle="Open a name for the full day with its timeline."
             flush
           >
@@ -245,7 +322,13 @@ export function TeamDayView({
                     <span className="font-semibold text-slate-900">
                       {formatDuration(s.focusSec)}
                     </span>{" "}
-                    · {breaks(s)}
+                    {unverifiedNote(s.unverifiedSec) ? `(${unverifiedNote(s.unverifiedSec)}) ` : ""}
+                    · paid time{" "}
+                    <span className="font-semibold text-slate-900">
+                      {formatDuration(s.paidSec)}
+                    </span>{" "}
+                    · {breaks(s)} · {breakPay(s)}
+                    {away(s) ? ` · away ${away(s)}` : ""}
                   </p>
                   {pending(s) && (
                     <p className="text-xs font-semibold text-amber-700">{pending(s)}</p>
@@ -269,8 +352,14 @@ export function TeamDayView({
                     <th scope="col" className={`${thBase} text-right`}>
                       Focus
                     </th>
+                    <th scope="col" className={`${thBase} text-right`}>
+                      Paid time
+                    </th>
                     <th scope="col" className={thBase}>
                       Breaks
+                    </th>
+                    <th scope="col" className={`${thBase} text-right`}>
+                      Away
                     </th>
                     <th scope="col" className={`${thBase} text-right`}>
                       Meetings
@@ -300,8 +389,9 @@ export function TeamDayView({
                       <td className="px-4 py-2.5">
                         <DayClassChip dayClass={s.dayClass} />
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-slate-700">
-                        {span(s) || <span className="text-slate-400">Did not start</span>}
+                      {/* "9:05 AM to 6:20 PM" may wrap after "to", so the table fits at 1280px. */}
+                      <td className="min-w-[6.5rem] px-4 py-2.5 tabular-nums text-slate-700">
+                        <SpanText s={s} />
                         {s.lateStart && s.lateStart.minutes > 0 && (
                           <span className="block text-xs font-semibold text-amber-700">
                             {s.lateStart.minutes} min late
@@ -312,18 +402,33 @@ export function TeamDayView({
                         <span className="font-semibold text-slate-900">
                           {formatDuration(s.focusSec)}
                         </span>
-                        {s.expectedSec > 0 && (
+                        {s.targetSec > 0 && (
                           <span className="block text-xs text-slate-500">
-                            of {formatDuration(s.expectedSec)}
+                            of {formatDuration(s.targetSec)}
+                          </span>
+                        )}
+                        {/* Notes wrap, so the column stays narrow and the table fits. */}
+                        {unverifiedNote(s.unverifiedSec) && (
+                          <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                            {unverifiedNote(s.unverifiedSec)}
                           </span>
                         )}
                         {pending(s) && (
-                          <span className="block text-xs font-semibold text-amber-700">
+                          <span className="block min-w-[5.5rem] whitespace-normal text-xs font-semibold text-amber-700">
                             {pending(s)}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-600">{breaks(s)}</td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                        {formatDuration(s.paidSec)}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-slate-600">
+                        {breaks(s)}
+                        <span className="block">{breakPay(s)}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs tabular-nums text-slate-600">
+                        {away(s) ?? <span className="text-slate-400">None</span>}
+                      </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
                         {s.meetings ? `${s.meetings} · ${formatDuration(s.meetingSec)}` : "None"}
                       </td>

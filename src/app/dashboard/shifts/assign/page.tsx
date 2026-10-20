@@ -3,13 +3,14 @@
 import { Suspense } from "react";
 
 import { LoadingState } from "@/components/ui/StatePanel";
+import { isOrgAdmin } from "@/constants/roles";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { AssignShiftsView } from "@/features/shifts/components/AssignShiftsView";
 
 function AssignShifts() {
   const { role } = useSession();
-  // Department shifts are a Super Admin's; Managers override their own staff only.
-  return <AssignShiftsView canEditDepartments={role === "SUPER_ADMIN"} />;
+  // Department shifts and personal overrides: Admins and Super Admins (SPEC 1.2).
+  return <AssignShiftsView canEditDepartments={isOrgAdmin(role)} />;
 }
 
 export default function AssignShiftsPage() {

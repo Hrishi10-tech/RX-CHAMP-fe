@@ -1,7 +1,22 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Camera, CameraOff, KeyRound, Lock, LockOpen, Pencil, Trash2 } from "lucide-react";
+import * as Dropdown from "@radix-ui/react-dropdown-menu";
+import {
+  Camera,
+  CameraOff,
+  Check,
+  Eye,
+  KeyRound,
+  Lock,
+  LockOpen,
+  MousePointerBan,
+  MousePointerClick,
+  Network,
+  Pencil,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ActionMenu } from "@/components/ui/ActionMenu";
@@ -11,9 +26,14 @@ import { errorMessage } from "@/lib/api";
 import { DownloadAgentRowButton } from "@/features/agent/components/DownloadAgentRowButton";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { deleteUser } from "@/features/users/api/deleteUser";
+import { canChangeMember } from "@/features/users/lib/memberAccess";
+import { setUserIdle } from "@/features/users/api/access";
 import { setUserScreenshots } from "@/features/users/api/setUserScreenshots";
 import { setUserStatus } from "@/features/users/api/setUserStatus";
-import { EditMemberModal } from "@/features/users/components/EditMemberModal";
+import {
+  GrantsDialog,
+  MemberDepartmentDialog,
+} from "@/features/users/components/MemberAccessDialogs";
 import {
   SetPasswordModal,
   type SetPasswordTarget,
@@ -26,15 +46,9 @@ import type {
 } from "@/features/users/types";
 import type { TeamMember } from "@/types";
 
-
 /**
- * Turns this member's automatic screenshots on or off. Asks first, the same way
- * blocking and deleting do — it changes what is recorded about a person, so it
- * shouldn't happen on a stray click.
- *
- * Only the periodic capture is affected: activity tracking carries on, and the
- * Capture button on the screenshots timeline still works either way. Both the
- * tooltip and the dialog say so, so nobody expects this to stop tracking.
+ * Turns this member's automatic screenshots on or off, after a confirm: it
+ * changes what is recorded about a person.
  */
 function ScreenshotsMemberButton({
   member,
@@ -67,11 +81,92 @@ function ScreenshotsMemberButton({
   );
 }
 
-export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMemberActionsResult {
-  const { user: me } = useSession();
+/** What the input tracking icon says for a person's override (SPEC 2.5). */
+export function idleLook(enabled: boolean | null): { label: string; title: string } {
+  if (enabled === true) return { label: "On", title: "Input tracking on for this person" };
+  if (enabled === false) return { label: "Off", title: "Input tracking off for this person" };
+  return { label: "Department", title: "Input tracking follows the department setting" };
+}
+
+/**
+ * Input tracking on/off for one person (the away pop-up, SPEC 2.5). The icon
+ * shows the override; the menu sets it on, off, or back to the department.
+ */
+function IdleMemberButton({
+  member,
+  onSet,
+}: {
+  member: TeamMember;
+  onSet: (member: TeamMember, enabled: boolean | null) => void;
+}) {
+  const state = member.idleEnabled;
+  const look = idleLook(state);
+  const Icon = state === false ? MousePointerBan : MousePointerClick;
+  const options: { value: boolean | null; label: string; icon: typeof Icon }[] = [
+    { value: true, label: "Track input", icon: MousePointerClick },
+    { value: false, label: "Don't track input", icon: MousePointerBan },
+    { value: null, label: "Use department setting", icon: Undo2 },
+  ];
+  return (
+    <Dropdown.Root>
+      <Dropdown.Trigger asChild>
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          title={`${look.title}. Click to change.`}
+          aria-label={`Input tracking for ${member.name}: ${look.label}`}
+          className={`${rowActionButtonClass} ${
+            state === true
+              ? "border-[rgba(34,34,204,0.35)] bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)] hover:bg-[rgba(34,34,204,0.14)]"
+              : state === false
+                ? "text-rose-500 hover:text-rose-600"
+                : `text-slate-400 ${rowActionHover.primary}`
+          }`}
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      </Dropdown.Trigger>
+      <Dropdown.Portal>
+        <Dropdown.Content
+          align="end"
+          sideOffset={6}
+          onClick={(e) => e.stopPropagation()}
+          className="z-50 min-w-[14rem] rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"
+        >
+          <Dropdown.Label className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Input tracking
+          </Dropdown.Label>
+          {options.map((o) => {
+            const ItemIcon = o.icon;
+            return (
+              <Dropdown.Item
+                key={String(o.value)}
+                onSelect={() => onSet(member, o.value)}
+                className="flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-slate-600 outline-none data-[highlighted]:bg-slate-50 data-[highlighted]:text-slate-900"
+              >
+                <ItemIcon className="h-4 w-4" aria-hidden />
+                <span className="flex-1">{o.label}</span>
+                {state === o.value && (
+                  <Check className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+                )}
+              </Dropdown.Item>
+            );
+          })}
+        </Dropdown.Content>
+      </Dropdown.Portal>
+    </Dropdown.Root>
+  );
+}
+
+export function useMemberActions({
+  onChanged,
+  onEdit,
+}: UseMemberActionsOptions): UseMemberActionsResult {
+  const { user: me, role: viewerRole } = useSession();
   const myId = me?.id;
-  const [editing, setEditing] = useState<TeamMember | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<SetPasswordTarget | null>(null);
+  const [grantsTarget, setGrantsTarget] = useState<TeamMember | null>(null);
+  const [departmentTarget, setDepartmentTarget] = useState<TeamMember | null>(null);
 
   const [statusTarget, setStatusTarget] = useState<MemberStatusTarget | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
@@ -81,6 +176,29 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
 
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const setIdle = useCallback(
+    async (member: TeamMember, enabled: boolean | null) => {
+      try {
+        await setUserIdle(member.id, {
+          enabled,
+          minutes: enabled === null ? null : member.idleMinutes,
+        });
+        toast.success("Input tracking changed", {
+          description:
+            enabled === null
+              ? `${member.name} follows the department setting.`
+              : `${member.name}: ${enabled ? "on" : "off"}.`,
+        });
+        onChanged("updated");
+      } catch (err) {
+        toast.error("Couldn't change input tracking", {
+          description: errorMessage(err) ?? "Please try again.",
+        });
+      }
+    },
+    [onChanged],
+  );
 
   async function handleConfirmScreenshots() {
     if (!screenshotsTarget) return;
@@ -146,71 +264,108 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
   }
 
   const renderActions = useCallback(
-    (m: TeamMember) => (
-      <div className="flex justify-end gap-2">
-        <ScreenshotsMemberButton member={m} onSelect={setScreenshotsTarget} />
-        <DownloadAgentRowButton userId={String(m.id)} userName={m.name} />
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setEditing(m);
-          }}
-          title="Edit member"
-          aria-label={`Edit ${m.name}`}
-          className={`${rowActionButtonClass} ${rowActionHover.primary}`}
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-        {/* Rarer actions live in the menu so the row fits a laptop screen. */}
-        <ActionMenu
-          label={`More actions for ${m.name}`}
-          triggerClassName={`${rowActionButtonClass} ${rowActionHover.primary} data-[state=open]:bg-slate-50`}
-          items={[
-            // Your own password is changed from the user menu (it needs the current one).
-            ...(String(m.id) !== myId
-              ? [
-                  {
-                    label: "Set password",
-                    icon: KeyRound,
-                    onSelect: () => setPasswordTarget({ id: String(m.id), name: m.name }),
-                  },
-                ]
-              : []),
-            m.status === "Inactive"
-              ? {
-                  label: "Unblock member",
-                  icon: LockOpen,
-                  onSelect: () => setStatusTarget({ member: m, block: false }),
-                }
-              : {
-                  label: "Block member",
-                  icon: Lock,
-                  onSelect: () => setStatusTarget({ member: m, block: true }),
-                },
-            {
-              label: "Delete member",
-              icon: Trash2,
-              destructive: true,
-              onSelect: () => setDeleteTarget(m),
-            },
-          ]}
-        />
-      </div>
-    ),
-    [myId],
+    (m: TeamMember) => {
+      const self = String(m.id) === myId;
+      const manager = m.role === "MANAGER";
+      const admin = m.role === "ADMIN" || m.role === "SUPER_ADMIN";
+      if (!canChangeMember(viewerRole, myId, m)) {
+        return (
+          <div className="flex justify-end gap-2">
+            {self ? (
+              // Your own computer: the plain installer (the API issues none for yourself).
+              <DownloadAgentRowButton userId={String(m.id)} userName={m.name} self />
+            ) : (
+              <span className="text-xs text-slate-400">No changes here</span>
+            )}
+          </div>
+        );
+      }
+      return (
+        <div className="flex justify-end gap-2">
+          <ScreenshotsMemberButton member={m} onSelect={setScreenshotsTarget} />
+          <IdleMemberButton member={m} onSet={setIdle} />
+          <DownloadAgentRowButton userId={String(m.id)} userName={m.name} />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(m);
+            }}
+            title="Edit member"
+            aria-label={`Edit ${m.name}`}
+            className={`${rowActionButtonClass} ${rowActionHover.primary}`}
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          {/* Rarer actions live in the menu so the row fits a laptop screen. */}
+          <ActionMenu
+            label={`More actions for ${m.name}`}
+            triggerClassName={`${rowActionButtonClass} ${rowActionHover.primary} data-[state=open]:bg-slate-50`}
+            items={[
+              ...(admin
+                ? []
+                : [
+                    {
+                      label: manager ? "Departments" : "Department",
+                      icon: Network,
+                      onSelect: () => setDepartmentTarget(m),
+                    },
+                  ]),
+              ...(manager
+                ? [{ label: "Grants", icon: Eye, onSelect: () => setGrantsTarget(m) }]
+                : []),
+              // Your own password is changed from the user menu (it needs the current one).
+              ...(!self
+                ? [
+                    {
+                      label: "Set password",
+                      icon: KeyRound,
+                      onSelect: () => setPasswordTarget({ id: String(m.id), name: m.name }),
+                    },
+                  ]
+                : []),
+              ...(self
+                ? []
+                : [
+                    m.status === "Inactive"
+                      ? {
+                          label: "Unblock member",
+                          icon: LockOpen,
+                          onSelect: () => setStatusTarget({ member: m, block: false }),
+                        }
+                      : {
+                          label: "Block member",
+                          icon: Lock,
+                          onSelect: () => setStatusTarget({ member: m, block: true }),
+                        },
+                    {
+                      label: "Delete member",
+                      icon: Trash2,
+                      destructive: true,
+                      onSelect: () => setDeleteTarget(m),
+                    },
+                  ]),
+            ]}
+          />
+        </div>
+      );
+    },
+    [myId, viewerRole, onEdit, setIdle],
   );
 
   const dialogs = (
     <>
-      <EditMemberModal
-        open={editing !== null}
-        member={editing}
-        onClose={() => setEditing(null)}
+      <SetPasswordModal target={passwordTarget} onClose={() => setPasswordTarget(null)} />
+      <GrantsDialog
+        member={grantsTarget}
+        onClose={() => setGrantsTarget(null)}
         onSaved={() => onChanged("updated")}
       />
-
-      <SetPasswordModal target={passwordTarget} onClose={() => setPasswordTarget(null)} />
+      <MemberDepartmentDialog
+        member={departmentTarget}
+        onClose={() => setDepartmentTarget(null)}
+        onSaved={() => onChanged("updated")}
+      />
 
       <ConfirmDialog
         open={screenshotsTarget !== null}
@@ -232,9 +387,7 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
         description={
           screenshotsTarget ? (
             <>
-              <span className="font-semibold text-slate-700">
-                {screenshotsTarget.member.name}
-              </span>{" "}
+              <span className="font-semibold text-slate-700">{screenshotsTarget.member.name}</span>{" "}
               {screenshotsTarget.enable
                 ? "will be screenshotted automatically again, about every 5 minutes."
                 : "will stop being screenshotted automatically. Activity tracking and manual capture are unaffected, and you can turn this back on at any time."}
@@ -279,6 +432,7 @@ export function useMemberActions({ onChanged }: UseMemberActionsOptions): UseMem
         }}
         onConfirm={handleConfirmDelete}
         loading={deleting}
+        destructive
         title="Are you sure?"
         confirmLabel={deleting ? "Deleting…" : "Delete"}
         description={

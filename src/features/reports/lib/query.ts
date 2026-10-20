@@ -1,16 +1,24 @@
 import { cleanParams } from "@/lib/api/list";
 import type { TeamDayParams, TeamMonthParams } from "@/features/reports/types";
 
-/** `GET /reports/team/day?date=&userIds=a,b`. No ids = everyone in scope. */
+/**
+ * `GET /reports/team/day?date=&departmentId=&userIds=a,b`. Nothing = everyone in
+ * scope; `departmentId` = that department (the endpoint narrows by it natively);
+ * `userIds` = the people picked.
+ */
 export function buildTeamDayQuery(params: TeamDayParams): Record<string, string> {
-  return cleanParams({ date: params.date, userIds: params.userIds }) as Record<string, string>;
+  return cleanParams({
+    date: params.date,
+    departmentId: params.departmentId,
+    userIds: params.userIds,
+  }) as Record<string, string>;
 }
 
-/** `GET /reports/team/month?month=&managerId=&userIds=a,b` (and its export.xlsx). */
+/** `GET /reports/team/month?month=&departmentId=&userIds=a,b` (and its export.xlsx). */
 export function buildTeamMonthQuery(params: TeamMonthParams): Record<string, string> {
   return cleanParams({
     month: params.month,
-    managerId: params.managerId,
+    departmentId: params.departmentId,
     userIds: params.userIds,
   }) as Record<string, string>;
 }

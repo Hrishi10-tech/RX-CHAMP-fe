@@ -1,7 +1,7 @@
 import { notificationHref } from "./links";
 
-/** SPEC 3.10: approvals types to Approvals, report types to Reports, auto-close to Team today. */
-describe("notificationHref for 3.1 types", () => {
+/** The 3.1 types under the 4.0 pages, plus the 4.0 away and calendar types. */
+describe("notificationHref for 3.1 and 4.0 types", () => {
   it.each([
     "SKIP_REQUESTED",
     "AUTO_SKIP_REQUESTED",
@@ -10,6 +10,7 @@ describe("notificationHref for 3.1 types", () => {
     "APPROVALS_DUE_SOON",
     "APPROVALS_OVERDUE",
     "APPROVALS_ESCALATED",
+    "AWAY_REQUESTED",
   ])("%s opens Approvals", (type) => {
     expect(notificationHref(type)).toBe("/dashboard/approvals");
   });
@@ -18,19 +19,12 @@ describe("notificationHref for 3.1 types", () => {
     expect(notificationHref("MONTHLY_REPORT_READY")).toBe("/dashboard/reports");
   });
 
-  it("opens Team today when a day was closed automatically", () => {
-    expect(notificationHref("DAY_AUTO_CLOSED")).toBe("/dashboard/team-today");
+  it("opens Team when a day was closed automatically (Team today is gone)", () => {
+    expect(notificationHref("DAY_AUTO_CLOSED")).toBe("/dashboard/team");
   });
 
-  it("opens the person's own home for a decision on their meeting", () => {
-    expect(notificationHref("MEETING_DECIDED")).toBe("/dashboard/me");
-  });
-
-  it("sends the 3.0 types the API still uses to the 3.1 pages", () => {
-    // SPEC 3.10: approvals types open /dashboard/approvals (the old page only redirects).
-    expect(notificationHref("BREAK_APPROVAL_REQUESTED")).toBe("/dashboard/approvals");
-    expect(notificationHref("BREAK_APPROVALS_DIGEST")).toBe("/dashboard/approvals");
-    expect(notificationHref("BREAK_DECIDED")).toBe("/dashboard/me?tab=breaks");
+  it("opens the Calendar when it changed", () => {
+    expect(notificationHref("CALENDAR_CHANGED")).toBe("/dashboard/calendar");
   });
 
   it("is case sensitive and has nowhere to go for unknown types", () => {

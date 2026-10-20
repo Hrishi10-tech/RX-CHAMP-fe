@@ -1,16 +1,11 @@
 import { Check, CheckCheck } from "lucide-react";
 
-import { Avatar } from "@/app/dashboard/admin/team-management/companies";
+import { Avatar } from "@/components/ui/Avatar";
+import { formatTime12 } from "@/lib/time/format";
 import type { ChatMessage } from "@/features/chat/types";
 
 function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? ""
-    : d.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      });
+  return formatTime12(iso);
 }
 
 export function ChatBubble({

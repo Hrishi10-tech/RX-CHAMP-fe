@@ -13,24 +13,25 @@ import {
 } from "@/components/ui/StatePanel";
 import { btnSmall, cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
-import { dateKeyOf, formatDay, hmOf } from "@/lib/time/businessTime";
+import { dateKeyOf, formatDay } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 import { formatMonth } from "@/lib/time/months";
 import { downloadTeamMonthXlsx } from "@/features/reports/api/reports";
+import { runFigures, runFiguresText } from "@/features/reports/lib/runs";
 import { useMonthLocks, useReportRuns } from "@/features/reports/hooks/useReports";
 import { ExcelButton } from "@/features/reports/components/ReportShell";
 import type { MonthLockView, ReportRun } from "@/features/reports/types";
 
 function scopeText(run: ReportRun): string {
-  const people = run.summary?.people;
-  const count =
-    typeof people === "number" ? ` · ${people} ${people === 1 ? "person" : "people"}` : "";
-  return `${run.scope === "ALL" ? "Everyone" : "My team"}${count}`;
+  const { people } = runFigures(run.summary);
+  const count = people !== null ? ` · ${people} ${people === 1 ? "person" : "people"}` : "";
+  return `${run.scope === "ALL" ? "Everyone" : "My departments"}${count}`;
 }
 
 function builtText(run: ReportRun): string {
   const at = new Date(run.generatedAt);
   if (Number.isNaN(at.getTime())) return "";
-  return `Built ${formatDay(dateKeyOf(at))}, ${hmOf(run.generatedAt)}`;
+  return `Built ${formatDay(dateKeyOf(at))}, ${formatTime12(run.generatedAt)}`;
 }
 
 function LockStatus({ lock }: { lock: MonthLockView | undefined }) {
@@ -52,7 +53,7 @@ function LockStatus({ lock }: { lock: MonthLockView | undefined }) {
 }
 
 /**
- * The monthly reports built at 00:30 on the 1st, newest first, each with the
+ * The monthly reports built at 12:30 AM on the 1st, newest first, each with the
  * month's lock state and its PDF and Excel. Opening one shows the live
  * team-month report for that month and scope.
  */
@@ -74,8 +75,8 @@ export function MonthlyRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         </h2>
         <p className="mt-0.5 text-sm text-slate-500">
           {isSuperAdmin
-            ? "Built at 00:30 on the 1st for everyone, managers included."
-            : "Built at 00:30 on the 1st for everyone in your team."}
+            ? "Built at 12:30 AM on the 1st for everyone, managers included."
+            : "Built at 12:30 AM on the 1st for everyone in your departments."}
         </p>
       </div>
       {runs.isError && runs.data && (
@@ -101,7 +102,7 @@ export function MonthlyRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         <EmptyState
           icon={CalendarCheck}
           title="No monthly reports yet"
-          message="The first one arrives at 00:30 on the 1st of next month. You can create any report above meanwhile."
+          message="The first one arrives at 12:30 AM on the 1st of next month. You can create any report above meanwhile."
         />
       ) : (
         <ul className="divide-y divide-slate-100 border-t border-slate-100">
@@ -117,6 +118,9 @@ export function MonthlyRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                   <p className="text-xs text-slate-500">
                     {[scopeText(run), builtText(run)].filter(Boolean).join(" · ")}
                   </p>
+                  {runFiguresText(run) && (
+                    <p className="text-xs text-slate-600">{runFiguresText(run)}</p>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <LockStatus lock={lockOf.get(run.month)} />

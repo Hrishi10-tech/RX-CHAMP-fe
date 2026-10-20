@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Paperclip, Send, ShieldCheck, Smile } from "lucide-react";
 
-import { Avatar } from "@/app/dashboard/admin/team-management/companies";
+import { Avatar } from "@/components/ui/Avatar";
 import { ChatBubble } from "@/features/chat/components/ChatBubble";
 import type { ConversationViewProps } from "@/features/chat/types";
 

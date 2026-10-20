@@ -1,9 +1,8 @@
 "use client";
 
-import { useSession } from "@/features/auth/hooks/useSession";
 import { TeamBreaksView } from "@/features/breaks/components/TeamBreaksView";
 
+/** Team breaks (Admin and Super Admin: the organisation; a Manager: their departments). */
 export default function TeamBreaksPage() {
-  const { role } = useSession();
-  return <TeamBreaksView isSuperAdmin={role === "SUPER_ADMIN"} />;
+  return <TeamBreaksView />;
 }

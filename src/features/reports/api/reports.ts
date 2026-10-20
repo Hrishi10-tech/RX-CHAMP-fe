@@ -1,10 +1,12 @@
 import { apiClient, type ApiResponse } from "@/lib/api";
 import { downloadFile } from "@/lib/api/download";
 import { readItems, unwrap } from "@/lib/api/list";
+import { paidSecOf } from "@/lib/format/payroll";
 import { buildTeamDayQuery, buildTeamMonthQuery, fileSlug } from "@/features/reports/lib/query";
 import type {
   MonthLockView,
   MonthTotals,
+  PersonDaySummary,
   PersonDayReport,
   PersonMonthReport,
   ReportPerson,
@@ -16,20 +18,24 @@ import type {
 } from "@/features/reports/types";
 
 /**
- * SPEC 3.7, every request in one module (Manager and Super Admin; the scope is
- * the server's):
+ * SPEC 3.7 and 4.0 5.8, every request in one module (Admin, Super Admin with an
+ * organisation, Manager; the scope is the server's: the organisation, or a
+ * manager's departments):
  *
  *   GET    /reports/people
  *   GET    /reports/person/:userId/day?date=
  *   GET    /reports/person/:userId/month?month=
  *   GET    /reports/person/:userId/month/export.xlsx?month=
- *   GET    /reports/team/day?date=&userIds=a,b
- *   GET    /reports/team/month?month=&managerId=&userIds=a,b
- *   GET    /reports/team/month/export.xlsx?month=&managerId=&userIds=
+ *   GET    /reports/team/day?date=&departmentId=&userIds=a,b
+ *   GET    /reports/team/month?month=&departmentId=&userIds=a,b
+ *   GET    /reports/team/month/export.xlsx?month=&departmentId=&userIds=
  *   GET    /reports/runs
  *   GET    /reports/months/:month/lock
- *   POST   /reports/months/:month/lock      (Super Admin; 409 PENDING_APPROVALS)
- *   DELETE /reports/months/:month/lock      (Super Admin)
+ *   POST   /reports/months/:month/lock      (Admin; 409 PENDING_APPROVALS)
+ *   DELETE /reports/months/:month/lock      (Admin)
+ *
+ * A department report sends `departmentId` (the team endpoints narrow by it;
+ * a department outside the caller's scope is a 404); picked people go as `userIds`.
  *
  * Lists the server leaves out come back as empty arrays, so a view never has
  * to guard every `.map`.
@@ -61,10 +67,50 @@ const EMPTY_TOTALS: MonthTotals = {
   pending: 0,
   quietHours: 0,
   needsALook: false,
+  targetSec: 0,
+  breakSec: 0,
+  meetingSec: 0,
+  paidBreakSec: 0,
+  unpaidBreakSec: 0,
+  awayApprovedSec: 0,
+  awayPendingSec: 0,
+  unverifiedSec: 0,
+  paidSec: 0,
 };
 
 function totalsOf(value: Partial<MonthTotals> | null | undefined): MonthTotals {
-  return { ...EMPTY_TOTALS, ...(value ?? {}) };
+  // A figure the server redacts for a viewer without the grant comes as null:
+  // it reads as zero (and the views hide activity for that viewer).
+  const sent = Object.fromEntries(
+    Object.entries(value ?? {}).filter(([, v]) => v !== null && v !== undefined),
+  ) as Partial<MonthTotals>;
+  const t = { ...EMPTY_TOTALS, ...sent };
+  // A 3.x server sends no target: the expected hours are the nearest thing.
+  if (!value || typeof value.targetSec !== "number") t.targetSec = t.expectedSec;
+  // A month locked before paid time existed: focus plus paid breaks, as the server works it out.
+  t.paidSec = paidSecOf({ ...t, paidSec: value?.paidSec });
+  return t;
+}
+
+/** The 4.0 fields of a day, zero when an older server leaves them out. */
+export function daySummaryOf(d: PersonDaySummary): PersonDaySummary {
+  const num = (v: unknown, fallback = 0) => (typeof v === "number" ? v : fallback);
+  return {
+    ...d,
+    targetSec: num(d.targetSec, num(d.expectedSec)),
+    paidBreakSec: num(d.paidBreakSec),
+    unpaidBreakSec: num(d.unpaidBreakSec),
+    awayApprovedSec: num(d.awayApprovedSec),
+    awayPendingSec: num(d.awayPendingSec),
+    awayRejectedSec: num(d.awayRejectedSec),
+    awayUnexplainedSec: num(d.awayUnexplainedSec),
+    unverifiedSec: num(d.unverifiedSec),
+    paidSec: paidSecOf(d),
+    label: typeof d.label === "string" && d.label ? d.label : null,
+    // Activity figures a manager without the grant gets as null.
+    activeMin: num(d.activeMin),
+    quietHours: num(d.quietHours),
+  };
 }
 
 export async function getReportPeople(): Promise<ReportPerson[]> {
@@ -81,6 +127,7 @@ export async function getPersonDayReport(userId: string, date: string): Promise<
   if (!r.person || !r.summary) throw new Error("The day report came back incomplete.");
   return {
     ...r,
+    summary: daySummaryOf(r.summary),
     timeline: list(r.timeline),
     skips: list(r.skips),
     breaks: list(r.breaks),
@@ -103,7 +150,7 @@ export async function getPersonMonthReport(
   return {
     ...r,
     totals: totalsOf(r.totals),
-    days: list(r.days),
+    days: list(r.days).map(daySummaryOf),
     heatmap: list(r.heatmap).map((d) => ({ ...d, hours: list(d.hours) })),
   };
 }
@@ -113,7 +160,12 @@ export async function getTeamDayReport(params: TeamDayParams): Promise<TeamDayRe
     params: buildTeamDayQuery(params),
   });
   const r = unwrap(data, "Failed to load the team day report");
-  return { ...r, rows: list(r.rows).filter((row) => row?.person?.id && row.summary) };
+  return {
+    ...r,
+    rows: list(r.rows)
+      .filter((row) => row?.person?.id && row.summary)
+      .map((row) => ({ ...row, summary: daySummaryOf(row.summary) })),
+  };
 }
 
 export async function getTeamMonthReport(params: TeamMonthParams): Promise<TeamMonthReport> {

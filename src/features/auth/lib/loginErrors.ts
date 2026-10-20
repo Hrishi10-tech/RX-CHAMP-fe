@@ -18,6 +18,12 @@ const COPY: Record<LoginFailureReason, LoginErrorCopy> = {
       "An administrator has disabled your access. Contact them to have your account unblocked.",
     duration: 10000,
   },
+  staff: {
+    title: "Use the RX Vision app on your computer",
+    description:
+      "The web portal is for Admins and Managers. Your day, breaks and history are in the RX Vision app.",
+    duration: 10000,
+  },
   network: {
     title: "Can't reach the server",
     description: "Check your internet connection and try again.",

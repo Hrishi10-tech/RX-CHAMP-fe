@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { AlertTriangle, Inbox, RotateCw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { hmOf } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 
 import { Loader } from "./Loader";
 import { btnSecondary } from "./classes";
@@ -70,7 +70,7 @@ export function RefreshFailedNotice({
   onRetry: () => void;
   retrying?: boolean;
 }) {
-  const at = updatedAt ? hmOf(new Date(updatedAt).toISOString()) : null;
+  const at = updatedAt ? formatTime12(updatedAt) : null;
   return (
     <div
       role="status"

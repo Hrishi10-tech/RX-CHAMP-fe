@@ -9,28 +9,38 @@ import {
   resolvePeriod,
   resolveWho,
   stepPeriod,
-  teamsOf,
+  departmentsIn,
+  membersOf,
 } from "./period";
 
 const TODAY = "2026-10-13";
 
-function person(id: string, name: string, managerId: string | null = "m-1"): ReportPerson {
+const DEPT_IDS: Record<string, string> = { Engineering: "d-eng", Sales: "d-sales" };
+
+function person(id: string, name: string, department: string | null = "Engineering"): ReportPerson {
   return {
     id,
     name,
     email: `${id}@example.com`,
     role: "USER",
-    department: "Engineering",
+    department,
+    departmentId: department ? (DEPT_IDS[department] ?? null) : null,
     designation: null,
-    managerId,
-    managerName: managerId === "m-1" ? "Maya Reddy" : managerId ? "Karthik N" : null,
+    managerId: null,
+    managerName: null,
   };
 }
 
 const PEOPLE = [
   person("u-1", "Asha Kumar"),
   person("u-2", "Praveen Kumar"),
-  person("u-3", "Kavya R", "m-2"),
+  person("u-3", "Kavya R", "Sales"),
+];
+
+const DEPARTMENTS = [
+  { id: "d-eng", name: "Engineering", icon: "code" },
+  { id: "d-sales", name: "Sales", icon: "bar-chart" },
+  { id: "d-empty", name: "Empty", icon: "briefcase" },
 ];
 
 describe("resolvePeriod", () => {
@@ -121,31 +131,58 @@ describe("pickers", () => {
 
 describe("resolveWho", () => {
   it("covers everyone in scope", () => {
-    const who = resolveWho({ mode: "everyone", managerId: "", picked: [] }, PEOPLE, false);
-    expect(who).toMatchObject({ count: 3, label: "Everyone in my team, 3 people", single: null });
+    const who = resolveWho({ mode: "everyone", departmentId: "", picked: [] }, PEOPLE, false);
+    expect(who).toMatchObject({
+      count: 3,
+      label: "Everyone in my departments, 3 people",
+      single: null,
+    });
     expect(who.userIds).toBeUndefined();
-    expect(resolveWho({ mode: "everyone", managerId: "", picked: [] }, PEOPLE, true).label).toBe(
+    expect(resolveWho({ mode: "everyone", departmentId: "", picked: [] }, PEOPLE, true).label).toBe(
       "Everyone, 3 people",
     );
   });
 
-  it("takes one manager's team for a Super Admin", () => {
-    const who = resolveWho({ mode: "team", managerId: "m-1", picked: [] }, PEOPLE, true);
-    expect(who).toMatchObject({ count: 2, label: "Maya Reddy's team, 2 people", managerId: "m-1" });
-    expect(who.userIds).toEqual(["u-1", "u-2"]);
-    expect(teamsOf(PEOPLE)).toEqual([
-      { id: "m-2", name: "Karthik N", count: 1 },
-      { id: "m-1", name: "Maya Reddy", count: 2 },
+  it("takes one department by its id, not its people's ids", () => {
+    const who = resolveWho(
+      { mode: "department", departmentId: "d-eng", picked: [] },
+      PEOPLE,
+      true,
+      DEPARTMENTS,
+    );
+    expect(who).toMatchObject({ count: 2, label: "Engineering, 2 people", departmentId: "d-eng" });
+    expect(who.userIds).toBeUndefined();
+    expect(departmentsIn(PEOPLE, DEPARTMENTS).map((d) => [d.name, d.count])).toEqual([
+      ["Engineering", 2],
+      ["Sales", 1],
     ]);
+    // Membership is the row's departmentId; the department's name plays no part.
+    const moved = { ...person("u-9", "Moved"), departmentId: "d-sales" };
+    expect(membersOf([moved], DEPARTMENTS[1]).map((p) => p.id)).toEqual(["u-9"]);
+    expect(membersOf([moved], DEPARTMENTS[0])).toEqual([]);
+    const nameOnly = { ...person("u-8", "Name only"), departmentId: null };
+    expect(membersOf([nameOnly], DEPARTMENTS[0])).toEqual([]);
+    expect(
+      resolveWho({ mode: "department", departmentId: "", picked: [] }, PEOPLE, true, DEPARTMENTS)
+        .label,
+    ).toBe("Pick a department");
   });
 
   it("names one picked person, counts several, ignores unknown ids", () => {
-    const one = resolveWho({ mode: "pick", managerId: "", picked: ["u-2", "gone"] }, PEOPLE, false);
+    const one = resolveWho(
+      { mode: "pick", departmentId: "", picked: ["u-2", "gone"] },
+      PEOPLE,
+      false,
+    );
     expect(one).toMatchObject({ count: 1, label: "Praveen Kumar" });
     expect(one.single?.id).toBe("u-2");
-    const two = resolveWho({ mode: "pick", managerId: "", picked: ["u-1", "u-3"] }, PEOPLE, false);
+    const two = resolveWho(
+      { mode: "pick", departmentId: "", picked: ["u-1", "u-3"] },
+      PEOPLE,
+      false,
+    );
     expect(two).toMatchObject({ count: 2, label: "2 people", single: null });
-    expect(resolveWho({ mode: "pick", managerId: "", picked: [] }, PEOPLE, false).label).toBe(
+    expect(resolveWho({ mode: "pick", departmentId: "", picked: [] }, PEOPLE, false).label).toBe(
       "Nobody picked yet",
     );
   });
@@ -156,7 +193,7 @@ describe("reportTarget", () => {
   const month = { kind: "month" as const, month: "2026-09" };
 
   it("opens the person views for one person", () => {
-    const who = resolveWho({ mode: "pick", managerId: "", picked: ["u-1"] }, PEOPLE, false);
+    const who = resolveWho({ mode: "pick", departmentId: "", picked: ["u-1"] }, PEOPLE, false);
     expect(reportTarget(who, day)).toEqual({
       kind: "person-day",
       href: "/dashboard/reports/person/u-1?date=2026-10-12",
@@ -168,27 +205,36 @@ describe("reportTarget", () => {
   });
 
   it("opens the team views for several or everyone", () => {
-    const all = resolveWho({ mode: "everyone", managerId: "", picked: [] }, PEOPLE, false);
+    const all = resolveWho({ mode: "everyone", departmentId: "", picked: [] }, PEOPLE, false);
     expect(reportTarget(all, month)?.href).toBe("/dashboard/reports/team?month=2026-09");
     expect(reportTarget(all, day)?.href).toBe("/dashboard/reports/team?date=2026-10-12");
-    const two = resolveWho({ mode: "pick", managerId: "", picked: ["u-1", "u-3"] }, PEOPLE, false);
+    const two = resolveWho(
+      { mode: "pick", departmentId: "", picked: ["u-1", "u-3"] },
+      PEOPLE,
+      false,
+    );
     expect(reportTarget(two, month)?.href).toBe(
       "/dashboard/reports/team?month=2026-09&userIds=u-1%2Cu-3",
     );
   });
 
-  it("sends a manager's team by managerId for a month, by ids for a day", () => {
-    const team = resolveWho({ mode: "team", managerId: "m-1", picked: [] }, PEOPLE, true);
-    expect(reportTarget(team, month)?.href).toBe(
-      "/dashboard/reports/team?month=2026-09&managerId=m-1",
+  it("sends a department as its id alone, for a month and a day", () => {
+    const dept = resolveWho(
+      { mode: "department", departmentId: "d-eng", picked: [] },
+      PEOPLE,
+      true,
+      DEPARTMENTS,
     );
-    expect(reportTarget(team, day)?.href).toBe(
-      "/dashboard/reports/team?date=2026-10-12&userIds=u-1%2Cu-2",
+    expect(reportTarget(dept, month)?.href).toBe(
+      "/dashboard/reports/team?month=2026-09&departmentId=d-eng",
+    );
+    expect(reportTarget(dept, day)?.href).toBe(
+      "/dashboard/reports/team?date=2026-10-12&departmentId=d-eng",
     );
   });
 
   it("has nowhere to go with nobody chosen", () => {
-    const none = resolveWho({ mode: "pick", managerId: "", picked: [] }, PEOPLE, false);
+    const none = resolveWho({ mode: "pick", departmentId: "", picked: [] }, PEOPLE, false);
     expect(reportTarget(none, month)).toBeNull();
   });
 });

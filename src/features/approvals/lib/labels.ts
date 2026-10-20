@@ -1,6 +1,7 @@
 import type { ChipTone } from "@/components/ui/Chip";
 import { formatSignedAmount, withMinusSign } from "@/lib/format/duration";
-import { dateKeyOf, formatDay, hmOf, todayKey } from "@/lib/time/businessTime";
+import { dateKeyOf, formatDay, todayKey } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 import type {
   ApprovalCategory,
   ApprovalEffect,
@@ -21,6 +22,11 @@ export const CATEGORY_LABEL: Record<ApprovalCategory, string> = {
   BREAK_AUTO_SKIP: "Auto-skipped",
   MEETING_LIVE: "Live meeting",
   MEETING_PAST: "Logged meeting",
+  AWAY_THINKING: "Thinking",
+  AWAY_MEETING: "Short meeting",
+  AWAY_HARDWARE: "Working on hardware",
+  AWAY_OTHER: "Other work",
+  AWAY_CUSTOM: "Away",
 };
 
 /** The longer wording in the Type filter. */
@@ -34,6 +40,11 @@ export const CATEGORY_FILTER_LABEL: Record<ApprovalCategory, string> = {
   BREAK_AUTO_SKIP: "Break auto-skipped",
   MEETING_LIVE: "Meeting started live",
   MEETING_PAST: "Meeting logged afterwards",
+  AWAY_THINKING: "Away: thinking",
+  AWAY_MEETING: "Away: short meeting",
+  AWAY_HARDWARE: "Away: working on hardware",
+  AWAY_OTHER: "Away: other work",
+  AWAY_CUSTOM: "Away: another reason",
 };
 
 const CATEGORY_TONE: Record<ApprovalCategory, ChipTone> = {
@@ -46,6 +57,11 @@ const CATEGORY_TONE: Record<ApprovalCategory, ChipTone> = {
   BREAK_AUTO_SKIP: "neutral",
   MEETING_LIVE: "brand",
   MEETING_PAST: "brand",
+  AWAY_THINKING: "info",
+  AWAY_MEETING: "info",
+  AWAY_HARDWARE: "info",
+  AWAY_OTHER: "info",
+  AWAY_CUSTOM: "info",
 };
 
 /**
@@ -70,6 +86,9 @@ export function categoryChip(
 /** What the text box under a row holds: a reason, a comment, an agenda. */
 export function reasonLabel(category: ApprovalCategory): string {
   if (category === "MEETING_LIVE" || category === "MEETING_PAST") return "Agenda";
+  if (category === "AWAY_THINKING") return "Their thought";
+  if (category === "AWAY_MEETING") return "Summary";
+  if (category.startsWith("AWAY_")) return "What they worked on";
   if (category === "BREAK_OVERRUN") return "Why it ran over";
   if (category === "BREAK_AUTO_SKIP") return "Comment";
   return "Reason";
@@ -130,7 +149,7 @@ export function dueChip(
     return {
       text: "Escalated",
       tone: "danger",
-      title: `Overdue ${hoursOrMinutes(Math.max(0, -left))}. Sent to the Super Admins.`,
+      title: `Overdue ${hoursOrMinutes(Math.max(0, -left))}. Sent to the Admin.`,
     };
   }
   if (overdue) {
@@ -199,7 +218,9 @@ export function decidedLine(
   if (Number.isNaN(at.getTime())) return `${verb}${by}`;
   const day = dateKeyOf(at);
   const when =
-    day === today ? `at ${hmOf(item.decidedAt)}` : `on ${formatDay(day)}, ${hmOf(item.decidedAt)}`;
+    day === today
+      ? `at ${formatTime12(item.decidedAt)}`
+      : `on ${formatDay(day)}, ${formatTime12(item.decidedAt)}`;
   return `${verb}${by} ${when}`;
 }
 

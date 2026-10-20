@@ -12,5 +12,48 @@
     "no-console": ["warn", { "allow": ["warn", "error"] }],
     "react/no-unescaped-entities": "off"
   },
-  "ignorePatterns": ["node_modules", ".next", "out", "coverage", "playwright-report"]
+  "overrides": [
+    {
+      "files": ["src/**/*.ts", "src/**/*.tsx"],
+      "excludedFiles": ["src/lib/time/**", "**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "Literal[value=/H{1,2}:mm/]",
+            "message": "SPEC 7.4: people read 12-hour times. Format with formatTime12 from @/lib/time/format, not an \"HH:mm\" pattern."
+          },
+          {
+            "selector": "TemplateElement[value.raw=/H{1,2}:mm/]",
+            "message": "SPEC 7.4: people read 12-hour times. Format with formatTime12 from @/lib/time/format, not an \"HH:mm\" pattern."
+          },
+          {
+            "selector": "TemplateElement[value.raw=/^:00\\b/]",
+            "message": "SPEC 7.4: an hour like `${h}:00` is 24-hour. Use formatHour12 or formatTime12 from @/lib/time/format."
+          },
+          {
+            "selector": "Property[key.name='hourCycle'][value.value=/^h2[34]$/]",
+            "message": "SPEC 7.4: no 24-hour clock in display code. Use formatTime12 from @/lib/time/format."
+          },
+          {
+            "selector": "Property[key.name='hour12'][value.value=false]",
+            "message": "SPEC 7.4: no 24-hour clock in display code. Use formatTime12 from @/lib/time/format."
+          }
+        ],
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@/lib/time/businessTime",
+                "importNames": ["hmOf"],
+                "message": "hmOf is a 24-hour wire value. Show times with formatTime12 from @/lib/time/format."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "ignorePatterns": ["node_modules", ".next", "out", "coverage", "playwright-report", "scripts"]
 }

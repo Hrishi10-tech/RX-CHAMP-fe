@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 
 import { errorText, inputBase, inputInvalid } from "@/components/ui/classes";
-import { normalizeHm } from "@/features/shifts/lib/time";
+import { normalizeTime12 } from "@/features/shifts/lib/time";
+import { formatTime12 } from "@/lib/time/format";
 
 /**
- * A 24-hour "HH:MM" time box. Typing is forgiving ("930", "9:30", "21.30"); the
- * value is tidied to "09:30" on blur. Passes the tidy value up as soon as what was
- * typed reads as a time, so the live check can run without waiting for blur.
- * A problem is only shown once the field is left, not mid-typing.
+ * A time box that reads and writes 12-hour time (SPEC 2.10): it shows "9:30 AM",
+ * and typing is forgiving ("930a", "9:30 pm", "6 PM", or 24-hour "21:30"). The
+ * value passed up stays the wire "HH:MM", as soon as what was typed reads as a
+ * time, so the live check can run without waiting for blur. A problem is only
+ * shown once the field is left, not mid-typing.
  */
 export function TimeField({
   id,
@@ -28,12 +30,13 @@ export function TimeField({
   /** Accessible name when the visible label is elsewhere. */
   label?: string;
 }) {
-  const [text, setText] = useState(value);
+  const shown = (hm: string) => formatTime12(hm) || hm;
+  const [text, setText] = useState(shown(value));
   const [focused, setFocused] = useState(false);
 
   // Follow outside changes (loading a shift, a reset) unless the person is typing.
   useEffect(() => {
-    if (!focused) setText(value);
+    if (!focused) setText(formatTime12(value) || value);
   }, [value, focused]);
 
   const showError = Boolean(error) && !focused;
@@ -52,8 +55,8 @@ export function TimeField({
           inputMode="numeric"
           autoComplete="off"
           spellCheck={false}
-          placeholder="HH:MM"
-          maxLength={5}
+          placeholder="9:30 AM"
+          maxLength={9}
           aria-label={label}
           aria-invalid={showError || undefined}
           aria-describedby={showError ? errorId : undefined}
@@ -63,13 +66,13 @@ export function TimeField({
           onChange={(e) => {
             const raw = e.target.value;
             setText(raw);
-            onChange(normalizeHm(raw) ?? raw);
+            onChange(normalizeTime12(raw) ?? raw);
           }}
           onBlur={() => {
             setFocused(false);
-            const tidy = normalizeHm(text);
+            const tidy = normalizeTime12(text);
             if (tidy) {
-              setText(tidy);
+              setText(shown(tidy));
               onChange(tidy);
             }
           }}

@@ -6,9 +6,24 @@ import { Download } from "lucide-react";
 import { rowActionButtonClass, rowActionHover } from "@/components/ui/rowAction";
 import { DownloadAgentDialog } from "@/features/agent/components/DownloadAgentDialog";
 
-/** Row action: opens the desktop-app dialog (Windows installer, or Mac app + setup code). */
-export function DownloadAgentRowButton({ userId, userName }: { userId: string; userName: string }) {
+/**
+ * Row action: opens the desktop-app dialog (Windows installer, or Mac app + setup
+ * code). On the viewer's own row (`self`) it offers the plain installer instead:
+ * the API never issues a sign-in for yourself.
+ */
+export function DownloadAgentRowButton({
+  userId,
+  userName,
+  self = false,
+}: {
+  userId: string;
+  userName: string;
+  self?: boolean;
+}) {
   const [open, setOpen] = useState(false);
+  const label = self
+    ? "Get the desktop app for this computer"
+    : `Get the desktop app for ${userName}`;
 
   return (
     <>
@@ -18,8 +33,8 @@ export function DownloadAgentRowButton({ userId, userName }: { userId: string; u
           e.stopPropagation();
           setOpen(true);
         }}
-        title={`Get the desktop app for ${userName}`}
-        aria-label={`Get the desktop app for ${userName}`}
+        title={label}
+        aria-label={label}
         aria-haspopup="dialog"
         className={`${rowActionButtonClass} ${rowActionHover.primary}`}
       >
@@ -33,6 +48,7 @@ export function DownloadAgentRowButton({ userId, userName }: { userId: string; u
             onClose={() => setOpen(false)}
             userId={userId}
             userName={userName}
+            self={self}
           />
         </div>
       )}

@@ -24,7 +24,7 @@ function extensionOf(fileName: string | undefined): string | null {
  */
 export function agentDownloadName(
   platform: AgentPlatform,
-  personName: string,
+  personName: string | null,
   serverFileName?: string,
 ): string {
   if (platform !== "windows") {
@@ -32,7 +32,8 @@ export function agentDownloadName(
     return platform === "mac" ? "RXVision-mac.zip" : "RXVision-mac-intel.zip";
   }
   const ext = extensionOf(serverFileName) ?? "exe";
-  const slug = nameSlug(personName);
+  // The plain installer (no one's sign-in in it) keeps a plain name.
+  const slug = personName ? nameSlug(personName) : "";
   return slug ? `RXVision-${slug}.${ext}` : `RXVision.${ext}`;
 }
 

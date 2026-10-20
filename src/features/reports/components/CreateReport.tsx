@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight, Search, Users } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Select } from "@/components/ui/Select";
 import { ErrorState, LoadingState, RefreshFailedNotice } from "@/components/ui/StatePanel";
@@ -13,17 +13,20 @@ import { initialsOf } from "@/lib/text/initials";
 import { todayKey } from "@/lib/time/businessTime";
 import { monthOfDate } from "@/lib/time/months";
 import { useReportPeople } from "@/features/reports/hooks/useReports";
+import { useDepartments } from "@/features/departments/hooks/useDepartments";
+import { departmentIcon } from "@/features/departments/lib/icons";
 import {
   REPORT_KIND_TEXT,
+  departmentsIn,
   initialPeriod,
   monthOptions,
   periodLabel,
   reportTarget,
   resolvePeriod,
   resolveWho,
-  teamsOf,
   type PeriodChoice,
   type PeriodMode,
+  type ReportDepartment,
   type WhoChoice,
   type WhoMode,
 } from "@/features/reports/lib/period";
@@ -44,17 +47,19 @@ function StepLabel({ n, children }: { n: number; children: string }) {
 
 function PeoplePicker({
   people,
+  departments,
   choice,
   onChange,
   isSuperAdmin,
 }: {
   people: ReportPerson[];
+  departments: ReportDepartment[];
   choice: WhoChoice;
   onChange: (next: WhoChoice) => void;
   isSuperAdmin: boolean;
 }) {
   const [query, setQuery] = useState("");
-  const teams = useMemo(() => teamsOf(people), [people]);
+  const withPeople = useMemo(() => departmentsIn(people, departments), [people, departments]);
   const q = query.trim().toLowerCase();
   const visible = useMemo(
     () =>
@@ -70,22 +75,23 @@ function PeoplePicker({
   const picked = new Set(choice.picked);
   const allPicked = people.length > 0 && people.every((p) => picked.has(p.id));
 
-  const modes: { value: WhoMode; label: string }[] = isSuperAdmin
-    ? [
-        { value: "everyone", label: `Everyone · ${people.length}` },
-        { value: "team", label: "A team" },
-        { value: "pick", label: "Pick people" },
-      ]
-    : [
-        { value: "everyone", label: `Everyone in my team · ${people.length}` },
-        { value: "pick", label: "Pick people" },
-      ];
+  // A department is worth offering when there is more than one to choose from,
+  // or to an Admin, whose "everyone" also covers people without a department.
+  const offerDepartments = withPeople.length > 1 || (isSuperAdmin && withPeople.length > 0);
+  const modes: { value: WhoMode; label: string }[] = [
+    {
+      value: "everyone",
+      label: `${isSuperAdmin ? "Everyone" : "Everyone in my departments"} · ${people.length}`,
+    },
+    ...(offerDepartments ? [{ value: "department" as const, label: "A department" }] : []),
+    { value: "pick", label: "Pick people" },
+  ];
 
-  const teamOptions: SelectOption[] = teams.map((t) => ({
-    value: t.id,
-    label: `${t.name}'s team`,
-    description: `${t.count} ${t.count === 1 ? "person" : "people"}`,
-    icon: Users,
+  const departmentOptions: SelectOption[] = withPeople.map((d) => ({
+    value: d.id,
+    label: d.name,
+    description: `${d.count} ${d.count === 1 ? "person" : "people"}`,
+    icon: departmentIcon(d.icon),
   }));
 
   function toggle(id: string) {
@@ -105,16 +111,16 @@ function PeoplePicker({
         onChange={(mode) => onChange({ ...choice, mode })}
       />
 
-      {choice.mode === "team" && isSuperAdmin && (
+      {choice.mode === "department" && (
         <div className="max-w-sm">
           <Select
-            aria-label="Team"
-            value={choice.managerId}
-            onValueChange={(managerId) => onChange({ ...choice, managerId })}
-            options={teamOptions}
-            placeholder="Pick a manager's team"
-            searchable={teamOptions.length > 8}
-            searchPlaceholder="Search managers…"
+            aria-label="Department"
+            value={choice.departmentId}
+            onValueChange={(departmentId) => onChange({ ...choice, departmentId })}
+            options={departmentOptions}
+            placeholder="Pick a department"
+            searchable={departmentOptions.length > 8}
+            searchPlaceholder="Search departments…"
             className="!mt-0"
           />
         </div>
@@ -180,10 +186,7 @@ function PeoplePicker({
                           {p.name}
                         </span>
                         <span className="block truncate text-xs text-slate-500">
-                          {[
-                            p.department,
-                            isSuperAdmin && p.managerName ? `Manager ${p.managerName}` : null,
-                          ]
+                          {[p.department, p.role === "MANAGER" ? "Manager" : null]
                             .filter(Boolean)
                             .join(" · ") || p.email}
                         </span>
@@ -311,11 +314,16 @@ function PeriodPicker({
 export function CreateReport({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const today = todayKey();
   const people = useReportPeople();
-  const [who, setWho] = useState<WhoChoice>({ mode: "everyone", managerId: "", picked: [] });
+  const departments = useDepartments();
+  const [who, setWho] = useState<WhoChoice>({ mode: "everyone", departmentId: "", picked: [] });
   const [period, setPeriod] = useState<PeriodChoice>(() => initialPeriod(today));
 
   const list = people.data ?? [];
-  const resolved = resolveWho(who, list, isSuperAdmin);
+  const deptList = useMemo<ReportDepartment[]>(
+    () => (departments.data ?? []).map((d) => ({ id: d.id, name: d.name, icon: d.icon })),
+    [departments.data],
+  );
+  const resolved = resolveWho(who, list, isSuperAdmin, deptList);
   const resolvedPeriod = resolvePeriod(period, today);
   const target = resolvedPeriod ? reportTarget(resolved, resolvedPeriod) : null;
 
@@ -350,13 +358,14 @@ export function CreateReport({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         />
       ) : list.length === 0 ? (
         <p className="mt-6 rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-          Nobody to report on yet. People who report to you appear here.
+          Nobody to report on yet. The staff of your departments appear here.
         </p>
       ) : (
         <div className="mt-5 space-y-6">
           <div className="grid gap-6 xl:grid-cols-2">
             <PeoplePicker
               people={list}
+              departments={deptList}
               choice={who}
               onChange={setWho}
               isSuperAdmin={isSuperAdmin}

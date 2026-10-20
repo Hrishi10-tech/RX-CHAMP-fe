@@ -22,7 +22,7 @@ export const NUMERIC_SETTINGS: NumericSettingMeta[] = [
   {
     key: "approvalSlaHours",
     label: "Time to decide an approval",
-    help: "After this, an item is overdue and goes to the Super Admins.",
+    help: "After this, an item is overdue and goes to the Admin.",
     unit: "hours",
     min: 12,
     max: 168,
@@ -74,6 +74,15 @@ export const NUMERIC_SETTINGS: NumericSettingMeta[] = [
     default: 4,
   },
   {
+    key: "breakBufferMin",
+    label: "Paid break buffer",
+    help: "Minutes a day paid on top of the scheduled breaks: quick breaks and overruns use it first. The daily focus target is the shift minus breaks and buffer.",
+    unit: "min a day",
+    min: 0,
+    max: 60,
+    default: 10,
+  },
+  {
     key: "autoCloseAfterShiftEndMin",
     label: "Close a forgotten day after",
     help: "A day nobody ended closes this long after the shift ends, at the last keyboard or mouse input.",
@@ -93,6 +102,7 @@ export const DEFAULT_SETTINGS: AppSettingsView = {
   quietHourActiveMin: 20,
   quietHoursFlag: 4,
   autoCloseAfterShiftEndMin: 240,
+  breakBufferMin: 10,
 };
 
 /** The form keeps numbers as typed, so a field can be empty mid-edit. */

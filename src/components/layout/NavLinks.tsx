@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 
 import type { NavSection } from "./types";
@@ -29,16 +30,22 @@ export function NavLinks({
   badges?: Record<string, NavBadge | undefined>;
   onNavigate?: () => void;
 }) {
+  // Sixteen items do not always fit: keep the current page's item in view.
+  const activeRef = useRef<HTMLAnchorElement | null>(null);
+  useEffect(() => {
+    activeRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [activeHref]);
+
   return (
     <>
       {sections.map((section, si) => (
-        <div key={section.heading ?? si} className={si > 0 ? "mt-4" : ""}>
+        <div key={section.heading ?? si} className={si > 0 ? "mt-3" : ""}>
           {!collapsed && section.heading && (
-            <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
               {section.heading}
             </p>
           )}
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             {section.items.map(({ href, label, icon: Icon }) => {
               const active = href === activeHref;
               const badge = badges[href];
@@ -46,11 +53,12 @@ export function NavLinks({
               return (
                 <Link
                   key={href}
+                  ref={active ? activeRef : undefined}
                   href={href}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   title={collapsed ? label : undefined}
-                  className={`group relative flex items-center gap-3 rounded-xl py-3 text-[15px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
+                  className={`group relative flex items-center gap-3 rounded-xl py-2.5 text-[15px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
                     collapsed ? "justify-center px-0" : "px-3"
                   } ${
                     active
@@ -63,7 +71,7 @@ export function NavLinks({
                   )}
                   <Icon
                     aria-hidden
-                    className={`h-[22px] w-[22px] shrink-0 ${
+                    className={`h-5 w-5 shrink-0 ${
                       active ? "text-white" : "text-slate-500 group-hover:text-slate-700"
                     }`}
                   />

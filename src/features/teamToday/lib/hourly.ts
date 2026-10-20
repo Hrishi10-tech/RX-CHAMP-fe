@@ -1,4 +1,5 @@
-import { dateKeyOf, hmOf } from "@/lib/time/businessTime";
+import { dateKeyOf } from "@/lib/time/businessTime";
+import { businessHourOf as hourOfInstant, formatHour12 } from "@/lib/time/format";
 import type { HourActivity } from "@/features/activity/types/hourly";
 
 function num(value: unknown): number {
@@ -58,7 +59,7 @@ export interface WorkBounds {
 
 /** The business-time hour (0..23) of an instant. */
 export function businessHourOf(at: Date): number {
-  return Number(hmOf(at.toISOString()).slice(0, 2));
+  return hourOfInstant(at);
 }
 
 /**
@@ -171,9 +172,9 @@ export function workSpan(hours: HourActivity[], bounds?: WorkBounds | null): Hou
   return first < 0 ? null : { start: first, end: last };
 }
 
-/** "09:00". */
+/** "9 AM", "12 PM": an hour as people read it (SPEC 2.10). */
 export function hourLabel(hour: number): string {
-  return `${String(hour).padStart(2, "0")}:00`;
+  return formatHour12(hour);
 }
 
 /** Bar height in px for active minutes out of 60, at least 2 px so a zero still shows. */

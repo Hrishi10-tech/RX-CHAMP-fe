@@ -1,4 +1,5 @@
 /** "HH:MM" clock-time helpers for shift definitions (24h, business time). */
+import { formatTimeRange12 } from "@/lib/time/format";
 
 const HM = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -50,9 +51,28 @@ export function normalizeHm(input: string): string | null {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
-/** "09:30", "18:30" -> "09:30–18:30". */
+/**
+ * A time typed by a person, 12-hour first (SPEC 2.10): "9:30 AM", "9:30pm",
+ * "930p", "12 am", "6 PM"; a 24-hour "18:30" or "1830" is understood too. Returns
+ * the wire value "HH:MM" (24-hour), or null when it does not read as a time.
+ */
+export function normalizeTime12(input: string): string | null {
+  const raw = input.trim().toLowerCase().replace(/\./g, "");
+  if (!raw) return null;
+  const m = /^(.*?)\s*(a|am|p|pm)$/.exec(raw);
+  if (!m) return normalizeHm(raw);
+  const base = normalizeHm(m[1]);
+  if (!base) return null;
+  const [h, min] = base.split(":").map(Number);
+  if (h < 1 || h > 12) return null;
+  const pm = m[2].startsWith("p");
+  const hours = (h % 12) + (pm ? 12 : 0);
+  return `${String(hours).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+/** "09:30", "18:30" -> "9:30 AM – 6:30 PM" (shift times are 24-hour on the wire only). */
 export function formatHmRange(from: string, to: string): string {
-  return `${from}–${to}`;
+  return formatTimeRange12(from, to);
 }
 
 /** Shift length in minutes; an end at or before the start runs past midnight. */

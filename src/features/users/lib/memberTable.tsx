@@ -1,8 +1,13 @@
-import { Avatar, type Status } from "@/app/dashboard/admin/team-management/companies";
+import { Avatar } from "@/components/ui/Avatar";
+import { STATUS_DOT, type Status } from "@/components/ui/StatusBadge";
 import { roleLabel } from "@/constants/roles";
 import type { Column } from "@/components/ui/types";
-import type { User } from "@/features/users/types";
-import type { AgentStatus, TeamMember } from "@/types";
+import { readGrants } from "@/features/auth/api/getMe";
+import { DepartmentIcon } from "@/features/departments/components/DepartmentIcon";
+import { formatDay, dateKeyOf } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
+import type { User, UserDepartment } from "@/features/users/types";
+import type { AgentStatus, MemberDepartment, TeamMember } from "@/types";
 
 export function toStatus(value?: string): Status {
   switch (value?.toUpperCase()) {
@@ -19,28 +24,63 @@ export function toStatus(value?: string): Status {
 export function formatJoined(iso?: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? "—"
-    : d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-      });
+  return Number.isNaN(d.getTime()) ? "—" : `${formatDay(dateKeyOf(d))} ${d.getFullYear()}`;
+}
+
+function toDept(d: UserDepartment | null | undefined): MemberDepartment | null {
+  if (!d || typeof d.id !== "string") return null;
+  return { id: d.id, name: d.name ?? "", icon: d.icon || "briefcase" };
+}
+
+/**
+ * The person's departments, whichever way the API sent them: a list for a
+ * manager, an object or a bare id plus name for staff.
+ */
+export function departmentsOf(u: User): MemberDepartment[] {
+  if (Array.isArray(u.departments) && u.departments.length) {
+    return u.departments.map(toDept).filter((d): d is MemberDepartment => d !== null);
+  }
+  // 4.0 sends a staff member's department as `departmentRef: {id, name, icon}`
+  // beside the text `department`; without it the icon fell back to a briefcase.
+  const ref = toDept(u.departmentRef);
+  if (ref) return [ref];
+  if (u.department && typeof u.department === "object") {
+    const d = toDept(u.department);
+    return d ? [d] : [];
+  }
+  if (u.departmentId) {
+    return [
+      {
+        id: u.departmentId,
+        name: typeof u.department === "string" ? u.department : "",
+        icon: "briefcase",
+      },
+    ];
+  }
+  return [];
 }
 
 export function mapUserToMember(u: User): TeamMember {
   const full = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+  const departments = departmentsOf(u);
   return {
     id: u.id,
     name: u.name || full || u.email || "—",
+    firstName: u.firstName ?? (u.name ?? "").split(" ")[0] ?? "",
+    lastName: u.lastName ?? (u.name ?? "").split(" ").slice(1).join(" "),
     email: u.email ?? "",
-    role: u.role ?? "—",
-    team: u.department ?? "—",
-    company: u.company ?? "—",
+    role: (u.role ?? "USER").toUpperCase(),
+    designation: u.designation ?? "",
+    department: departments[0] ?? null,
+    departments,
     status: toStatus(u.status),
     // Default on, matching the backend: an older API that omits the field must not
     // make the toggle read as off.
     screenshotsEnabled: u.screenshotsEnabled ?? true,
+    idleEnabled: typeof u.idleEnabled === "boolean" ? u.idleEnabled : null,
+    idleMinutes: typeof u.idleMinutes === "number" ? u.idleMinutes : null,
+    grants: readGrants(u.grants, u as unknown as Record<string, unknown>),
+    shiftId: u.shiftId ?? null,
     // Default OFFLINE, not LIVE: an older API that omits the field must not claim
     // someone is being tracked when we have no idea.
     agentStatus: u.agentStatus ?? "OFFLINE",
@@ -50,8 +90,18 @@ export function mapUserToMember(u: User): TeamMember {
 }
 
 export function RolePill({ role }: { role: string }) {
+  const admin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const manager = role === "MANAGER";
   return (
-    <span className="inline-flex items-center whitespace-nowrap rounded-md border border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.06)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[rgb(34_34_204)]">
+    <span
+      className={`inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+        admin
+          ? "border-violet-200 bg-violet-50 text-violet-700"
+          : manager
+            ? "border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.06)] text-[rgb(34_34_204)]"
+            : "border-slate-200 bg-slate-50 text-slate-600"
+      }`}
+    >
       {roleLabel(role)}
     </span>
   );
@@ -68,7 +118,7 @@ const AGENT_STATUS_STYLE: Record<
     hint: "Recording now",
   },
   DAY_ENDED: {
-    label: "End day",
+    label: "Day ended",
     className: "border-sky-200 bg-sky-50 text-sky-700",
     dot: "bg-sky-500",
     hint: "They ended their working day. Nothing more is recorded today.",
@@ -93,15 +143,16 @@ const AGENT_STATUS_STYLE: Record<
   },
 };
 
+/** "13 Oct, 9:05 AM": when the agent last reported. */
+function lastReported(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${formatDay(dateKeyOf(d))}, ${formatTime12(d)}`;
+}
+
 /**
  * Whether this person's agent is set up and reporting. Deliberately separate from
- * the avatar's dot, which is only whether the account may sign in — someone can be
- * a perfectly active user with no agent installed, or blocked with one still running.
- *
- * "Offline" covers asleep, closed, broken and uninstalled alike. The server cannot
- * tell those apart, and to whoever is reading the table they mean the same thing:
- * nothing is being recorded. The tooltip gives the last report so a long silence is
- * distinguishable from a lunch break.
+ * the avatar's dot, which is only whether the account may sign in.
  */
 export function AgentStatusPill({
   status,
@@ -123,13 +174,11 @@ export function AgentStatusPill({
           hint: "Signed in, but has not pressed Start Day yet. Nothing is recorded before that.",
         }
       : { ...AGENT_STATUS_STYLE.OFFLINE, label: raw || "Unknown" });
-  // The last report turns "quiet" into something you can judge — a lunch break
-  // reads very differently from five days.
   const seen =
     status === "NOT_ACTIVATED"
       ? null
       : lastSeenAt
-        ? `Last reported ${new Date(lastSeenAt).toLocaleString()}`
+        ? `Last reported ${lastReported(lastSeenAt)}`
         : "No activity has ever been reported";
 
   return (
@@ -142,12 +191,6 @@ export function AgentStatusPill({
     </span>
   );
 }
-
-const STATUS_DOT: Record<Status, string> = {
-  Active: "bg-emerald-500",
-  Invited: "bg-amber-500",
-  Inactive: "bg-slate-400",
-};
 
 export function MemberAvatar({ name, status }: { name: string; status: Status }) {
   return (
@@ -162,6 +205,33 @@ export function MemberAvatar({ name, status }: { name: string; status: Status })
   );
 }
 
+/** Department icon and name; a manager's extra departments as "+2". */
+export function MemberDepartments({ member }: { member: TeamMember }) {
+  const first = member.departments[0];
+  if (!first) {
+    return (
+      <span className="text-sm text-slate-400">
+        {member.role === "USER" ? "No department" : "—"}
+      </span>
+    );
+  }
+  const more = member.departments.length - 1;
+  return (
+    <span
+      className="inline-flex min-w-0 items-center gap-2"
+      title={member.departments.map((d) => d.name).join(", ")}
+    >
+      <DepartmentIcon icon={first.icon} size="xs" />
+      <span className="truncate text-sm font-medium text-slate-700">{first.name}</span>
+      {more > 0 && (
+        <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+          +{more}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export const memberColumns: Column<TeamMember>[] = [
   {
     key: "name",
@@ -169,9 +239,9 @@ export const memberColumns: Column<TeamMember>[] = [
     render: (m) => (
       <div className="flex items-center gap-3">
         <MemberAvatar name={m.name} status={m.status} />
-        <div>
-          <p className="font-medium text-slate-900">{m.name}</p>
-          <p className="text-xs text-slate-400">{m.email}</p>
+        <div className="min-w-0">
+          <p className="truncate font-medium text-slate-900">{m.name}</p>
+          <p className="truncate text-xs text-slate-400">{m.designation || m.email}</p>
         </div>
       </div>
     ),
@@ -181,8 +251,11 @@ export const memberColumns: Column<TeamMember>[] = [
     header: "Role",
     render: (m) => <RolePill role={m.role} />,
   },
-  { key: "team", header: "Team" },
-  { key: "company", header: "Company" },
+  {
+    key: "department",
+    header: "Department",
+    render: (m) => <MemberDepartments member={m} />,
+  },
   {
     key: "agentStatus",
     header: "Status",

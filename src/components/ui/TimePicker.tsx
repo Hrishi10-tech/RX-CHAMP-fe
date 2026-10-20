@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Clock } from "lucide-react";
 
+import { formatTime12 } from "@/lib/time/format";
+
 import type { Parsed, TimePickerProps } from "./types";
 
 const BRAND = "#2222cc";
@@ -13,13 +15,8 @@ const RADIUS = 72;
 const NUM = 32;
 const TICK_R = CENTER - 8;
 
-export function formatTime12(value: string): string {
-  if (!value) return "";
-  const [h, m] = value.split(":").map(Number);
-  const period = h < 12 ? "AM" : "PM";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
-}
+/** The portal's one 12-hour formatter (SPEC 7.4), re-exported for older imports. */
+export { formatTime12 };
 
 function parseValue(value: string): Parsed {
   if (!value) return { h12: 9, m: 0, p: "AM" };

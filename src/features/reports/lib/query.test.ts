@@ -11,14 +11,30 @@ describe("report query strings", () => {
     expect(buildTeamDayQuery({ date: "2026-10-12", userIds: [] })).toEqual({ date: "2026-10-12" });
   });
 
-  it("team month: the month, the manager and the ids that are set", () => {
+  it("team month: the month, the department and the ids that are set", () => {
     expect(buildTeamMonthQuery({ month: "2026-09" })).toEqual({ month: "2026-09" });
-    expect(buildTeamMonthQuery({ month: "2026-09", managerId: "m-1" })).toEqual({
+    expect(
+      buildTeamMonthQuery({ month: "2026-09", departmentId: "d-1", userIds: ["a", "b"] }),
+    ).toEqual({
       month: "2026-09",
-      managerId: "m-1",
+      departmentId: "d-1",
+      userIds: "a,b",
     });
-    expect(buildTeamMonthQuery({ month: "2026-09", userIds: ["a"], managerId: "" })).toEqual({
+    expect(buildTeamMonthQuery({ month: "2026-09", userIds: ["a"], departmentId: "" })).toEqual({
       month: "2026-09",
+      userIds: "a",
+    });
+  });
+
+  it("team day: a department goes as its id", () => {
+    expect(buildTeamDayQuery({ date: "2026-10-12", departmentId: "d-1" })).toEqual({
+      date: "2026-10-12",
+      departmentId: "d-1",
+    });
+    // An older link that also names people keeps them (the server takes both).
+    expect(buildTeamDayQuery({ date: "2026-10-12", departmentId: "d-1", userIds: ["a"] })).toEqual({
+      date: "2026-10-12",
+      departmentId: "d-1",
       userIds: "a",
     });
   });

@@ -61,18 +61,38 @@ function ReadyBanner({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   );
 }
 
+/** "7h 30m a day on a 9h shift with 80 min of scheduled breaks". */
+function formatTargetExample(bufferMin: number): string {
+  const scheduled = 80;
+  const targetMin = 9 * 60 - scheduled - bufferMin;
+  const h = Math.floor(targetMin / 60);
+  const m = targetMin % 60;
+  return `${h}h${m ? ` ${m}m` : ""} a day on a 9h shift with ${scheduled} min of scheduled breaks`;
+}
+
 function HowNumbersWork() {
   const { data: s } = useAppSettings();
+  const buffer = s?.breakBufferMin ?? 10;
   const rows: [string, string][] = [
-    ["Focus time", "Start Day to End Day, minus breaks. Payroll uses it as is."],
+    [
+      "Focus time",
+      "Start Day to End Day, minus breaks and time away that was not approved. Payroll pays focus time plus paid breaks.",
+    ],
+    [
+      "Paid breaks",
+      `The shift's scheduled breaks plus a ${buffer} min buffer a day. Quick breaks and overruns use the buffer first; the rest is unpaid.`,
+    ],
+    [
+      "Target",
+      `The shift minus the paid breaks: ${formatTargetExample(buffer)}. Only the calendar's working days have one.`,
+    ],
     [
       "Approvals",
-      "Meetings and skipped breaks count until rejected. Minutes over a break stay out until approved.",
+      "Meetings and skipped breaks count until rejected. Away time with a reason counts once approved.",
     ],
-    ["Expected", "Shift length minus scheduled breaks: 8h a day on a 9h shift with 1h of breaks."],
     [
       "Attendance",
-      `Full day at ${s?.fullDayPct ?? 80}% of expected or more, half day at ${s?.halfDayPct ?? 40}% or more, otherwise absent. Days off are left out.`,
+      `Full day at ${s?.fullDayPct ?? 80}% of the target or more, half day at ${s?.halfDayPct ?? 40}% or more, otherwise absent. Days off are left out.`,
     ],
     [
       "Late start",
@@ -80,7 +100,7 @@ function HowNumbersWork() {
     ],
     [
       "Activity",
-      "Keyboard and mouse minutes by hour, for managers and Super Admins only. It never changes focus time.",
+      "Keyboard and mouse minutes by hour, for Admins and managers with activity access. It never changes focus time.",
     ],
   ];
   return (
@@ -97,8 +117,8 @@ function HowNumbersWork() {
         ))}
       </dl>
       <p className="mt-4 text-xs text-slate-500">
-        Super Admins can change these rules in Settings. A Super Admin locks each month for payroll
-        once its approvals are decided.
+        The Admin changes these rules in Settings and the working days in Calendar, and locks each
+        month for payroll once its approvals are decided.
       </p>
     </aside>
   );

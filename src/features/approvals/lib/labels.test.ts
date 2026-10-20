@@ -139,6 +139,9 @@ describe("row wording", () => {
     expect(reasonLabel("BREAK_OVERRUN")).toBe("Why it ran over");
     expect(reasonLabel("BREAK_AUTO_SKIP")).toBe("Comment");
     expect(reasonLabel("BREAK_SKIP")).toBe("Reason");
+    expect(reasonLabel("AWAY_THINKING")).toBe("Their thought");
+    expect(reasonLabel("AWAY_MEETING")).toBe("Summary");
+    expect(reasonLabel("AWAY_CUSTOM")).toBe("What they worked on");
   });
 
   it("says who decided and when", () => {
@@ -148,13 +151,13 @@ describe("row wording", () => {
         { status: "APPROVED", decidedAt: "2026-10-13T06:35:00Z", decidedByName: "Maya Reddy" },
         today,
       ),
-    ).toBe("Approved by Maya Reddy at 12:05");
+    ).toBe("Approved by Maya Reddy at 12:05 PM");
     expect(
       decidedLine(
         { status: "REJECTED", decidedAt: "2026-10-12T12:50:00Z", decidedByName: null },
         today,
       ),
-    ).toBe("Rejected on 12 Oct, 18:20");
+    ).toBe("Rejected on 12 Oct, 6:20 PM");
     expect(decidedLine({ status: "PENDING", decidedAt: null, decidedByName: null }, today)).toBe(
       null,
     );

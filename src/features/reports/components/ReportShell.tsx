@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import { btnSecondary, btnSmall } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { formatDayLong } from "@/lib/time/months";
-import { hmOf, todayKey } from "@/lib/time/businessTime";
+import { todayKey } from "@/lib/time/businessTime";
+import { formatTime12 } from "@/lib/time/format";
 
 export interface Crumb {
   label: string;
@@ -173,7 +174,7 @@ export function ReportShell({
       </div>
 
       <p className="hidden text-xs text-slate-500 print:block">
-        RX Vision report · printed {formatDayLong(todayKey())}, {hmOf(now)}
+        RX Vision report · printed {formatDayLong(todayKey())}, {formatTime12(now)}
       </p>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

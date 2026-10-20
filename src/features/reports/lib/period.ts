@@ -137,24 +137,35 @@ export function stepPeriod(period: ReportPeriod, by: number, today: string): Rep
 
 // ---- People --------------------------------------------------------------------------
 
-/** "Everyone in scope", "A team" (a Super Admin picks a manager), or "Pick people". */
-export type WhoMode = "everyone" | "team" | "pick";
+/**
+ * "Everyone in scope", "A department" (4.0: people are grouped by department,
+ * not by a manager's team), or "Pick people".
+ */
+export type WhoMode = "everyone" | "department" | "pick";
 
 export interface WhoChoice {
   mode: WhoMode;
-  managerId: string;
+  departmentId: string;
   picked: string[];
+}
+
+/** A department as the report pickers name it (GET /departments). */
+export interface ReportDepartment {
+  id: string;
+  name: string;
+  icon?: string | null;
 }
 
 export interface ResolvedWho {
   count: number;
-  /** "Everyone in my team, 8 people", "Maya Reddy's team, 8 people", "Asha Kumar", "3 people". */
+  /** "Everyone, 8 people", "Engineering, 8 people", "Asha Kumar", "3 people". */
   label: string;
   /** Set when exactly one person is chosen: the report is about them. */
   single: ReportPerson | null;
-  /** For a team report: who exactly, when it is not everyone in scope. */
+  /** For a team report of picked people: who exactly. */
   userIds?: string[];
-  managerId?: string;
+  /** For a department report: which one (the team endpoints narrow by it). */
+  departmentId?: string;
   /** Everyone the report covers, for lists and team-day ids. */
   members: ReportPerson[];
 }
@@ -163,38 +174,39 @@ function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** The managers who have people in scope, for the Super Admin's "A team". */
-export function teamsOf(people: ReportPerson[]): { id: string; name: string; count: number }[] {
-  const teams = new Map<string, { id: string; name: string; count: number }>();
-  for (const p of people) {
-    if (!p.managerId) continue;
-    const team = teams.get(p.managerId) ?? {
-      id: p.managerId,
-      name: p.managerName || "Unnamed manager",
-      count: 0,
-    };
-    team.count += 1;
-    teams.set(p.managerId, team);
-  }
-  return [...teams.values()].sort((a, b) => a.name.localeCompare(b.name));
+/** The people of one department, by the `departmentId` each `/reports/people` row carries. */
+export function membersOf(people: ReportPerson[], dept: ReportDepartment): ReportPerson[] {
+  return people.filter((p) => p.departmentId === dept.id);
+}
+
+/** The departments that have people in scope, with how many, for "A department". */
+export function departmentsIn(
+  people: ReportPerson[],
+  departments: ReportDepartment[],
+): (ReportDepartment & { count: number })[] {
+  return departments
+    .map((d) => ({ ...d, count: membersOf(people, d).length }))
+    .filter((d) => d.count > 0)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function resolveWho(
   choice: WhoChoice,
   people: ReportPerson[],
-  isSuperAdmin: boolean,
+  isAdmin: boolean,
+  departments: ReportDepartment[] = [],
 ): ResolvedWho {
-  if (choice.mode === "team") {
-    const members = people.filter((p) => p.managerId && p.managerId === choice.managerId);
-    const manager = members[0]?.managerName || "This manager";
+  if (choice.mode === "department") {
+    const dept = departments.find((d) => d.id === choice.departmentId);
+    const members = dept ? membersOf(people, dept) : [];
     return {
       count: members.length,
-      label: members.length
-        ? `${manager}'s team, ${plural(members.length, "person", "people")}`
-        : "Pick a team",
+      label:
+        dept && members.length
+          ? `${dept.name}, ${plural(members.length, "person", "people")}`
+          : "Pick a department",
       single: members.length === 1 ? members[0] : null,
-      managerId: choice.managerId || undefined,
-      userIds: members.map((p) => p.id),
+      departmentId: dept?.id,
       members,
     };
   }
@@ -216,7 +228,7 @@ export function resolveWho(
   }
   return {
     count: people.length,
-    label: `${isSuperAdmin ? "Everyone" : "Everyone in my team"}, ${plural(people.length, "person", "people")}`,
+    label: `${isAdmin ? "Everyone" : "Everyone in my departments"}, ${plural(people.length, "person", "people")}`,
     single: people.length === 1 ? people[0] : null,
     members: people,
   };
@@ -228,9 +240,11 @@ export type ReportKind = "person-day" | "person-month" | "team-day" | "team-mont
 
 export const REPORT_KIND_TEXT: Record<ReportKind, string> = {
   "person-day": "A timeline of the day, every break and reason, and the day's totals.",
-  "person-month": "Every day in detail: hours, attendance, breaks, reasons and decisions.",
+  "person-month":
+    "Every day in detail: hours against target, paid and unpaid breaks, away time and decisions.",
   "team-day": "An overview of the day: each person's hours, breaks and approvals, side by side.",
-  "team-month": "An overview: each person's hours, attendance, breaks and reasons, side by side.",
+  "team-month":
+    "An overview: each person's hours against target, breaks, away time and attendance, side by side.",
 };
 
 function query(params: Record<string, string | undefined>): string {
@@ -252,19 +266,17 @@ export function reportTarget(
       ? { kind: "person-day", href: `${base}${query({ date: period.date })}` }
       : { kind: "person-month", href: `${base}${query({ month: period.month })}` };
   }
-  if (period.kind === "day") {
-    // The team-day endpoint takes ids only, so a manager's team goes as its ids.
-    return {
-      kind: "team-day",
-      href: `/dashboard/reports/team${query({ date: period.date, userIds: who.userIds?.join(",") })}`,
-    };
-  }
-  return {
-    kind: "team-month",
-    href: `/dashboard/reports/team${query({
-      month: period.month,
-      managerId: who.managerId,
-      userIds: who.managerId ? undefined : who.userIds?.join(","),
-    })}`,
-  };
+  // A department goes as itself (the team endpoints narrow by it); picked people as ids.
+  const people = who.departmentId
+    ? { departmentId: who.departmentId }
+    : { userIds: who.userIds?.join(",") };
+  return period.kind === "day"
+    ? {
+        kind: "team-day",
+        href: `/dashboard/reports/team${query({ date: period.date, ...people })}`,
+      }
+    : {
+        kind: "team-month",
+        href: `/dashboard/reports/team${query({ month: period.month, ...people })}`,
+      };
 }

@@ -61,7 +61,11 @@ export function addDaysToKey(key: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** ISO instant -> "HH:MM" (24h) in the business zone, or "" when missing/invalid. */
+/**
+ * ISO instant -> "HH:MM" (24h) in the business zone, or "" when missing/invalid.
+ * A wire value for comparisons and inputs, never for display: people read times
+ * through formatTime12 (lib/time/format), which the lint rules enforce.
+ */
 export function hmOf(iso: string | null | undefined, timeZone = BUSINESS_TIMEZONE): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -110,4 +114,32 @@ export function formatMinutes(totalSec: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m ? `${h} h ${m} min` : `${h} h`;
+}
+
+/** The business zone's offset from UTC at an instant, in ms (IST: +5h30). */
+export function zoneOffsetMs(instant: number, timeZone: string): number {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).formatToParts(new Date(instant));
+    const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+    const asUtc = Date.UTC(
+      get("year"),
+      get("month") - 1,
+      get("day"),
+      get("hour"),
+      get("minute"),
+      get("second"),
+    );
+    return asUtc - Math.floor(instant / 1000) * 1000;
+  } catch {
+    return 0;
+  }
 }

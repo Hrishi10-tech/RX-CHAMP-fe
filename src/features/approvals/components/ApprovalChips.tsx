@@ -17,13 +17,16 @@ import type { ApprovalItemView } from "@/features/approvals/types";
 export function CategoryChip({
   category,
   inProgress = false,
+  label: override,
 }: {
   category: string;
   /** A live meeting still running reads "Live meeting"; an ended one "Meeting". */
   inProgress?: boolean;
+  /** An away item's own reason label (a renamed or custom reason). */
+  label?: string | null;
 }) {
   const { label, tone } = categoryChip(category, inProgress);
-  return <Chip tone={tone}>{label}</Chip>;
+  return <Chip tone={tone}>{override?.trim() || label}</Chip>;
 }
 
 export function StatusChip({ status }: { status: ApprovalItemView["status"] }) {

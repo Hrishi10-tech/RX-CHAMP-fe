@@ -16,10 +16,13 @@ export type ApproverRole = "SUPER_ADMIN" | "MANAGER";
 /** 3.1: a record is a break taken, a break skipped, or one skipped automatically. */
 export type BreakOutcome = "TAKEN" | "SKIPPED" | "AUTO_SKIPPED";
 
+/** A record's kind: a shift's break, a 4.0 quick break, or null for an unscheduled one. */
+export type BreakRecordKind = BreakKind | "QUICK";
+
 export interface BreakRecordView {
   id: string;
   date: string;
-  kind: BreakKind | null;
+  kind: BreakRecordKind | null;
   label: string;
   presenceType: BreakPresenceType;
   shiftName: string | null;
@@ -51,6 +54,8 @@ export interface BreakRecordView {
   dueAt?: string | null;
   /** A skip with no reason yet, still pending: the person must comment before End Day. */
   needsComment?: boolean;
+  /** 4.0 quick breaks: the length the person picked (5, 10 or 15 min). */
+  plannedMin?: number | null;
 }
 
 export interface BreakSlotLocal {
@@ -198,6 +203,6 @@ export interface TeamBreaksView {
 
 export interface GetTeamBreaksParams {
   date?: string;
-  /** Super Admin: one manager's team; omitted = everyone. */
-  managerId?: string;
+  /** One department (4.0); omitted = everyone the viewer may see. */
+  departmentId?: string;
 }

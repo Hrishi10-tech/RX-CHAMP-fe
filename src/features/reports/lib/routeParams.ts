@@ -19,11 +19,14 @@ export function periodFromParams(params: Params, today: string): ReportPeriod {
   return { kind: "month", month: monthOfDate(today) };
 }
 
-/** The people a team report URL narrows to (`managerId`, `userIds=a,b`). */
-export function peopleFromParams(params: Params): { managerId?: string; userIds?: string[] } {
-  const managerId = params.get("managerId")?.trim() || undefined;
+/**
+ * The people a team report URL narrows to (`departmentId`, `userIds=a,b`). A 3.x
+ * `managerId` link is read as everyone in scope: 4.0 has no manager's team.
+ */
+export function peopleFromParams(params: Params): { departmentId?: string; userIds?: string[] } {
+  const departmentId = params.get("departmentId")?.trim() || undefined;
   const userIds = parseIds(params.get("userIds"));
-  return { managerId, userIds: userIds.length ? userIds : undefined };
+  return { departmentId, userIds: userIds.length ? userIds : undefined };
 }
 
 /** `?print=1`: open the print dialog once the report has loaded (the PDF link). */

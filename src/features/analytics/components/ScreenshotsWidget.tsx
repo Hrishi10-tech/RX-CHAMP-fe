@@ -1,14 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { format, parseISO } from "date-fns";
-import {
-  Camera,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  Maximize2,
-} from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Loader2, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { getScreenshots } from "@/features/screenshots/api/getScreenshots";
@@ -17,16 +10,13 @@ import type { Screenshot } from "@/features/screenshots/types";
 import { ScreenshotLightbox } from "@/features/screenshots/components/ScreenshotLightbox";
 import { indexOfScreenshot } from "@/features/screenshots/lib/sameScreenshot";
 import { TimePicker } from "@/components/ui/TimePicker";
+import { businessHourOf, formatTime12, twelveHour } from "@/lib/time/format";
+import { BUSINESS_TIMEZONE, todayKey, zoneOffsetMs } from "@/lib/time/businessTime";
 
-const pad = (n: number) => String(n).padStart(2, "0");
 const shotKey = (s: Screenshot, i: number) => s.id ?? `${s.takenAt}-${i}`;
 
 function timeLabel(iso: string): string {
-  try {
-    return format(parseISO(iso), "hh:mm a");
-  } catch {
-    return iso;
-  }
+  return formatTime12(iso) || iso;
 }
 
 const toMinutes = (hhmm: string) => {
@@ -57,16 +47,28 @@ function loadSavedRange(): { start: string; end: string } {
   return FULL_DAY;
 }
 
-function rangeIso(
+/**
+ * The window of a business day (SPEC 2.10): midnight is the business zone's,
+ * whatever the viewer's own clock says, so a manager abroad sees the same day.
+ */
+export function rangeIso(
   date: string | undefined,
   startMin: number,
   endMin: number,
 ): { from: string; to: string } {
-  const base = date ? new Date(`${date}T00:00:00`) : new Date();
-  base.setHours(0, 0, 0, 0);
-  const from = new Date(base.getTime() + startMin * 60000);
-  const to = new Date(base.getTime() + (endMin + 1) * 60000);
+  const key = date ?? todayKey();
+  const [y, m, d] = key.split("-").map(Number);
+  const guess = Date.UTC(y, m - 1, d);
+  const midnight = guess - zoneOffsetMs(guess, BUSINESS_TIMEZONE);
+  const from = new Date(midnight + startMin * 60000);
+  const to = new Date(midnight + (endMin + 1) * 60000);
   return { from: from.toISOString(), to: to.toISOString() };
+}
+
+/** The business-zone hour (0-23) a screenshot was taken in. */
+function hourOf(iso: string): number {
+  const hour = businessHourOf(iso);
+  return Number.isNaN(hour) ? 0 : hour;
 }
 
 function dedupById(list: Screenshot[]): Screenshot[] {
@@ -93,17 +95,11 @@ function TimeField({ value, onChange }: { value: string; onChange: (v: string) =
 }
 
 function hourLabel(h: number): string {
-  const ampm = h < 12 || h === 24 ? "AM" : "PM";
-  const hr = h % 12 === 0 ? 12 : h % 12;
-  return `${pad(hr)}:00 ${ampm}`;
+  return twelveHour(h % 24, 0);
 }
 
 function minuteLabel(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  const ampm = h < 12 ? "AM" : "PM";
-  const hr = h % 12 === 0 ? 12 : h % 12;
-  return `${pad(hr)}:${pad(m)} ${ampm}`;
+  return twelveHour(Math.floor(min / 60), min % 60);
 }
 
 function agoLabel(iso: string): string {
@@ -115,7 +111,16 @@ function agoLabel(iso: string): string {
   return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
 }
 
-export function ScreenshotsWidget({ userId, date }: { userId: string; date?: string }) {
+export function ScreenshotsWidget({
+  userId,
+  date,
+  canCapture = true,
+}: {
+  userId: string;
+  date?: string;
+  /** Capture now is the Admin's (a Manager's grant is view-only, SPEC 2.2). */
+  canCapture?: boolean;
+}) {
   const [items, setItems] = useState<Screenshot[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -220,14 +225,14 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
     const endH = Math.ceil(endMin / 60);
     const list: { hour: number; count: number }[] = [];
     for (let h = startH; h <= endH; h++) {
-      const count = filtered.filter((s) => new Date(s.takenAt).getHours() === h).length;
+      const count = filtered.filter((s) => hourOf(s.takenAt) === h).length;
       list.push({ hour: h, count });
     }
     return list;
   }, [startMin, endMin, filtered]);
 
   useEffect(() => {
-    setActiveHour(filtered.length ? new Date(filtered[0].takenAt).getHours() : null);
+    setActiveHour(filtered.length ? hourOf(filtered[0].takenAt) : null);
   }, [filtered]);
 
   const activeIndex = useMemo(() => {
@@ -242,7 +247,7 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
     if (!el || !filtered.length) return;
     const step = 176 + 12;
     const idx = Math.min(filtered.length - 1, Math.max(0, Math.round(el.scrollLeft / step)));
-    const hour = new Date(filtered[idx].takenAt).getHours();
+    const hour = hourOf(filtered[idx].takenAt);
     setActiveHour((prev) => (prev === hour ? prev : hour));
 
     if (el.scrollWidth - el.scrollLeft - el.clientWidth < 260) loadMore();
@@ -318,15 +323,17 @@ export function ScreenshotsWidget({ userId, date }: { userId: string; date?: str
             value={range.end}
             onChange={(v) => updateRange({ start: range.start, end: v })}
           />
-          <button
-            type="button"
-            onClick={handleCapture}
-            disabled={capturing}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[rgb(34_34_204)] px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[rgb(28_28_180)] disabled:opacity-60"
-          >
-            <Camera className={`h-4 w-4 ${capturing ? "animate-pulse" : ""}`} />
-            {capturing ? "Capturing…" : "Capture "}
-          </button>
+          {canCapture && (
+            <button
+              type="button"
+              onClick={handleCapture}
+              disabled={capturing}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[rgb(34_34_204)] px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[rgb(28_28_180)] disabled:opacity-60"
+            >
+              <Camera className={`h-4 w-4 ${capturing ? "animate-pulse" : ""}`} />
+              {capturing ? "Capturing…" : "Capture "}
+            </button>
+          )}
         </div>
       </div>
 

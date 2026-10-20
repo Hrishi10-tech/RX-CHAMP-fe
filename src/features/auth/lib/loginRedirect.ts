@@ -1,8 +1,10 @@
-import { canAccess, normalizeRole, resolveHomeRoute } from "@/constants/roles";
+import { canAccess, normalizeRole, resolveHomeRoute, type Grants } from "@/constants/roles";
 import { safeInternalPath } from "@/lib/nav/returnTo";
 
 export const LOGIN_ROUTE = "/auth/login";
 export const REDIRECT_PARAM = "redirect";
+/** `?reason=staff`: the portal refused a Staff account (SPEC 1.1). */
+export const REASON_PARAM = "reason";
 
 /** The pathname of an internal path, without its query or hash. */
 function pathnameOf(path: string): string {
@@ -34,9 +36,13 @@ export function loginHref(from?: string | null): string {
  * Where to go once signed in: the `?redirect=` page when it is a dashboard
  * page this role may open, else the role's home.
  */
-export function afterLoginPath(redirect: string | null | undefined, role?: string | null): string {
+export function afterLoginPath(
+  redirect: string | null | undefined,
+  role?: string | null,
+  grants?: Grants,
+): string {
   const home = resolveHomeRoute(role);
   const path = dashboardPath(redirect);
   if (!path) return home;
-  return canAccess(normalizeRole(role), pathnameOf(path)) ? path : home;
+  return canAccess(normalizeRole(role), pathnameOf(path), { grants }) ? path : home;
 }

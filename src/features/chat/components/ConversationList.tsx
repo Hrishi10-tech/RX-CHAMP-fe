@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
-import { Avatar } from "@/app/dashboard/admin/team-management/companies";
+import { Avatar } from "@/components/ui/Avatar";
+import { formatTime12 } from "@/lib/time/format";
 import type { ChatContactView, ConversationTab } from "@/features/chat/types";
 
 function relativeLabel(iso?: string): string {
@@ -12,9 +13,7 @@ function relativeLabel(iso?: string): string {
   if (Number.isNaN(d.getTime())) return "";
   const now = new Date();
   const sameDay = d.toDateString() === now.toDateString();
-  if (sameDay) {
-    return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  }
+  if (sameDay) return formatTime12(d);
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) return "Yesterday";

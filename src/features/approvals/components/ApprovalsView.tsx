@@ -51,6 +51,7 @@ const CATEGORY_OPTIONS: SelectOption[] = [
   { value: ANY, label: "All types" },
   { value: "TYPE_BREAK", label: "All breaks" },
   { value: "TYPE_MEETING", label: "All meetings" },
+  { value: "TYPE_AWAY", label: "All away time" },
   ...APPROVAL_CATEGORIES.map((c) => ({ value: c, label: CATEGORY_FILTER_LABEL[c] })),
 ];
 
@@ -129,8 +130,8 @@ function Banner({ slaHours, isSuperAdmin }: { slaHours: number; isSuperAdmin: bo
         <p>
           <span className="font-semibold">Decide every item within {slaHours} hours.</span>{" "}
           {isSuperAdmin
-            ? "Overdue items go to the Super Admins and stop their manager ending the day."
-            : "Overdue items go to the Super Admins and stop you ending your day."}
+            ? "Overdue items go to the Admin and stop their manager ending the day."
+            : "Overdue items go to the Admin and stop you ending your day."}
         </p>
         <p>
           <span className="font-semibold">Each decision changes focus time.</span> Meetings and
@@ -277,7 +278,7 @@ export function ApprovalsView({
     <div className="space-y-5">
       <PageHeader
         title="Approvals"
-        subtitle="Breaks started early or late, back late, skipped, and every meeting, with each person's reason. Clear the list every day."
+        subtitle="Breaks started early or late, back late or skipped, meetings, and time away with a reason. Clear the list every day."
       />
 
       <Banner slaHours={slaHours} isSuperAdmin={isSuperAdmin} />
@@ -346,7 +347,7 @@ export function ApprovalsView({
               onChange={setScope}
               tabs={[
                 { value: "mine", label: "Mine" },
-                { value: "all", label: "All teams" },
+                { value: "all", label: "Whole organisation" },
               ]}
             />
           )}
@@ -456,10 +457,10 @@ export function ApprovalsView({
                     </button>
                   ) : tab !== "pending" ? null : (
                     <Link
-                      href="/dashboard/team-today"
+                      href="/dashboard/overview"
                       className="text-sm font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
                     >
-                      Open Team today
+                      Open the overview
                     </Link>
                   )
                 }

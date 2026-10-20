@@ -21,13 +21,16 @@ function TeamReport() {
   const autoPrint = wantsPrint(searchParams);
 
   const dayParams = useMemo(
-    () => (period.kind === "day" ? { date: period.date, userIds: people.userIds } : null),
+    () =>
+      period.kind === "day"
+        ? { date: period.date, departmentId: people.departmentId, userIds: people.userIds }
+        : null,
     [period, people],
   );
   const monthParams = useMemo(
     () =>
       period.kind === "month"
-        ? { month: period.month, managerId: people.managerId, userIds: people.userIds }
+        ? { month: period.month, departmentId: people.departmentId, userIds: people.userIds }
         : null,
     [period, people],
   );

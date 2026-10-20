@@ -1,11 +1,54 @@
 import {
   APPROVAL_LABEL,
   CELL_STATUS,
+  isQuickBreak,
   overrunLabel,
+  recordLabel,
   timingLabel,
   timingTone,
   tookLabel,
+  unscheduledHeading,
 } from "./labels";
+
+describe("quick breaks (4.0, GET /breaks/team unscheduled)", () => {
+  const quick = { kind: "QUICK" as const, label: "Quick break", plannedMin: 10 };
+
+  it("names a quick break with its planned length", () => {
+    expect(recordLabel(quick)).toBe("Quick break (10 min)");
+    expect(recordLabel({ ...quick, plannedMin: null })).toBe("Quick break");
+    expect(recordLabel({ kind: null, label: "Break (unscheduled)", plannedMin: null })).toBe(
+      "Break (unscheduled)",
+    );
+    expect(recordLabel({ kind: "LUNCH", label: "Lunch" })).toBe("Lunch");
+  });
+
+  it("measures a quick break against its planned length", () => {
+    const base = { tookSec: 12 * 60, durationMin: null, inProgress: false };
+    expect(tookLabel({ ...base, ...quick })).toBe("Took 12 min of 10");
+    expect(tookLabel({ ...base, kind: null })).toBe("Took 12 min");
+    expect(tookLabel({ ...base, ...quick, inProgress: true })).toBe("12 min so far");
+  });
+
+  it("says how far a quick break ran past its planned length (the API sends overrunSec 0)", () => {
+    const done = { ...quick, overrunSec: 0, inProgress: false };
+    expect(overrunLabel({ ...done, tookSec: 15 * 60 })).toBe("5 min over");
+    expect(overrunLabel({ ...done, tookSec: 10 * 60 + 20 })).toBeNull();
+    expect(overrunLabel({ ...done, tookSec: 9 * 60 })).toBeNull();
+    // Still running: not over yet, whatever the clock says.
+    expect(overrunLabel({ ...done, tookSec: 15 * 60, inProgress: true })).toBeNull();
+    // A shift's break keeps the server's figure.
+    expect(overrunLabel({ kind: "LUNCH", overrunSec: 240, tookSec: 0 })).toBe("4 min over");
+  });
+
+  it("heads the list by what is in it", () => {
+    expect(unscheduledHeading([{ kind: "QUICK" }, { kind: "QUICK" }])).toBe("Quick breaks");
+    expect(unscheduledHeading([{ kind: "QUICK" }, { kind: null }])).toBe(
+      "Quick and unscheduled breaks",
+    );
+    expect(unscheduledHeading([{ kind: null }])).toBe("Outside the schedule");
+    expect(isQuickBreak({ kind: "MORNING" })).toBe(false);
+  });
+});
 
 describe("timingLabel", () => {
   it.each([

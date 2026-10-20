@@ -87,30 +87,5 @@ export function layoutTimeline(
   return { startMs, endMs, segments, markers, ticks, totals };
 }
 
-/** The business zone's offset from UTC at an instant, in ms (IST: +5h30). */
-export function zoneOffsetMs(instant: number, timeZone: string): number {
-  try {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      hourCycle: "h23",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }).formatToParts(new Date(instant));
-    const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
-    const asUtc = Date.UTC(
-      get("year"),
-      get("month") - 1,
-      get("day"),
-      get("hour"),
-      get("minute"),
-      get("second"),
-    );
-    return asUtc - Math.floor(instant / 1000) * 1000;
-  } catch {
-    return 0;
-  }
-}
+/** Kept here for the reports that import it; it lives with the other zone helpers. */
+export { zoneOffsetMs } from "@/lib/time/businessTime";

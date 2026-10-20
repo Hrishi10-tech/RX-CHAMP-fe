@@ -1,3 +1,4 @@
+import { formatHour12 } from "@/lib/time/format";
 import type { DailyFlowCell } from "@/features/analytics/types";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -48,7 +49,7 @@ export function DailyFlowHeatmap({
                       key={hour}
                       className="aspect-square rounded-[3px]"
                       style={{ backgroundColor: cellColor(v) }}
-                      title={`${label} ${hour}:00 — ${Math.round(v * 100)}%`}
+                      title={`${label} ${formatHour12(hour)} — ${Math.round(v * 100)}%`}
                     />
                   );
                 })}

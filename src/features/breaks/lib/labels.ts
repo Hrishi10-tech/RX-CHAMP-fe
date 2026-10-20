@@ -83,18 +83,66 @@ export function isSkipRecord(r: Pick<BreakRecordView, "outcome">): boolean {
   return r.outcome === "SKIPPED" || r.outcome === "AUTO_SKIPPED";
 }
 
+/** A 4.0 quick break (taken any time, from the break buffer), not a shift's break. */
+export function isQuickBreak(r: Pick<BreakRecordView, "kind">): boolean {
+  return r.kind === "QUICK";
+}
+
+/** How long the break was meant to last: the slot's length, or a quick break's planned length. */
+function lengthMin(r: Pick<BreakRecordView, "durationMin" | "kind" | "plannedMin">): number | null {
+  if (r.durationMin) return r.durationMin;
+  return isQuickBreak(r) && r.plannedMin ? r.plannedMin : null;
+}
+
+/** "Quick break (10 min)" for a quick break; a shift's or unscheduled break keeps its label. */
+export function recordLabel(r: Pick<BreakRecordView, "kind" | "label" | "plannedMin">): string {
+  if (!isQuickBreak(r)) return r.label;
+  return r.plannedMin ? `Quick break (${r.plannedMin} min)` : "Quick break";
+}
+
+/** The heading over a person's breaks that matched no slot: quick breaks, unscheduled ones, or both. */
+export function unscheduledHeading(records: Pick<BreakRecordView, "kind">[]): string {
+  const quick = records.filter(isQuickBreak).length;
+  if (quick === 0) return "Outside the schedule";
+  return quick === records.length ? "Quick breaks" : "Quick and unscheduled breaks";
+}
+
 /** "Took 19 min of 15", "12 min so far", or "Took 8 min" for a break with no set length. */
 export function tookLabel(
-  r: Pick<BreakRecordView, "tookSec" | "durationMin" | "inProgress">,
+  r: Pick<BreakRecordView, "tookSec" | "durationMin" | "inProgress"> &
+    Partial<Pick<BreakRecordView, "kind" | "plannedMin">>,
 ): string {
   const took = formatMinutes(r.tookSec);
   if (r.inProgress) return `${took} so far`;
-  return r.durationMin ? `Took ${took} of ${r.durationMin}` : `Took ${took}`;
+  const length = lengthMin({
+    kind: r.kind ?? null,
+    durationMin: r.durationMin,
+    plannedMin: r.plannedMin,
+  });
+  return length ? `Took ${took} of ${length}` : `Took ${took}`;
 }
 
 /** "4 min over", or null when the break stayed within its length. */
-export function overrunLabel(r: Pick<BreakRecordView, "overrunSec">): string | null {
-  return r.overrunSec > 0 ? `${formatMinutes(r.overrunSec)} over` : null;
+export function overrunLabel(
+  r: Pick<BreakRecordView, "overrunSec"> &
+    Partial<Pick<BreakRecordView, "kind" | "plannedMin" | "tookSec" | "inProgress">>,
+): string | null {
+  const over = r.overrunSec > 0 ? r.overrunSec : quickOverSec(r);
+  return over > 0 ? `${formatMinutes(over)} over` : null;
+}
+
+/**
+ * How far a finished quick break ran past the length the person picked. The API
+ * sends `overrunSec` 0 for quick breaks (the time over comes out of the buffer,
+ * then goes unpaid), so it is worked out from `tookSec` and `plannedMin`.
+ */
+export function quickOverSec(
+  r: Partial<Pick<BreakRecordView, "kind" | "plannedMin" | "tookSec" | "inProgress">>,
+): number {
+  if (r.kind !== "QUICK" || !r.plannedMin || r.inProgress) return 0;
+  const over = (r.tookSec ?? 0) - r.plannedMin * 60;
+  // Under half a minute reads as nothing ("0 min over" would say nothing).
+  return over >= 30 ? over : 0;
 }
 
 export const SOURCE_LABEL: Record<ShiftSource, string> = {

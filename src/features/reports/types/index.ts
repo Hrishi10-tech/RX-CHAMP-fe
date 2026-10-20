@@ -16,7 +16,10 @@ export interface ReportPerson {
   email: string;
   role: string;
   department: string | null;
+  /** 4.0: the person's department (absent from months locked before 4.0). */
+  departmentId?: string | null;
   designation: string | null;
+  /** 3.x reporting line; 4.0 groups people by department instead. Not shown. */
   managerId: string | null;
   managerName: string | null;
 }
@@ -47,6 +50,25 @@ export interface PersonDaySummary {
   pending: number;
   quietHours: number;
   activeMin: number;
+  /** 4.0 (SPEC 2.4, 5.8): the day's focus target (shift minus the paid allowance). */
+  targetSec: number;
+  /** 4.0: break time paid by the allowance, and the rest. */
+  paidBreakSec: number;
+  unpaidBreakSec: number;
+  /** 4.0: away time by decision (approved counts as focus; pending would if approved). */
+  awayApprovedSec: number;
+  awayPendingSec: number;
+  awayRejectedSec: number;
+  awayUnexplainedSec: number;
+  /**
+   * Time inside a work session recorded offline (replayed) with no activity
+   * data from the agent; it is left out of focus. 0 from servers without it.
+   */
+  unverifiedSec: number;
+  /** Payroll time: focus time plus paid breaks (worked out when not sent). */
+  paidSec: number;
+  /** 4.0: the calendar's name for the day (a holiday), if any. */
+  label: string | null;
 }
 
 export type TimelineKind = "WORK" | "BREAK" | "LUNCH" | "MEETING" | "OFF";
@@ -97,6 +119,18 @@ export interface MonthTotals {
   pending: number;
   quietHours: number;
   needsALook: boolean;
+  /** 4.0: the month's focus target (working days from the join date), paid and unpaid breaks, away. */
+  targetSec: number;
+  breakSec: number;
+  meetingSec: number;
+  paidBreakSec: number;
+  unpaidBreakSec: number;
+  awayApprovedSec: number;
+  awayPendingSec: number;
+  /** Offline time with no activity data, left out of focus (0 when not sent). */
+  unverifiedSec: number;
+  /** Payroll time: focus time plus paid breaks (worked out when not sent). */
+  paidSec: number;
 }
 
 export interface HeatmapDay {
@@ -146,7 +180,10 @@ export interface ReportRun {
   month: string;
   scope: string;
   generatedAt: string;
-  /** A small summary the server keeps with the run; its keys are not fixed. */
+  /**
+   * A small summary the server keeps with the run; its keys are not fixed (quiet
+   * hours and needs-a-look are left out for a viewer without the activity grant).
+   */
   summary: Record<string, unknown>;
 }
 
@@ -159,13 +196,18 @@ export interface MonthLockView {
   pending: number;
 }
 
+/**
+ * A team report narrows by department (4.0, `departmentId`, which the team
+ * endpoints take natively) or by picked people (`userIds`).
+ */
 export interface TeamDayParams {
   date: string;
+  departmentId?: string;
   userIds?: string[];
 }
 
 export interface TeamMonthParams {
   month: string;
-  managerId?: string;
+  departmentId?: string;
   userIds?: string[];
 }

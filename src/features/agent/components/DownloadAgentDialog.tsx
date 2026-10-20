@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { btnPrimary, btnSecondary } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
-import { downloadAgentForUser } from "@/features/agent/api/downloadAgent";
+import { downloadAgentForUser, downloadAgentInstaller } from "@/features/agent/api/downloadAgent";
 import { useAgentVersion, useSetupCode } from "@/features/agent/hooks/useAgent";
 import { agentDownloadName, formatBytes } from "@/features/agent/lib/fileName";
 import type { AgentPlatform, AgentVersionInfo } from "@/features/agent/types";
@@ -137,17 +137,21 @@ function SetupCode({ userId, userName }: { userId: string; userName: string }) {
 /**
  * Get the desktop app for one person: a Windows installer that signs itself in,
  * or the Mac app plus a setup code (a Mac app can't carry a per-person sign-in).
+ * For yourself (`self`) the plain app, which signs in with your email and
+ * password: the API issues installers and setup codes only for other people.
  */
 export function DownloadAgentDialog({
   open,
   onClose,
   userId,
   userName,
+  self = false,
 }: {
   open: boolean;
   onClose: () => void;
   userId: string;
   userName: string;
+  self?: boolean;
 }) {
   const [platform, setPlatform] = useState<AgentPlatform>("windows");
   const [downloading, setDownloading] = useState(false);
@@ -160,10 +164,11 @@ export function DownloadAgentDialog({
 
   async function download() {
     const info = version.data;
-    const fileName = agentDownloadName(platform, userName, info?.fileName);
+    const fileName = agentDownloadName(platform, self ? null : userName, info?.fileName);
     setDownloading(true);
     try {
-      await downloadAgentForUser(userId, fileName, platform);
+      if (self) await downloadAgentInstaller(fileName, platform);
+      else await downloadAgentForUser(userId, fileName, platform);
       toast.success("Download started", { description: fileName });
     } catch (err) {
       toast.error("Couldn't download the app", {
@@ -181,7 +186,9 @@ export function DownloadAgentDialog({
       open={open}
       onClose={downloading ? () => {} : onClose}
       title="Get the desktop app"
-      description={`For ${userName}.`}
+      description={
+        self ? "For this computer: you sign in with your email and password." : `For ${userName}.`
+      }
       className="max-w-lg"
     >
       <div className="space-y-4 px-6 py-5">
@@ -230,11 +237,20 @@ export function DownloadAgentDialog({
                   First launch: right-click RX Vision and choose Open. If macOS still blocks it,
                   open System Settings &gt; Privacy &amp; Security and click Open Anyway.
                 </li>
-                <li>On the sign-in screen, paste the setup code below.</li>
+                <li>
+                  {self
+                    ? "On the sign-in screen, sign in with your email and password."
+                    : "On the sign-in screen, paste the setup code below."}
+                </li>
                 <li>Allow Screen Recording when macOS asks.</li>
               </ol>
-              <SetupCode userId={userId} userName={userName} />
+              {!self && <SetupCode userId={userId} userName={userName} />}
             </>
+          ) : self ? (
+            <p className="text-sm leading-relaxed text-slate-600">
+              This installer opens the RX Vision sign-in screen. Sign in with your email and
+              password.
+            </p>
           ) : (
             <p className="text-sm leading-relaxed text-slate-600">
               This installer signs in as {userName} by itself. Send it to them and they run it. No

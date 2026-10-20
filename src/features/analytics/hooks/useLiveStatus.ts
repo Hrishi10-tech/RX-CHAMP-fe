@@ -28,7 +28,23 @@ function combine(
   return activity;
 }
 
-export function useLiveStatus(userId: string): {
+export function useLiveStatus(
+  userId: string,
+  /**
+   * Keyboard/mouse status and the app in use come from the activity endpoints,
+   * which a manager reaches only with a timeline or activity grant (SPEC 2.2).
+   * Without one, only the presence status (working, break, meeting) is read.
+   *
+   * `current`: seed the status and the app in use from
+   * `GET /activity/user/:id/current`, which needs the timeline grant (the app is
+   * timeline data; 403 GRANT_REQUIRED otherwise). Without it the live socket
+   * alone brings the status, with `app` null. Defaults to `activity`.
+   */
+  {
+    activity: withActivity = true,
+    current: withCurrent = withActivity,
+  }: { activity?: boolean; current?: boolean } = {},
+): {
   status: LiveStatus | null;
   connected: boolean;
   live: LiveActivityData;
@@ -38,6 +54,8 @@ export function useLiveStatus(userId: string): {
    * are only recomputed server-side, so callers watch this to refetch them.
    */
   presenceVersion: number;
+  /** The presence status alone (working, break, lunch, meeting, not started). */
+  presence: PresenceStatus | null;
 } {
   const [activity, setActivity] = useState<ActivityStatus | null>(null);
   const [presence, setPresence] = useState<PresenceStatus | null>(null);
@@ -89,12 +107,12 @@ export function useLiveStatus(userId: string): {
           if (active) setPresenceKnown(true);
         });
 
-    void seedActivity();
+    if (withActivity && withCurrent) void seedActivity();
     void seedPresence();
 
-    const aSock = acquireActivitySocket();
+    const aSock = withActivity ? acquireActivitySocket() : null;
     const pSock = acquirePresenceSocket();
-    const syncConn = () => setConnected(aSock.connected || pSock.connected);
+    const syncConn = () => setConnected(Boolean(aSock?.connected) || pSock.connected);
     syncConn();
 
     // A dropped socket (the access cookie expiring mid-session) misses whatever
@@ -102,7 +120,7 @@ export function useLiveStatus(userId: string): {
     // for the next transition.
     const onActivityConnect = () => {
       syncConn();
-      void seedActivity();
+      if (withCurrent) void seedActivity();
     };
     const onPresenceConnect = () => {
       syncConn();
@@ -140,30 +158,31 @@ export function useLiveStatus(userId: string): {
       setPresenceVersion((v) => v + 1);
     };
 
-    aSock.on("activity:update", onActivityUpdate);
-    aSock.on("activity:me", onActivityMe);
+    aSock?.on("activity:update", onActivityUpdate);
+    aSock?.on("activity:me", onActivityMe);
     pSock.on("presence:update", onPresenceUpdate);
-    aSock.on("connect", onActivityConnect);
+    aSock?.on("connect", onActivityConnect);
     pSock.on("connect", onPresenceConnect);
-    aSock.on("disconnect", syncConn);
+    aSock?.on("disconnect", syncConn);
     pSock.on("disconnect", syncConn);
 
     return () => {
       active = false;
-      aSock.off("activity:update", onActivityUpdate);
-      aSock.off("activity:me", onActivityMe);
+      aSock?.off("activity:update", onActivityUpdate);
+      aSock?.off("activity:me", onActivityMe);
       pSock.off("presence:update", onPresenceUpdate);
-      aSock.off("connect", onActivityConnect);
+      aSock?.off("connect", onActivityConnect);
       pSock.off("connect", onPresenceConnect);
-      aSock.off("disconnect", syncConn);
+      aSock?.off("disconnect", syncConn);
       pSock.off("disconnect", syncConn);
-      releaseActivitySocket();
+      if (aSock) releaseActivitySocket();
       releasePresenceSocket();
     };
-  }, [userId, self]);
+  }, [userId, self, withActivity, withCurrent]);
 
   return {
-    status: presenceKnown ? combine(activity, presence) : null,
+    status: presenceKnown ? combine(withActivity ? activity : null, presence) : null,
+    presence: presenceKnown ? presence : null,
     connected,
     live,
     current,

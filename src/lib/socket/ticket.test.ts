@@ -7,7 +7,9 @@
 interface Harness {
   getSocketTicket: () => Promise<string>;
   clearSocketTicket: () => void;
-  socketAuth: (cb: (payload: { token?: string }) => void) => void;
+  socketAuth: (cb: (payload: { token?: string; orgId?: string }) => void) => void;
+  selectOrg: (org: { id: string; name: string } | null) => void;
+  setOrgSwitching: (enabled: boolean) => void;
   /** One entry per actual HTTP call, so the cache is measurable. */
   calls: string[];
 }
@@ -36,10 +38,13 @@ async function loadHarness(responder: Responder): Promise<Harness> {
     }));
 
     const mod = await import("./ticket");
+    const org = await import("@/lib/org/selection");
     harness = {
       getSocketTicket: mod.getSocketTicket,
       clearSocketTicket: mod.clearSocketTicket,
       socketAuth: mod.socketAuth,
+      selectOrg: org.selectOrg,
+      setOrgSwitching: org.setOrgSwitching,
       calls,
     };
   });
@@ -119,6 +124,20 @@ describe("getSocketTicket", () => {
 });
 
 describe("socketAuth", () => {
+  it("adds the selected organisation for a Super Admin only", async () => {
+    window.localStorage.clear();
+    const h = await loadHarness(ok);
+    h.selectOrg({ id: "o1", name: "Northwind" });
+    // Not a Super Admin: the selection is ignored.
+    expect(await new Promise((resolve) => h.socketAuth(resolve))).toEqual({ token: "ticket-1" });
+    h.setOrgSwitching(true);
+    expect(await new Promise((resolve) => h.socketAuth(resolve))).toEqual({
+      token: "ticket-1",
+      orgId: "o1",
+    });
+    window.localStorage.clear();
+  });
+
   it("hands socket.io the ticket", async () => {
     const h = await loadHarness(ok);
     const payload = await new Promise<{ token?: string }>((resolve) => h.socketAuth(resolve));

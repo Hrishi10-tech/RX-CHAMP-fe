@@ -1,13 +1,14 @@
-/** Where a notification takes you when opened, by type. */
-export const MY_BREAKS_PAGE = "/dashboard/me?tab=breaks";
-
-/** 3.1 destinations (SPEC 3.10). The old approvals page redirects to the new one. */
-export const APPROVALS_PAGE_31 = "/dashboard/approvals";
+/** Where a notification takes you when opened, by type (SPEC 7.1 pages). */
+export const APPROVALS_PAGE = "/dashboard/approvals";
 export const REPORTS_PAGE = "/dashboard/reports";
-export const TEAM_TODAY_PAGE = "/dashboard/team-today";
-export const MY_HOME_PAGE = "/dashboard/me";
+export const TEAM_PAGE = "/dashboard/team";
+export const OVERVIEW_PAGE = "/dashboard/overview";
+export const CALENDAR_PAGE = "/dashboard/calendar";
 
-/** The 3.1 notification types, as the server sends them. */
+/** @deprecated 3.1 name, kept for older imports. */
+export const APPROVALS_PAGE_31 = APPROVALS_PAGE;
+
+/** The notification types, as the server sends them. */
 export const NOTIFICATION_TYPES_31 = {
   SKIP_REQUESTED: "SKIP_REQUESTED",
   AUTO_SKIP_REQUESTED: "AUTO_SKIP_REQUESTED",
@@ -21,26 +22,36 @@ export const NOTIFICATION_TYPES_31 = {
   DAY_AUTO_CLOSED: "DAY_AUTO_CLOSED",
 } as const;
 
+/** 4.0 types: away approvals and the calendar. */
+export const NOTIFICATION_TYPES_40 = {
+  AWAY_REQUESTED: "AWAY_REQUESTED",
+  AWAY_DECIDED: "AWAY_DECIDED",
+  CALENDAR_CHANGED: "CALENDAR_CHANGED",
+} as const;
+
 const T = NOTIFICATION_TYPES_31;
+const T4 = NOTIFICATION_TYPES_40;
 
 const LINKS: Record<string, string> = {
-  // 3.0 types the 3.1 API still sends for taken breaks and overruns, and the
-  // 18:30 digest: the one Approvals page now (no hop through the old address).
-  BREAK_APPROVAL_REQUESTED: APPROVALS_PAGE_31,
-  BREAK_APPROVALS_DIGEST: APPROVALS_PAGE_31,
-  BREAK_DECIDED: MY_BREAKS_PAGE,
+  // 3.0 types the API still sends for taken breaks and overruns, and the
+  // 18:30 digest: the one Approvals page.
+  BREAK_APPROVAL_REQUESTED: APPROVALS_PAGE,
+  BREAK_APPROVALS_DIGEST: APPROVALS_PAGE,
   // Requests and deadlines go to the approver's list.
-  [T.SKIP_REQUESTED]: APPROVALS_PAGE_31,
-  [T.AUTO_SKIP_REQUESTED]: APPROVALS_PAGE_31,
-  [T.SKIP_COMMENT_ADDED]: APPROVALS_PAGE_31,
-  [T.MEETING_REQUESTED]: APPROVALS_PAGE_31,
-  [T.APPROVALS_DUE_SOON]: APPROVALS_PAGE_31,
-  [T.APPROVALS_OVERDUE]: APPROVALS_PAGE_31,
-  [T.APPROVALS_ESCALATED]: APPROVALS_PAGE_31,
-  // A decision on someone's own meeting: their home shows what it did to focus time.
-  [T.MEETING_DECIDED]: MY_HOME_PAGE,
+  [T.SKIP_REQUESTED]: APPROVALS_PAGE,
+  [T.AUTO_SKIP_REQUESTED]: APPROVALS_PAGE,
+  [T.SKIP_COMMENT_ADDED]: APPROVALS_PAGE,
+  [T.MEETING_REQUESTED]: APPROVALS_PAGE,
+  [T.APPROVALS_DUE_SOON]: APPROVALS_PAGE,
+  [T.APPROVALS_OVERDUE]: APPROVALS_PAGE,
+  [T.APPROVALS_ESCALATED]: APPROVALS_PAGE,
+  [T4.AWAY_REQUESTED]: APPROVALS_PAGE,
   [T.MONTHLY_REPORT_READY]: REPORTS_PAGE,
-  [T.DAY_AUTO_CLOSED]: TEAM_TODAY_PAGE,
+  [T.DAY_AUTO_CLOSED]: TEAM_PAGE,
+  [T4.CALENDAR_CHANGED]: CALENDAR_PAGE,
+  // A decision on someone's own break, meeting or away time is read in the RX
+  // Vision app's History (4.0 has no personal page in the portal), so
+  // BREAK_DECIDED, MEETING_DECIDED and AWAY_DECIDED have nowhere to go here.
 };
 
 /** The page a notification opens, or null for types that have nowhere to go. */

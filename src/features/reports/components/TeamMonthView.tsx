@@ -1,5 +1,6 @@
 "use client";
 
+import { isOrgAdmin } from "@/constants/roles";
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,15 +26,21 @@ import { todayKey } from "@/lib/time/businessTime";
 import { formatMonth } from "@/lib/time/months";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
+import { useDepartments } from "@/features/departments/hooks/useDepartments";
 import { useTeamMonthReport } from "@/features/reports/hooks/useReports";
 import { downloadTeamMonthXlsx } from "@/features/reports/api/reports";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
 import { dayClassLook } from "@/features/reports/lib/labels";
 import {
+  ActivityGate,
+  BreakRulesItems,
   Kpi,
   KpiGrid,
   ManagersOnly,
   ReportSection,
+  paidTimeSub,
+  unverifiedNote,
+  useCanSeeActivity,
 } from "@/features/reports/components/ReportParts";
 import { MonthLockChip, MonthLockControl } from "@/features/reports/components/MonthLockControl";
 import {
@@ -49,15 +56,28 @@ import type {
   TeamMonthParams,
 } from "@/features/reports/types";
 
-type SortKey = "name" | "focus" | "pct" | "attendance" | "late" | "skipped" | "quiet" | "pending";
+type SortKey =
+  | "name"
+  | "focus"
+  | "paid"
+  | "pct"
+  | "breaks"
+  | "away"
+  | "attendance"
+  | "late"
+  | "skipped"
+  | "quiet"
+  | "pending";
 
 const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: "name", label: "Person", numeric: false },
   { key: "focus", label: "Focus", numeric: true },
-  { key: "pct", label: "Of expected", numeric: true },
+  { key: "pct", label: "Of target", numeric: true },
+  { key: "paid", label: "Paid time", numeric: true },
+  { key: "breaks", label: "Breaks", numeric: true },
+  { key: "away", label: "Away", numeric: true },
   { key: "attendance", label: "Attendance", numeric: true },
-  { key: "late", label: "Late starts", numeric: true },
-  { key: "skipped", label: "Skipped", numeric: true },
+  { key: "late", label: "Late · skipped", numeric: true },
   { key: "quiet", label: "Quiet hours", numeric: true },
   { key: "pending", label: "Open", numeric: true },
 ];
@@ -77,7 +97,16 @@ function attendanceDays(t: MonthTotals): number {
 const SORTERS: Record<SortKey, (a: TeamMonthRow, b: TeamMonthRow) => number> = {
   name: (a, b) => a.person.name.localeCompare(b.person.name),
   focus: (a, b) => a.totals.focusSec - b.totals.focusSec,
+  paid: (a, b) => a.totals.paidSec - b.totals.paidSec,
   pct: (a, b) => (pctOf(a.totals) ?? -1) - (pctOf(b.totals) ?? -1),
+  breaks: (a, b) =>
+    a.totals.paidBreakSec +
+    a.totals.unpaidBreakSec -
+    (b.totals.paidBreakSec + b.totals.unpaidBreakSec),
+  away: (a, b) =>
+    a.totals.awayApprovedSec +
+    a.totals.awayPendingSec -
+    (b.totals.awayApprovedSec + b.totals.awayPendingSec),
   attendance: (a, b) => attendanceDays(a.totals) - attendanceDays(b.totals),
   late: (a, b) => a.totals.lateStarts - b.totals.lateStarts,
   skipped: (a, b) =>
@@ -141,6 +170,13 @@ function AttendanceMix({ totals }: { totals: MonthTotals }) {
   );
 }
 
+/** "Engineering · Manager": where a person sits (4.0 groups people by department). */
+function personLine(r: TeamMonthRow): string {
+  return [r.person.department, r.person.role === "MANAGER" ? "Manager" : null]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 function Meter({ pct }: { pct: number | null }) {
   if (pct === null) {
     return (
@@ -154,7 +190,7 @@ function Meter({ pct }: { pct: number | null }) {
       <span
         aria-hidden
         data-print-hide
-        className="block h-1.5 w-16 overflow-hidden rounded-full bg-indigo-100"
+        className="block h-1.5 w-12 overflow-hidden rounded-full bg-indigo-100"
       >
         <span
           className={`block h-full rounded-full ${pct < 90 ? "bg-amber-500" : "bg-indigo-600"}`}
@@ -170,14 +206,21 @@ function RankingTable({
   rows,
   month,
   flagAt,
+  activity,
 }: {
   rows: TeamMonthRow[];
   month: string;
   flagAt: number;
+  /** Whether the viewer sees keyboard and mouse activity (quiet hours, SPEC 2.2). */
+  activity: boolean;
 }) {
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "pct", dir: -1 });
   const [lookOnly, setLookOnly] = useState(false);
-  const flagged = useMemo(() => rows.filter((r) => r.totals.needsALook), [rows]);
+  const columns = activity ? COLUMNS : COLUMNS.filter((c) => c.key !== "quiet");
+  const flagged = useMemo(
+    () => (activity ? rows.filter((r) => r.totals.needsALook) : []),
+    [rows, activity],
+  );
   const shown = useMemo(
     () => sortRows(lookOnly ? flagged : rows, sort.key, sort.dir),
     [rows, flagged, lookOnly, sort],
@@ -198,7 +241,7 @@ function RankingTable({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3 sm:px-6 print:hidden">
-        <label className="flex items-center gap-2 text-sm text-slate-700 xl:hidden">
+        <label className="flex items-center gap-2 text-sm text-slate-700 min-[1360px]:hidden">
           <span>Sort by</span>
           <select
             value={`${sort.key}:${sort.dir}`}
@@ -211,7 +254,8 @@ function RankingTable({
             <option value="pct:-1">Of expected, highest first</option>
             <option value="pct:1">Of expected, lowest first</option>
             <option value="focus:-1">Focus time</option>
-            <option value="quiet:-1">Quiet hours</option>
+            <option value="paid:-1">Paid time</option>
+            {activity && <option value="quiet:-1">Quiet hours</option>}
             <option value="late:-1">Late starts</option>
             <option value="pending:-1">Open approvals</option>
             <option value="name:1">Name</option>
@@ -230,9 +274,9 @@ function RankingTable({
         )}
       </div>
 
-      {/* Cards below xl: the eight-column table needs about 910px, more than
-          the card has beside the sidebar on a 1024 to 1279px screen. */}
-      <ul className="divide-y divide-slate-100 border-t border-slate-100 xl:hidden print:hidden">
+      {/* Cards below 1360px: the ten-column table needs about 1020px, more than
+          the card has beside the sidebar on a 1024 to 1359px screen. */}
+      <ul className="divide-y divide-slate-100 border-t border-slate-100 min-[1360px]:hidden print:hidden">
         {shown.map((r) => {
           const t = r.totals;
           return (
@@ -248,26 +292,27 @@ function RankingTable({
                   {formatDuration(t.focusSec)}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
-                {[
-                  r.person.department,
-                  r.person.managerName ? `Manager ${r.person.managerName}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
+              <p className="text-xs text-slate-500">{personLine(r)}</p>
               <Meter pct={pctOf(t)} />
+              <p className="text-xs text-slate-600">
+                Month target {formatDuration(t.targetSec)} · paid time{" "}
+                <span className="font-semibold text-slate-900">{formatDuration(t.paidSec)}</span>
+                {unverifiedNote(t.unverifiedSec) ? ` · ${unverifiedNote(t.unverifiedSec)}` : ""} ·
+                breaks {formatDuration(t.paidBreakSec)} paid, {formatDuration(t.unpaidBreakSec)}{" "}
+                unpaid · away {formatDuration(t.awayApprovedSec)} approved
+                {t.awayPendingSec > 0 ? `, ${formatDuration(t.awayPendingSec)} pending` : ""}
+              </p>
               <p className="text-xs text-slate-600">
                 {attendanceDays(t)} days: {t.full} full, {t.half} half, {t.absent} absent ·{" "}
                 {t.lateStarts} late · {t.skipped + t.autoSkipped} skipped
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {t.quietHours > 0 && (
+                {activity && t.quietHours > 0 && (
                   <Chip tone={t.needsALook ? "warning" : "neutral"}>
                     {t.quietHours} quiet {t.quietHours === 1 ? "hour" : "hours"}
                   </Chip>
                 )}
-                {t.needsALook && <Chip tone="warning">Needs a look</Chip>}
+                {activity && t.needsALook && <Chip tone="warning">Needs a look</Chip>}
                 {t.pending > 0 && (
                   <Chip tone="warning" dot>
                     {t.pending} open
@@ -279,18 +324,18 @@ function RankingTable({
         })}
       </ul>
 
-      <div className="hidden overflow-x-auto xl:block print:block">
+      <div className="hidden overflow-x-auto min-[1360px]:block print:block">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-y border-slate-200 bg-slate-50/70">
-              {COLUMNS.map((c, i) => {
+              {columns.map((c, i) => {
                 const active = sort.key === c.key;
                 return (
                   <th
                     key={c.key}
                     scope="col"
                     aria-sort={active ? (sort.dir === 1 ? "ascending" : "descending") : "none"}
-                    className={`${thBase} ${i === 0 ? "pl-6" : ""} ${i === COLUMNS.length - 1 ? "pr-6" : ""} ${
+                    className={`${thBase} ${i === 0 ? "pl-6" : ""} ${i === columns.length - 1 ? "pr-6" : ""} ${
                       c.numeric ? "text-right" : ""
                     }`}
                   >
@@ -334,44 +379,63 @@ function RankingTable({
                     >
                       {r.person.name}
                     </Link>
-                    <span className="block text-xs text-slate-500">
-                      {[
-                        r.person.department,
-                        r.person.managerName ? `Manager ${r.person.managerName}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
+                    <span className="block text-xs text-slate-500">{personLine(r)}</span>
                   </th>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold tabular-nums text-slate-900">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums text-slate-900">
                     {formatDuration(t.focusSec)}
+                    <span className="block text-xs font-normal text-slate-500">
+                      of {formatDuration(t.targetSec)}
+                    </span>
+                    {/* The note wraps, so the column stays narrow and the table fits. */}
+                    {unverifiedNote(t.unverifiedSec) && (
+                      <span className="block min-w-[5.5rem] whitespace-normal text-xs font-normal text-slate-500">
+                        {unverifiedNote(t.unverifiedSec)}
+                      </span>
+                    )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right">
                     <span className="inline-flex justify-end">
                       <Meter pct={pctOf(t)} />
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-slate-900">
+                    {formatDuration(t.paidSec)}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
+                    {formatDuration(t.paidBreakSec)}
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                      paid · {formatDuration(t.unpaidBreakSec)} unpaid
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
+                    {formatDuration(t.awayApprovedSec)}
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                      approved
+                      {t.awayPendingSec > 0 ? ` · ${formatDuration(t.awayPendingSec)} pending` : ""}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
                     {attendanceDays(t)} days
-                    <span className="block text-xs text-slate-500">
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
                       {t.full} full · {t.half} half · {t.absent} absent
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{t.lateStarts}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">
-                    {t.skipped + t.autoSkipped}
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
+                    {t.lateStarts} · {t.skipped + t.autoSkipped}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
-                    <span className={t.needsALook ? "font-semibold text-amber-700" : ""}>
-                      {t.quietHours}
-                    </span>
-                    {t.needsALook && (
-                      <span className="block text-xs font-semibold text-amber-700">
-                        Needs a look
+                  {activity && (
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
+                      <span className={t.needsALook ? "font-semibold text-amber-700" : ""}>
+                        {t.quietHours}
                       </span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right">
+                      {t.needsALook && (
+                        <span className="block text-xs font-semibold text-amber-700">
+                          Needs a look
+                        </span>
+                      )}
+                    </td>
+                  )}
+                  <td className="whitespace-nowrap py-2.5 pl-3 pr-6 text-right">
                     {t.pending > 0 ? (
                       <Chip tone="warning" dot>
                         {t.pending} open
@@ -387,7 +451,7 @@ function RankingTable({
         </table>
       </div>
       <p className="space-y-1 border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:px-6">
-        {flagged.length === 0 && (
+        {activity && flagged.length === 0 && (
           <span className="block">Nobody has {flagAt} or more quiet hours this month.</span>
         )}
         <span className="block">{ROUNDING_NOTE}</span>
@@ -411,28 +475,33 @@ export function TeamMonthView({
 }) {
   const router = useRouter();
   const { role } = useSession();
-  const isSuperAdmin = role === "SUPER_ADMIN";
+  const isSuperAdmin = isOrgAdmin(role);
   const today = todayKey();
   const query = useTeamMonthReport(params);
   const settings = useAppSettings();
+  const activityAllowed = useCanSeeActivity();
+  const departments = useDepartments(Boolean(params.departmentId));
+  const department = params.departmentId
+    ? departments.data?.find((d) => d.id === params.departmentId)
+    : undefined;
   const report = query.data;
   const month = params.month;
   const label = periodLabel({ kind: "month", month }, today);
-  const narrowed = Boolean(params.managerId || params.userIds?.length);
+  const narrowed = Boolean(params.departmentId || params.userIds?.length);
 
   const scopeName = report
-    ? report.scope === "ALL" && !narrowed
-      ? "Everyone"
-      : params.managerId
-        ? `${report.rows[0]?.person.managerName ?? "A manager"}'s team`
-        : params.userIds?.length
-          ? `${params.userIds.length} people`
-          : "My team"
+    ? !narrowed
+      ? report.scope === "ALL"
+        ? "Everyone"
+        : "My departments"
+      : params.departmentId
+        ? (department?.name ?? "A department")
+        : `${params.userIds?.length ?? 0} people`
     : "Team";
 
   function go(m: string) {
     const search = new URLSearchParams({ month: m });
-    if (params.managerId) search.set("managerId", params.managerId);
+    if (params.departmentId) search.set("departmentId", params.departmentId);
     if (params.userIds?.length) search.set("userIds", params.userIds.join(","));
     router.replace(`/dashboard/reports/team?${search.toString()}`, { scroll: false });
   }
@@ -502,7 +571,13 @@ export function TeamMonthView({
     const status = errorStatus(query.error);
     return shell(
       <div className={cardBase}>
-        {status === 400 || status === 403 ? (
+        {status === 404 ? (
+          <EmptyState
+            icon={Info}
+            title="Not in your reports"
+            message="That department is not one of yours, or it has been deleted. Pick another from Reports."
+          />
+        ) : status === 400 || status === 403 ? (
           <EmptyState
             icon={Info}
             title={status === 400 ? "No report for this month" : "Not in your reports"}
@@ -574,12 +649,41 @@ export function TeamMonthView({
         </div>
       ) : (
         <>
-          <KpiGrid>
+          <KpiGrid wide>
             <Kpi
-              label="Focus time, for payroll"
+              label="Focus time"
               value={formatDuration(t.focusSec)}
               meter={expected ? Math.min(100, pct) : undefined}
-              sub={`${pct}% of ${formatDuration(expected)} expected · ${formatDuration(t.avgFocusSec)} a working day`}
+              sub={[
+                `${pct}% of ${formatDuration(expected)} target so far`,
+                `month target ${formatDuration(t.targetSec)}`,
+                `${formatDuration(t.avgFocusSec)} a working day`,
+                unverifiedNote(t.unverifiedSec) &&
+                  `${unverifiedNote(t.unverifiedSec)}, not counted`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+            <Kpi
+              label="Paid time, for payroll"
+              value={formatDuration(t.paidSec)}
+              sub={paidTimeSub(t.paidBreakSec)}
+            />
+            <Kpi
+              label="Breaks"
+              value={`${formatDuration(t.paidBreakSec)} paid`}
+              tone={t.unpaidBreakSec > 0 ? "warning" : "default"}
+              sub={`${formatDuration(t.unpaidBreakSec)} unpaid · ${formatDuration(t.breakSec)} in all · meetings ${formatDuration(t.meetingSec)}`}
+            />
+            <Kpi
+              label="Away with a reason"
+              value={`${formatDuration(t.awayApprovedSec)} approved`}
+              tone={t.awayPendingSec > 0 ? "warning" : "default"}
+              sub={
+                t.awayPendingSec > 0
+                  ? `${formatDuration(t.awayPendingSec)} waiting: it counts as focus once approved`
+                  : "Nothing waiting for a decision"
+              }
             />
             <Kpi
               label="Attendance"
@@ -624,7 +728,9 @@ export function TeamMonthView({
               subtitle={`${flagAt} or more quiet hours in the month. Activity never changes focus time.`}
               aside={<ManagersOnly />}
             >
-              {flagged.length === 0 ? (
+              {!activityAllowed ? (
+                <ActivityGate>{null}</ActivityGate>
+              ) : flagged.length === 0 ? (
                 <p className="text-sm text-slate-500">Nobody this month.</p>
               ) : (
                 <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
@@ -654,26 +760,31 @@ export function TeamMonthView({
           </div>
 
           <ReportSection
-            title={narrowed ? "People" : report.scope === "ALL" ? "Everyone" : "My team"}
-            subtitle="Ranked by focus time against expected. Open a name for the day-by-day report. Focus time is what payroll uses."
+            title={
+              narrowed
+                ? (department?.name ?? "People")
+                : report.scope === "ALL"
+                  ? "Everyone"
+                  : "My departments"
+            }
+            subtitle="Ranked by focus time against the target so far. Open a name for the day-by-day report. Paid time (focus time plus paid breaks) is what payroll uses."
             flush
           >
-            <RankingTable rows={report.rows} month={month} flagAt={flagAt} />
+            <RankingTable
+              rows={report.rows}
+              month={month}
+              flagAt={flagAt}
+              activity={activityAllowed}
+            />
           </ReportSection>
 
           <ReportSection title="How the numbers work">
             <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-slate-600">
-              <li>
-                Focus time runs from Start Day to End Day, minus breaks. Payroll uses it as is.
-              </li>
-              <li>
-                Meetings and skipped breaks count until a manager rejects them. Minutes over a break
-                stay out until a manager approves them.
-              </li>
-              <li>
-                Expected is the shift minus its scheduled breaks. A full day needs{" "}
-                {s?.fullDayPct ?? 80}% of that, a half day {s?.halfDayPct ?? 40}%.
-              </li>
+              <BreakRulesItems
+                bufferMin={s?.breakBufferMin}
+                fullDayPct={s?.fullDayPct}
+                halfDayPct={s?.halfDayPct}
+              />
               <li>
                 A late start is Start Day more than {s?.lateStartGraceMin ?? 10} min after the shift
                 starts. It is reported only.

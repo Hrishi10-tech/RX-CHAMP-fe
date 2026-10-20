@@ -5,16 +5,16 @@ function params(query: string) {
   return new URLSearchParams(query);
 }
 
-const FALLBACK = { href: "/dashboard/admin/team-management", label: "Team Management" };
+const FALLBACK = { href: "/dashboard/people", label: "Team management" };
 
 describe("withReturnTo", () => {
   it("adds the origin and label to a plain link", () => {
-    const href = withReturnTo("/dashboard/manager/activity/u-1", "/dashboard/manager", "My Team");
+    const href = withReturnTo("/dashboard/team/u-1", "/dashboard/team", "Team");
     const url = new URL(href, "https://x.test");
 
-    expect(url.pathname).toBe("/dashboard/manager/activity/u-1");
-    expect(url.searchParams.get("from")).toBe("/dashboard/manager");
-    expect(url.searchParams.get("fromLabel")).toBe("My Team");
+    expect(url.pathname).toBe("/dashboard/team/u-1");
+    expect(url.searchParams.get("from")).toBe("/dashboard/team");
+    expect(url.searchParams.get("fromLabel")).toBe("Team");
   });
 
   it("keeps a link's existing query intact", () => {
@@ -26,7 +26,7 @@ describe("withReturnTo", () => {
   });
 
   it("survives a round trip with characters that need escaping", () => {
-    const from = "/dashboard/admin/team-management/organization/1/manager/2?org=A%20%26%20B";
+    const from = "/dashboard/team?department=A%20%26%20B";
     const href = withReturnTo("/target", from, "A & B");
     const url = new URL(href, "https://x.test");
 
@@ -36,9 +36,10 @@ describe("withReturnTo", () => {
 
 describe("resolveReturnTo", () => {
   it("uses the caller's origin and label", () => {
-    expect(
-      resolveReturnTo(params("from=%2Fdashboard%2Fmanager&fromLabel=My%20Team"), FALLBACK),
-    ).toEqual({ href: "/dashboard/manager", label: "My Team" });
+    expect(resolveReturnTo(params("from=%2Fdashboard%2Fteam&fromLabel=Team"), FALLBACK)).toEqual({
+      href: "/dashboard/team",
+      label: "Team",
+    });
   });
 
   it("falls back when arriving fresh — a reload or a bookmark", () => {
@@ -46,8 +47,8 @@ describe("resolveReturnTo", () => {
   });
 
   it("falls back to its own label when only the path is given", () => {
-    expect(resolveReturnTo(params("from=%2Fdashboard%2Fmanager"), FALLBACK)).toEqual({
-      href: "/dashboard/manager",
+    expect(resolveReturnTo(params("from=%2Fdashboard%2Fteam"), FALLBACK)).toEqual({
+      href: "/dashboard/team",
       label: FALLBACK.label,
     });
   });

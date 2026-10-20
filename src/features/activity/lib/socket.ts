@@ -1,5 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 
+import { attachOrgReconnect } from "@/lib/socket/org";
 import { attachSocketReauth } from "@/lib/socket/reauth";
 import { socketAuth } from "@/lib/socket/ticket";
 
@@ -7,6 +8,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL ?? "";
 
 let socket: Socket | null = null;
 let refCount = 0;
+let detachOrg: (() => void) | null = null;
 
 export function acquireActivitySocket(): Socket {
   if (!socket) {
@@ -16,6 +18,8 @@ export function acquireActivitySocket(): Socket {
     // same-site and the cookie is what the gateway falls back to.
     socket = io(`${SOCKET_URL}/activity`, { withCredentials: true, auth: socketAuth });
     attachSocketReauth(socket);
+    // A Super Admin who switches organisation joins the new one's rooms.
+    detachOrg = attachOrgReconnect(socket);
   }
   refCount += 1;
   return socket;
@@ -24,6 +28,8 @@ export function acquireActivitySocket(): Socket {
 export function releaseActivitySocket(): void {
   refCount = Math.max(0, refCount - 1);
   if (refCount === 0 && socket) {
+    detachOrg?.();
+    detachOrg = null;
     socket.disconnect();
     socket = null;
   }

@@ -1,6 +1,7 @@
 import { parseISO } from "date-fns";
 
 import { formatDuration } from "@/features/activity/lib/format";
+import { formatHour12 } from "@/lib/time/format";
 import type {
   CategoryUsage,
   DashboardAnalytics,
@@ -86,7 +87,7 @@ export function mapDashboard(raw: RawDashboardAnalytics): DashboardAnalytics {
     date: raw.date ?? "",
     kpis: mapKpis(raw.kpis),
     timeline: (raw.timeline ?? []).map((t) => ({
-      hour: `${String(t.hour).padStart(2, "0")}:00`,
+      hour: formatHour12(t.hour),
       activeSec: t.activeSec,
       idleSec: t.idleSec,
     })),

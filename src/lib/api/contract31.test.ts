@@ -236,16 +236,16 @@ describe("3.7 Reports", () => {
     await expect(getPersonDayReport("u1", "2026-10-13")).rejects.toThrow(/incomplete/);
   });
 
-  it("GET /reports/team/day?date=&userIds=a,b and /team/month?month=&managerId=&userIds=", async () => {
+  it("GET /reports/team/day?date=&userIds=a,b and /team/month?month=&departmentId=&userIds=", async () => {
     client.get.mockImplementation(() => answer({ rows: [] }));
     await getTeamDayReport({ date: "2026-10-13", userIds: ["a", "b"] });
     expect(client.get).toHaveBeenLastCalledWith("/api/v1/reports/team/day", {
       params: { date: "2026-10-13", userIds: "a,b" },
     });
     client.get.mockImplementation(() => answer({ rows: [], totals: {} }));
-    await getTeamMonthReport({ month: "2026-09", managerId: "m1" });
+    await getTeamMonthReport({ month: "2026-09", departmentId: "d1", userIds: ["a"] });
     expect(client.get).toHaveBeenLastCalledWith("/api/v1/reports/team/month", {
-      params: { month: "2026-09", managerId: "m1" },
+      params: { month: "2026-09", departmentId: "d1", userIds: "a" },
     });
   });
 

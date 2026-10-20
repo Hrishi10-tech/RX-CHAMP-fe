@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 
 import { formatDuration } from "@/lib/format/duration";
-import { BUSINESS_TIMEZONE, hmOf } from "@/lib/time/businessTime";
+import { BUSINESS_TIMEZONE } from "@/lib/time/businessTime";
+import { formatTime12, formatTimeCompact12 } from "@/lib/time/format";
 import { layoutTimeline, zoneOffsetMs } from "@/features/reports/lib/timeline";
 import { TIMELINE, timelineLook } from "@/features/reports/lib/labels";
 import type { ReportSkip, TimelineKind, TimelineSegment } from "@/features/reports/types";
@@ -44,7 +45,7 @@ export function TimelineBar({
             } ${i === 0 ? "translate-x-0" : ""} ${i === layout.ticks.length - 1 ? "-translate-x-full" : ""}`}
             style={{ left: `${t.left}%` }}
           >
-            {hmOf(new Date(t.ms).toISOString())}
+            {formatTimeCompact12(t.ms)}
           </span>
         ))}
         <div className="relative h-9 overflow-hidden rounded-lg bg-slate-100">
@@ -58,7 +59,7 @@ export function TimelineBar({
           {layout.segments.map((s, i) => (
             <span
               key={`${s.startedAt}-${i}`}
-              title={`${hmOf(s.startedAt)} to ${hmOf(s.endedAt)} · ${s.label} · ${formatDuration(s.seconds)}`}
+              title={`${formatTime12(s.startedAt)} to ${formatTime12(s.endedAt)} · ${s.label} · ${formatDuration(s.seconds)}`}
               className={`absolute inset-y-0 ${timelineLook(s.kind).bar}`}
               style={{ left: `${s.left}%`, width: `${s.width}%` }}
             />
@@ -86,12 +87,13 @@ export function TimelineBar({
       <ol className="sr-only">
         {layout.segments.map((s, i) => (
           <li key={`${s.startedAt}-${i}`}>
-            {hmOf(s.startedAt)} to {hmOf(s.endedAt)}: {s.label}, {formatDuration(s.seconds)}
+            {formatTime12(s.startedAt)} to {formatTime12(s.endedAt)}: {s.label},{" "}
+            {formatDuration(s.seconds)}
           </li>
         ))}
         {layout.markers.map((m) => (
           <li key={m.at}>
-            {hmOf(m.at)}: {m.label} skipped
+            {formatTime12(m.at)}: {m.label} skipped
           </li>
         ))}
       </ol>

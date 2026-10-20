@@ -15,6 +15,8 @@ export interface MeetingRecordView {
   mode: MeetingMode;
   agenda: string;
   participants: MeetingParticipant[];
+  /** 4.0: who will mail the minutes of meeting (SPEC 2.9). */
+  momSender?: string | null;
   startedAt: string;
   endedAt: string | null;
   inProgress: boolean;

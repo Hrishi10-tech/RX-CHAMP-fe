@@ -14,6 +14,11 @@ describe("agentDownloadName", () => {
     expect(agentDownloadName("windows", "  ...  ", "RXVision.exe")).toBe("RXVision.exe");
   });
 
+  it("keeps the plain installer (no one's sign-in in it) under a plain name", () => {
+    expect(agentDownloadName("windows", null, "RXVision.exe")).toBe("RXVision.exe");
+    expect(agentDownloadName("windows", null, "RXVision.zip")).toBe("RXVision.zip");
+  });
+
   it("keeps the server's Mac file names", () => {
     expect(agentDownloadName("mac", "Asha", "RXVision-mac.zip")).toBe("RXVision-mac.zip");
     expect(agentDownloadName("mac-x64", "Asha", "RXVision-mac-intel.zip")).toBe(

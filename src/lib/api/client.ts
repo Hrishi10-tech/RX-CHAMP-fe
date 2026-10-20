@@ -1,10 +1,15 @@
-import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
+import axios, { AxiosHeaders, type AxiosError, type AxiosRequestConfig } from "axios";
 
 import { clearSession } from "@/lib/auth/session";
+import { dropMissingOrg, orgHeaderValue } from "@/lib/org/selection";
+import { errorCode } from "./errorMessage";
 import { loginHref } from "@/features/auth/lib/loginRedirect";
 import type { RetryableConfig } from "./types";
 
 const REFRESH_URL = "/api/v1/auth/refresh";
+
+/** SPEC 1.4: the organisation a Super Admin has selected. */
+export const ORG_HEADER = "X-Org-Id";
 
 /**
  * A 401 from one of these is a rejected credential — a wrong password, or a
@@ -19,6 +24,18 @@ export const apiClient = axios.create({
   // Both tokens are httpOnly cookies, so every request has to carry them; the
   // browser sends nothing without this and everything 401s.
   withCredentials: true,
+});
+
+/**
+ * A Super Admin acts inside one organisation by sending its id on every request
+ * (SPEC 1.4). Nothing is sent for "All organisations" or for any other role. A
+ * request that names an organisation itself (the Organisations page reading one
+ * organisation's departments and people) keeps it.
+ */
+apiClient.interceptors.request.use((config) => {
+  const org = orgHeaderValue();
+  if (org && !config.headers.has(ORG_HEADER)) config.headers.set(ORG_HEADER, org);
+  return config;
 });
 
 let refreshPromise: Promise<void> | null = null;
@@ -68,6 +85,14 @@ apiClient.interceptors.response.use(
     const original = error.config as RetryableConfig | undefined;
     const status = error.response?.status;
     const isAuthCall = AUTH_URLS.some((url) => original?.url?.includes(url));
+
+    // The selected organisation no longer exists (deleted, or a stale choice in
+    // this browser): drop it and fall back to the platform view, instead of
+    // failing on every page and every refetch.
+    if (status === 404 && errorCode(error) === "ORG_NOT_FOUND") {
+      const sent = AxiosHeaders.from(original?.headers as AxiosHeaders | undefined).get(ORG_HEADER);
+      dropMissingOrg(typeof sent === "string" ? sent : null);
+    }
 
     // `_retry` caps this at one refresh per request — no loops.
     if (status !== 401 || !original || original._retry || isAuthCall) {

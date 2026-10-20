@@ -5,8 +5,30 @@ import {
   isValidHm,
   minutesToHm,
   normalizeHm,
+  normalizeTime12,
   shiftLengthMinutes,
 } from "./time";
+
+describe("normalizeTime12 (what people type into a shift time)", () => {
+  it.each([
+    ["9:30 AM", "09:30"],
+    ["9:30am", "09:30"],
+    ["930a", "09:30"],
+    ["9:30 PM", "21:30"],
+    ["6 pm", "18:00"],
+    ["12 am", "00:00"],
+    ["12:15 PM", "12:15"],
+    ["9.30 p.m.", "21:30"],
+    ["18:30", "18:30"],
+    ["0930", "09:30"],
+  ])("reads %p as %p", (raw, expected) => {
+    expect(normalizeTime12(raw)).toBe(expected);
+  });
+
+  it.each(["", "13:00 pm", "0 am", "9:60 am", "pm", "abc"])("refuses %p", (raw) => {
+    expect(normalizeTime12(raw)).toBeNull();
+  });
+});
 
 describe("normalizeHm", () => {
   it.each([
