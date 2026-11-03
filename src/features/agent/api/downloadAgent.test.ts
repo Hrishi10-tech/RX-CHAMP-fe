@@ -1,32 +1,43 @@
 import { apiClient } from "@/lib/api";
 import { downloadAgentForUser, downloadAgentInstaller } from "./downloadAgent";
 
-jest.mock("@/lib/api", () => ({ apiClient: { get: jest.fn() } }));
+jest.mock("@/lib/api", () => ({ apiClient: { post: jest.fn() } }));
 
-const get = apiClient.get as jest.Mock;
+const post = apiClient.post as jest.Mock;
+const LINK = "https://api.test/api/v1/agent/download/direct?ticket=abc";
+let clicked: string[] = [];
 
 beforeEach(() => {
-  get.mockReset();
-  get.mockResolvedValue({ data: new Blob(["x"]) });
-  // jsdom has no object URLs.
-  Object.assign(URL, { createObjectURL: jest.fn(() => "blob:x"), revokeObjectURL: jest.fn() });
-  jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  post.mockReset();
+  post.mockResolvedValue({ data: { data: { url: LINK, expiresInSec: 60 } } });
+  clicked = [];
+  jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    clicked.push(this.href);
+  });
 });
 
-describe("agent downloads (4.0)", () => {
-  it("asks for one person's installer by their id", async () => {
+describe("agent downloads (direct from the API host)", () => {
+  it("asks for a ticket for one person's installer, then opens the direct link", async () => {
     await downloadAgentForUser("u-2", "RXVision-Staff.exe", "windows");
-    expect(get).toHaveBeenCalledWith("/api/v1/agent/download", {
+    expect(post).toHaveBeenCalledWith("/api/v1/agent/download-ticket", undefined, {
       params: { userId: "u-2", platform: "windows" },
-      responseType: "blob",
     });
+    expect(clicked).toEqual([LINK]);
   });
 
   it("asks for the plain installer without any user id (never one for yourself)", async () => {
     await downloadAgentInstaller("RXVision.exe", "mac");
-    expect(get).toHaveBeenCalledWith("/api/v1/agent/download", {
+    expect(post).toHaveBeenCalledWith("/api/v1/agent/download-ticket", undefined, {
       params: { platform: "mac" },
-      responseType: "blob",
     });
+    expect(clicked).toEqual([LINK]);
+  });
+
+  it("fails clearly when the server sends no link", async () => {
+    post.mockResolvedValue({ data: {} });
+    await expect(downloadAgentInstaller()).rejects.toThrow("download link");
+    expect(clicked).toEqual([]);
   });
 });
