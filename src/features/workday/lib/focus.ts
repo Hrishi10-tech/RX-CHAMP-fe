@@ -38,15 +38,25 @@ export function pendingEffectLines(
   return lines;
 }
 
-/** What decisions already did: "+11 min approved back", "−15 min taken off". */
+/**
+ * What decisions already did: "+11 min approved back", "−15 min taken off",
+ * and (3.3) what the Super Manager changed by hand.
+ */
 export function decidedEffectLines(
-  focus: Pick<FocusView, "approvedPlusSec" | "rejectedMinusSec"> | null | undefined,
+  focus: Pick<FocusView, "approvedPlusSec" | "rejectedMinusSec" | "adjustedSec"> | null | undefined,
 ): { tone: "plus" | "minus"; text: string }[] {
   if (!focus) return [];
   const lines: { tone: "plus" | "minus"; text: string }[] = [];
   const plus = Math.max(0, finite(focus.approvedPlusSec));
   const minus = Math.max(0, finite(focus.rejectedMinusSec));
+  const adjusted = finite(focus.adjustedSec);
   if (plus >= 60) lines.push({ tone: "plus", text: `${formatSignedAmount(plus)} approved back` });
   if (minus >= 60) lines.push({ tone: "minus", text: `${formatSignedAmount(-minus)} taken off` });
+  if (Math.abs(adjusted) >= 60) {
+    lines.push({
+      tone: adjusted > 0 ? "plus" : "minus",
+      text: `${formatSignedAmount(adjusted)} adjusted by the Super Manager`,
+    });
+  }
   return lines;
 }

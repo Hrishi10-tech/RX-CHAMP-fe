@@ -28,6 +28,9 @@ export interface TeamTodayPerson {
   role: string;
   department: string | null;
   managerId: string | null;
+  /** 3.3: the person's organisation (a chip on combined lists). */
+  companyId?: string | null;
+  companyName?: string | null;
 }
 
 export interface TeamTodayBreakCell {
@@ -89,4 +92,6 @@ export interface GetTeamTodayParams {
   date?: string;
   /** Super Admin: one manager's team; omitted = everyone. */
   managerId?: string;
+  /** 3.3: on "All organisations", only this organisation. */
+  companyId?: string;
 }

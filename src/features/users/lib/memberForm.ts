@@ -1,5 +1,6 @@
 import { NO_GRANTS, type Grants } from "@/constants/roles";
 import { newPasswordProblem } from "@/features/auth/lib/passwordRules";
+import type { CreateSuperManagerInput } from "@/features/users/api/superManagers";
 import type { CreateUserInput, UpdateUserInput } from "@/features/users/types";
 import type { TeamMember } from "@/types";
 
@@ -10,7 +11,8 @@ export interface MemberDraft {
   email: string;
   password: string;
   designation: string;
-  role: "MANAGER" | "USER";
+  /** SUPER_MANAGER (3.3): added by a Super Admin, no organisation or department. */
+  role: "MANAGER" | "USER" | "SUPER_MANAGER";
   departmentIds: string[];
   grants: Grants;
   /** "" follows the department or the organisation's default shift. */
@@ -38,7 +40,7 @@ export function draftFromMember(m: TeamMember): MemberDraft {
     email: m.email,
     password: "",
     designation: m.designation,
-    role: m.role === "MANAGER" ? "MANAGER" : "USER",
+    role: m.role === "MANAGER" || m.role === "SUPER_MANAGER" ? m.role : "USER",
     departmentIds: m.departments.map((d) => d.id),
     grants: { ...m.grants },
     shiftId: m.shiftId ?? "",
@@ -74,6 +76,32 @@ function departmentFields(
     : { departmentIds: [...draft.departmentIds] };
 }
 
+/** Manager or Staff for the people endpoints (a Super Manager goes through /super-managers). */
+function orgRole(draft: MemberDraft): "MANAGER" | "USER" {
+  return draft.role === "MANAGER" ? "MANAGER" : "USER";
+}
+
+/** `POST /super-managers` body (3.3): the person only. */
+export function superManagerInput(draft: MemberDraft): CreateSuperManagerInput {
+  return {
+    firstName: draft.firstName.trim(),
+    lastName: draft.lastName.trim(),
+    email: draft.email.trim(),
+    password: draft.password,
+    designation: draft.designation.trim() || undefined,
+  };
+}
+
+/** `PATCH /users/:id` for an account whose role and place are fixed (Admin, Super Manager). */
+export function detailsInput(draft: MemberDraft): UpdateUserInput {
+  return {
+    firstName: draft.firstName.trim(),
+    lastName: draft.lastName.trim(),
+    email: draft.email.trim(),
+    designation: draft.designation.trim(),
+  };
+}
+
 /** `POST /users` body. Grants go only with a manager. */
 export function createInput(draft: MemberDraft): CreateUserInput {
   return {
@@ -81,7 +109,7 @@ export function createInput(draft: MemberDraft): CreateUserInput {
     lastName: draft.lastName.trim(),
     email: draft.email.trim(),
     password: draft.password,
-    role: draft.role,
+    role: orgRole(draft),
     designation: draft.designation.trim() || undefined,
     ...departmentFields(draft),
     shiftId: draft.shiftId || null,
@@ -96,7 +124,7 @@ export function updateInput(draft: MemberDraft): UpdateUserInput {
     lastName: draft.lastName.trim(),
     email: draft.email.trim(),
     designation: draft.designation.trim(),
-    role: draft.role,
+    role: orgRole(draft),
     ...(draft.role === "USER"
       ? { departmentId: draft.departmentIds[0] ?? null }
       : { departmentIds: [...draft.departmentIds] }),

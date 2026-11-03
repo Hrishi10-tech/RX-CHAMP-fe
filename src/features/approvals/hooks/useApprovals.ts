@@ -47,12 +47,18 @@ export function useApprovalsList(
 
 /**
  * Counts behind the Approvals badge and the summary strip. Polled once a minute
- * and on focus; a new request (notification) refreshes it at once.
+ * and on focus; a new request (notification) refreshes it at once. 3.3: the whole
+ * organisation (`scope: "all"`) or one organisation of the combined view.
  */
-export function useApprovalsSummary(enabled: boolean) {
+export function useApprovalsSummary(
+  enabled: boolean,
+  opts: { scope?: "mine" | "all"; companyId?: string } = {},
+) {
+  const scope = opts.scope === "all" ? "all" : undefined;
+  const companyId = opts.companyId || undefined;
   return useQuery({
-    queryKey: approvalKeys.summary(),
-    queryFn: getApprovalsSummary,
+    queryKey: approvalKeys.summary({ scope, companyId }),
+    queryFn: () => getApprovalsSummary({ scope, companyId }),
     enabled,
     staleTime: 15_000,
     refetchInterval: 60_000,

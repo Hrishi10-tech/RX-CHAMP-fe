@@ -25,11 +25,13 @@ import {
   roleFilterOptions,
   statusFilterOptions,
 } from "@/features/users/lib/memberQuery";
-import { mapUserToMember, memberColumns } from "@/features/users/lib/memberTable";
+import { seesEveryOrg } from "@/constants/roles";
+import { mapUserToMember, memberColumns, memberOrgColumn } from "@/features/users/lib/memberTable";
 import { useMemberActions } from "@/features/users/hooks/useMemberActions";
 import { canChangeMember } from "@/features/users/lib/memberAccess";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { MemberFormDialog } from "@/features/users/components/MemberFormDialog";
+import type { MemberDraft } from "@/features/users/lib/memberForm";
 import { MemberSortPopover } from "@/features/users/components/MemberSortPopover";
 import type { GetUsersParams, MemberFilters, MemberSortKey } from "@/features/users/types";
 import type { TeamMember } from "@/types";
@@ -67,6 +69,13 @@ function Stat({
  * Team management (SPEC 7.2): everyone in the organisation, with filters and
  * the row actions only an Admin or Super Admin has. One request per page of
  * the table (React Query, cached per organisation).
+ *
+ * 3.3: the Super Admin and the Super Manager with "All organisations" in view
+ * get everyone in every organisation, each row with its organisation chip and
+ * no department filter (departments belong to one organisation). The Super
+ * Manager adds Staff only, and only with an organisation picked; Managers and
+ * Admins are read-only to her. The Super Admin adds a Super Manager from the
+ * platform view.
  */
 /** How many people of one role match the filters (the server's `meta.total`). */
 function useRoleTotal(
@@ -84,12 +93,33 @@ function useRoleTotal(
   return query.data;
 }
 
+/** The Actions cell on the combined view: changes happen inside the organisation. */
+function pickOrgHint(m: TeamMember) {
+  return (
+    <span
+      className="text-xs text-slate-400"
+      title={`Pick ${m.companyName || "their organisation"} in the header to change this person.`}
+    >
+      Pick organisation to change
+    </span>
+  );
+}
+
 export function MembersSection() {
   const org = useOrgScope();
   const { user: me, role } = useSession();
   const myId = me?.id;
   const queryClient = useQueryClient();
-  const departments = useDepartments();
+  // "All organisations" (3.3): the list spans organisations.
+  const combined = seesEveryOrg(role) && !org;
+  const departments = useDepartments(!combined);
+  const addRoles: MemberDraft["role"][] =
+    role === "SUPER_MANAGER"
+      ? ["USER"]
+      : role === "SUPER_ADMIN" && combined
+        ? ["SUPER_MANAGER"]
+        : ["USER", "MANAGER"];
+  const canAdd = !(role === "SUPER_MANAGER" && combined);
   const [query, setQuery] = useState("");
   const q = useDebouncedValue(query.trim(), 300);
   const [filters, setFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
@@ -140,10 +170,18 @@ export function MembersSection() {
 
   const columns = useMemo<Column<TeamMember>[]>(
     () => [
-      ...memberColumns,
-      { key: "actions", header: "Actions", align: "right", render: renderActions },
+      ...memberColumns.slice(0, 1),
+      ...(combined ? [memberOrgColumn] : []),
+      ...memberColumns.slice(1),
+      {
+        key: "actions",
+        header: "Actions",
+        align: "right",
+        // A person is changed inside their organisation (the API needs it picked).
+        render: combined ? pickOrgHint : renderActions,
+      },
     ],
-    [renderActions],
+    [renderActions, combined],
   );
 
   const departmentOptions: SelectOption[] = useMemo(
@@ -196,10 +234,12 @@ export function MembersSection() {
         <button
           type="button"
           className={btnPrimary}
+          disabled={!canAdd}
+          title={canAdd ? undefined : "Choose an organisation to add Staff to it."}
           onClick={() => setForm({ open: true, member: null })}
         >
           <Plus className="h-4 w-4" aria-hidden />
-          Add member
+          {role === "SUPER_ADMIN" && combined ? "Add Super Manager" : "Add member"}
         </button>
       </div>
 
@@ -235,7 +275,7 @@ export function MembersSection() {
           columns={columns}
           getRowKey={(m) => m.id}
           onRowClick={(m) => {
-            if (canChangeMember(role, myId, m)) openEdit(m);
+            if (!combined && canChangeMember(role, myId, m)) openEdit(m);
           }}
           countNoun="member"
           minWidth={980}
@@ -257,14 +297,16 @@ export function MembersSection() {
                   aria-label="Role"
                 />
               </div>
-              <div className="w-52">
-                <Select
-                  value={filters.departmentId}
-                  onValueChange={(v) => filter("departmentId", v)}
-                  options={departmentOptions}
-                  aria-label="Department"
-                />
-              </div>
+              {!combined && (
+                <div className="w-52">
+                  <Select
+                    value={filters.departmentId}
+                    onValueChange={(v) => filter("departmentId", v)}
+                    options={departmentOptions}
+                    aria-label="Department"
+                  />
+                </div>
+              )}
               <div className="w-36">
                 <Select
                   value={filters.status}
@@ -296,8 +338,12 @@ export function MembersSection() {
       <MemberFormDialog
         open={form.open}
         member={form.member}
+        roles={addRoles}
         onClose={() => setForm({ open: false, member: null })}
-        onSaved={() => refresh("updated")}
+        onSaved={() => {
+          refresh("updated");
+          void queryClient.invalidateQueries({ queryKey: ["super-managers"] });
+        }}
       />
     </>
   );

@@ -1,4 +1,8 @@
-import { canChangeMember } from "@/features/users/lib/memberAccess";
+import {
+  SUPER_MANAGER_READ_ONLY,
+  canChangeMember,
+  readOnlyReason,
+} from "@/features/users/lib/memberAccess";
 import { departmentsOf } from "@/features/users/lib/memberTable";
 
 describe("who may change a Team management row", () => {
@@ -18,6 +22,22 @@ describe("who may change a Team management row", () => {
     expect(canChangeMember("SUPER_ADMIN", "sa-1", admin)).toBe(true);
     expect(canChangeMember("SUPER_ADMIN", "sa-1", staff)).toBe(true);
     expect(canChangeMember("SUPER_ADMIN", "sa-1", superAdmin)).toBe(false);
+  });
+
+  it("the Super Manager (3.3) changes Staff only; Managers and admins are read-only", () => {
+    expect(canChangeMember("SUPER_MANAGER", "sm-1", staff)).toBe(true);
+    expect(canChangeMember("SUPER_MANAGER", "sm-1", manager)).toBe(false);
+    expect(canChangeMember("SUPER_MANAGER", "sm-1", admin)).toBe(false);
+    expect(canChangeMember("SUPER_MANAGER", "sm-1", superAdmin)).toBe(false);
+    expect(readOnlyReason("SUPER_MANAGER", "sm-1", manager)).toBe(SUPER_MANAGER_READ_ONLY);
+    expect(readOnlyReason("SUPER_MANAGER", "m-1", manager)).toBeNull();
+  });
+
+  it("only the Super Admin changes a Super Manager account", () => {
+    const sm = { id: "sm-2", role: "SUPER_MANAGER" };
+    expect(canChangeMember("SUPER_ADMIN", "sa-1", sm)).toBe(true);
+    expect(canChangeMember("ADMIN", "a-1", sm)).toBe(false);
+    expect(canChangeMember("SUPER_MANAGER", "sm-1", sm)).toBe(false);
   });
 
   it("managers and staff change nobody", () => {

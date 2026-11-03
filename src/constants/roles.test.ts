@@ -13,6 +13,7 @@ import {
   normalizeRole,
   resolveHomeRoute,
   roleLabel,
+  seesEveryOrg,
   viewerGrants,
   type Role,
 } from "./roles";
@@ -22,6 +23,8 @@ describe("normalizeRole", () => {
     ["SUPER_ADMIN", "SUPER_ADMIN"],
     ["super admin", "SUPER_ADMIN"],
     ["super-admin", "SUPER_ADMIN"],
+    ["SUPER_MANAGER", "SUPER_MANAGER"],
+    ["super manager", "SUPER_MANAGER"],
     ["ADMIN", "ADMIN"],
     ["admin", "ADMIN"],
     [" Manager ", "MANAGER"],
@@ -37,9 +40,10 @@ describe("normalizeRole", () => {
 });
 
 describe("labels", () => {
-  it("names the four roles, and calls USER Staff everywhere", () => {
+  it("names the five roles (3.3 adds the Super Manager), and calls USER Staff everywhere", () => {
     expect(ROLE_LABEL).toEqual({
       SUPER_ADMIN: "Super Admin",
+      SUPER_MANAGER: "Super Manager",
       ADMIN: "Admin",
       MANAGER: "Manager",
       USER: "Staff",
@@ -57,6 +61,7 @@ describe("labels", () => {
 describe("resolveHomeRoute", () => {
   it.each([
     ["SUPER_ADMIN", "/dashboard/overview"],
+    ["SUPER_MANAGER", "/dashboard/overview"],
     ["ADMIN", "/dashboard/overview"],
     ["MANAGER", "/dashboard/overview"],
     ["USER", STAFF_REFUSED_ROUTE],
@@ -73,6 +78,7 @@ describe("resolveHomeRoute", () => {
 describe("role groups", () => {
   it("lets every role but Staff into the portal", () => {
     expect(isPortalRole("SUPER_ADMIN")).toBe(true);
+    expect(isPortalRole("SUPER_MANAGER")).toBe(true);
     expect(isPortalRole("ADMIN")).toBe(true);
     expect(isPortalRole("MANAGER")).toBe(true);
     expect(isPortalRole("USER")).toBe(false);
@@ -82,16 +88,27 @@ describe("role groups", () => {
   it("treats Super Admin and Admin as the organisation's admins", () => {
     expect(isOrgAdmin("SUPER_ADMIN")).toBe(true);
     expect(isOrgAdmin("ADMIN")).toBe(true);
+    // 3.3: the Super Manager administers nothing.
+    expect(isOrgAdmin("SUPER_MANAGER")).toBe(false);
     expect(isOrgAdmin("MANAGER")).toBe(false);
     expect(isOrgAdmin("USER")).toBe(false);
   });
 
-  it("makes Super Admin, Admin and Manager approvers", () => {
+  it("makes Super Admin, Super Manager, Admin and Manager approvers", () => {
     expect(isApprover("SUPER_ADMIN")).toBe(true);
+    expect(isApprover("SUPER_MANAGER")).toBe(true);
     expect(isApprover("ADMIN")).toBe(true);
     expect(isApprover("MANAGER")).toBe(true);
     expect(isApprover("USER")).toBe(false);
     expect(isApprover(null)).toBe(false);
+  });
+
+  it("lets the Super Admin and the Super Manager see every organisation", () => {
+    expect(seesEveryOrg("SUPER_ADMIN")).toBe(true);
+    expect(seesEveryOrg("SUPER_MANAGER")).toBe(true);
+    expect(seesEveryOrg("ADMIN")).toBe(false);
+    expect(seesEveryOrg("MANAGER")).toBe(false);
+    expect(seesEveryOrg(null)).toBe(false);
   });
 });
 
@@ -105,6 +122,7 @@ describe("grants", () => {
   it("gives admins every section and a manager exactly their grants", () => {
     expect(effectiveGrants("ADMIN", NO_GRANTS)).toEqual(ALL_GRANTS);
     expect(effectiveGrants("SUPER_ADMIN")).toEqual(ALL_GRANTS);
+    expect(effectiveGrants("SUPER_MANAGER", NO_GRANTS)).toEqual(ALL_GRANTS);
     expect(
       effectiveGrants("MANAGER", { screenshots: true, timeline: false, activity: false }),
     ).toEqual({
@@ -161,8 +179,10 @@ describe("viewerGrants (GET /me permissions)", () => {
 /** SPEC 1.2 and 7.1: who may open which page. M+ is a manager with a grant, M- one without. */
 describe("canAccess (route guard)", () => {
   type Row = Record<Role | "MANAGER_NO_GRANTS", boolean>;
-  const yes = (sa = true, admin = true, mgr = true, mgrNo = mgr, staff = false): Row => ({
+  // The Super Manager (3.3) goes where a Manager with grants goes, unless stated.
+  const yes = (sa = true, admin = true, mgr = true, mgrNo = mgr, staff = false, sm = mgr): Row => ({
     SUPER_ADMIN: sa,
+    SUPER_MANAGER: sm,
     ADMIN: admin,
     MANAGER: mgr,
     MANAGER_NO_GRANTS: mgrNo,
@@ -170,21 +190,24 @@ describe("canAccess (route guard)", () => {
   });
   const ADMINS = yes(true, true, false, false);
   const SA_ONLY = yes(true, false, false, false);
+  /** Admins and the Super Manager, never a Manager. */
+  const OVERSEERS = yes(true, true, false, false, false, true);
 
   const matrix: [string, Row][] = [
     ["/dashboard/organisations", SA_ONLY],
     ["/dashboard/overview", yes()],
     ["/dashboard/team", yes(true, true, true, false)],
     ["/dashboard/team/u-1", yes(true, true, true, false)],
-    ["/dashboard/people", ADMINS],
+    ["/dashboard/people", OVERSEERS],
     ["/dashboard/departments", ADMINS],
     ["/dashboard/approvals", yes()],
     ["/dashboard/breaks/team", yes()],
     ["/dashboard/reports", yes()],
     ["/dashboard/reports/person/u-1", yes()],
-    ["/dashboard/shifts", ADMINS],
+    ["/dashboard/shifts", OVERSEERS],
     ["/dashboard/shifts/new", ADMINS],
-    ["/dashboard/shifts/assign", ADMINS],
+    ["/dashboard/shifts/edit/s-1", ADMINS],
+    ["/dashboard/shifts/assign", OVERSEERS],
     ["/dashboard/calendar", yes()],
     ["/dashboard/tracking", ADMINS],
     ["/dashboard/signout-keys", ADMINS],
@@ -198,6 +221,7 @@ describe("canAccess (route guard)", () => {
     const without = { grants: NO_GRANTS };
     expect({
       SUPER_ADMIN: canAccess("SUPER_ADMIN", path),
+      SUPER_MANAGER: canAccess("SUPER_MANAGER", path),
       ADMIN: canAccess("ADMIN", path),
       MANAGER: canAccess("MANAGER", path, withGrant),
       MANAGER_NO_GRANTS: canAccess("MANAGER", path, without),
@@ -227,12 +251,13 @@ describe("canAccess (route guard)", () => {
 });
 
 describe("isOrgFreeRoute", () => {
-  it("names the pages a Super Admin can use without an organisation", () => {
+  it("names the pages a Super Admin or Super Manager can use without an organisation", () => {
     expect(isOrgFreeRoute("/dashboard/organisations")).toBe(true);
     expect(isOrgFreeRoute("/dashboard/overview")).toBe(true);
     expect(isOrgFreeRoute("/dashboard/instructions")).toBe(true);
+    // 3.3: People lists everyone in every organisation on the combined view.
+    expect(isOrgFreeRoute("/dashboard/people")).toBe(true);
     expect(isOrgFreeRoute("/dashboard/team")).toBe(false);
-    expect(isOrgFreeRoute("/dashboard/people")).toBe(false);
     expect(isOrgFreeRoute("/dashboard/calendar")).toBe(false);
   });
 });

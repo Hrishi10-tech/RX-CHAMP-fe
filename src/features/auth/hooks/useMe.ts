@@ -7,7 +7,8 @@ import { useAppDispatch } from "@/store/hooks";
 import { meLoaded } from "@/features/auth/store/authSlice";
 import { getMe } from "@/features/auth/api/getMe";
 import { saveSession } from "@/lib/auth/session";
-import { setOrgSwitching } from "@/lib/org/selection";
+import { seesEveryOrg } from "@/constants/roles";
+import { adoptOrgFromUrl, setOrgSwitching } from "@/lib/org/selection";
 
 export const meKeys = {
   all: ["me"] as const,
@@ -33,7 +34,9 @@ export function useMeSync(enabled: boolean) {
   const me = query.data;
   useEffect(() => {
     if (!me) return;
-    setOrgSwitching(me.role === "SUPER_ADMIN");
+    // The Super Admin and the Super Manager (3.3) pick the organisation they act in.
+    setOrgSwitching(seesEveryOrg(me.role));
+    adoptOrgFromUrl();
     dispatch(meLoaded(me));
     if (me.role !== "USER") {
       saveSession({

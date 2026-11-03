@@ -32,7 +32,12 @@ describe("navFor", () => {
     expect(labels("SUPER_ADMIN", { hasOrg: false })).toEqual([
       "Organisations",
       "Overview",
+      // 3.3: combined approvals and team breaks, and Team management listing everyone
+      // in every organisation (and the Super Managers).
+      "Approvals",
       "Messages",
+      "Team management",
+      "Team breaks",
       "Instructions",
     ]);
   });
@@ -100,5 +105,35 @@ describe("activeHrefFor", () => {
     expect(activeHrefFor(sections, "/dashboard/shifts/assign")).toBe("/dashboard/shifts/assign");
     expect(activeHrefFor(sections, "/dashboard/shifts/edit/s1")).toBe("/dashboard/shifts");
     expect(activeHrefFor(sections, "/dashboard/team/u-1")).toBe("/dashboard/team");
+  });
+});
+
+describe("Agent health in the menu (3.3)", () => {
+  it("shows only when GET /me grants canSeeAgentHealth", () => {
+    expect(labels("ADMIN")).not.toContain("Agent health");
+    expect(labels("ADMIN", { permissions: { canSeeAgentHealth: false } })).not.toContain(
+      "Agent health",
+    );
+    expect(labels("ADMIN", { permissions: { canSeeAgentHealth: true } })).toContain("Agent health");
+    expect(
+      labels("MANAGER", {
+        grants: { ...NO_GRANTS, activity: true },
+        permissions: { canSeeAgentHealth: true },
+      }),
+    ).toContain("Agent health");
+    expect(navFor("USER", { permissions: { canSeeAgentHealth: true } })).toEqual([]);
+  });
+});
+
+describe("Focus adjustments in the menu (3.3)", () => {
+  it("shows only when GET /me grants canAdjustFocus (the Super Manager)", () => {
+    expect(labels("SUPER_ADMIN", { hasOrg: true })).not.toContain("Focus adjustments");
+    expect(labels("ADMIN", { permissions: { canAdjustFocus: false } })).not.toContain(
+      "Focus adjustments",
+    );
+    expect(
+      labels("SUPER_MANAGER", { hasOrg: true, permissions: { canAdjustFocus: true } }),
+    ).toContain("Focus adjustments");
+    expect(navFor("USER", { permissions: { canAdjustFocus: true } })).toEqual([]);
   });
 });

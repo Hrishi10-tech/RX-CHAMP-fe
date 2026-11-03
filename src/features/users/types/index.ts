@@ -32,7 +32,9 @@ export interface User {
   departments?: UserDepartment[];
   designation?: string | null;
   company?: string;
-  companyId?: string;
+  companyId?: string | null;
+  /** 3.3: the organisation's name, for the organisation chip on the combined view. */
+  companyName?: string | null;
   status?: string;
   /** Automatic screenshots for this user. Absent on an older API → treated as on. */
   screenshotsEnabled?: boolean;

@@ -13,6 +13,8 @@ import { errorMessage } from "@/lib/api";
 import { addDaysToKey, formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
+import { OrgChip } from "@/features/organisations/components/OrgChip";
+import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
 import { BREAK_KINDS, type BreakKind } from "@/features/shifts/types";
 import { BREAK_SHORT_LABEL } from "@/features/shifts/lib/draft";
 import { SourceChip, shiftRefLabel } from "@/features/shifts/components/ShiftBadges";
@@ -149,17 +151,19 @@ function cellOf(row: TeamBreakRowView, kind: BreakKind) {
 
 /** One day of a team's breaks: who took what, when, late or early, skipped, running, pending. */
 export function TeamBreaksView() {
+  // 3.3: "All organisations" combines every organisation; departments belong to one.
+  const { mixed } = useOrgsInView();
   const today = todayKey();
   const [date, setDate] = useState(today);
   const [team, setTeam] = useState(EVERYONE);
-  const departments = useDepartments();
+  const departments = useDepartments(!mixed);
 
   const params = useMemo(
     () => ({
       date: date || undefined,
-      departmentId: team !== EVERYONE ? team : undefined,
+      departmentId: team !== EVERYONE && !mixed ? team : undefined,
     }),
-    [date, team],
+    [date, team, mixed],
   );
   const { data, isLoading, isError, error, refetch, isFetching, isPlaceholderData } =
     useTeamBreaks(params);
@@ -186,7 +190,7 @@ export function TeamBreaksView() {
           subtitle="Who took which break, when, who skipped one, and what is waiting for approval."
         />
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          {(departments.data?.length ?? 0) > 1 && (
+          {!mixed && (departments.data?.length ?? 0) > 1 && (
             <div className="sm:w-64">
               <Select
                 value={team}
@@ -292,6 +296,7 @@ export function TeamBreaksView() {
                         {shiftRefLabel(row.shift)}
                         {row.user.department ? ` · ${row.user.department}` : ""}
                       </p>
+                      <OrgChip name={row.user.companyName} show={mixed} className="mt-1" />
                     </div>
                     {row.pending > 0 && (
                       <Chip tone="warning" dot>
@@ -356,6 +361,7 @@ export function TeamBreaksView() {
                             {row.user.department && (
                               <span className="text-xs text-slate-500">{row.user.department}</span>
                             )}
+                            <OrgChip name={row.user.companyName} show={mixed} />
                           </div>
                         </th>
                         {row.cells.length === 0 ? (

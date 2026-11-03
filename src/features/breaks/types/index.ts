@@ -118,6 +118,9 @@ export interface ApprovalPersonView {
   email: string;
   role: string;
   department: string | null;
+  /** 3.3: the person's organisation (a chip on combined lists). */
+  companyId?: string | null;
+  companyName?: string | null;
 }
 
 export interface ApprovalItemView extends BreakRecordView {

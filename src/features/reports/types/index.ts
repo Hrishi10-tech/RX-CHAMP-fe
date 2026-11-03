@@ -6,6 +6,7 @@ import type { HourActivity } from "@/features/activity/types/hourly";
 import type { ApprovalItemView } from "@/features/approvals/types";
 import type { BreakRecordView } from "@/features/breaks/types";
 import type { MeetingRecordView } from "@/features/meetings/types";
+import type { FocusAdjustmentView } from "@/features/adjustments/types";
 import type { BreakKind, ShiftRef } from "@/features/shifts/types";
 
 export type DayClass = "FULL" | "HALF" | "ABSENT" | "OFF" | "EXTRA" | "IN_PROGRESS" | "UPCOMING";
@@ -22,6 +23,9 @@ export interface ReportPerson {
   /** 3.x reporting line; 4.0 groups people by department instead. Not shown. */
   managerId: string | null;
   managerName: string | null;
+  /** 3.3: the person's organisation (a chip on combined lists). */
+  companyId?: string | null;
+  companyName?: string | null;
 }
 
 export interface PersonDaySummary {
@@ -69,6 +73,11 @@ export interface PersonDaySummary {
   paidSec: number;
   /** 4.0: the calendar's name for the day (a holiday), if any. */
   label: string | null;
+  /**
+   * 3.3: signed seconds added to focus by hand (Super Manager), already inside
+   * focusSec and paidSec. 0 when not sent.
+   */
+  adjustedSec?: number;
 }
 
 export type TimelineKind = "WORK" | "BREAK" | "LUNCH" | "MEETING" | "OFF";
@@ -97,6 +106,8 @@ export interface PersonDayReport {
   meetings: MeetingRecordView[];
   approvals: ApprovalItemView[];
   hourly: HourActivity[];
+  /** 3.3: the day's manual focus adjustments, newest first, undone ones included. */
+  adjustments?: FocusAdjustmentView[];
 }
 
 export interface MonthTotals {
@@ -131,6 +142,8 @@ export interface MonthTotals {
   unverifiedSec: number;
   /** Payroll time: focus time plus paid breaks (worked out when not sent). */
   paidSec: number;
+  /** 3.3: signed seconds added to focus by hand over the month (0 when not sent). */
+  adjustedSec?: number;
 }
 
 export interface HeatmapDay {

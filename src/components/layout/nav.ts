@@ -7,21 +7,34 @@ import {
   Clock3,
   Coffee,
   FileChartColumn,
+  HeartPulse,
   KeyRound,
   LayoutDashboard,
   MessageSquare,
   MousePointerClick,
   Network,
   Settings,
+  SlidersHorizontal,
   UserCog,
   Users,
 } from "lucide-react";
 
-import { canAccess, isOrgFreeRoute, type Grants, type Role } from "@/constants/roles";
+import { canAccess, isOrgFreeRoute, seesEveryOrg, type Grants, type Role } from "@/constants/roles";
+import type { MePermissions } from "@/features/auth/types";
 import type { NavSection } from "./types";
 
 export const APPROVALS_HREF = "/dashboard/approvals";
 export const CHAT_HREF = "/dashboard/chat";
+export const AGENT_HEALTH_HREF = "/dashboard/agent-health";
+export const FOCUS_ADJUSTMENTS_HREF = "/dashboard/focus-adjustments";
+
+/** Items shown only when GET /me grants the named permission (3.3). */
+const PERMISSION_GATES: Record<string, keyof MePermissions> = {
+  [AGENT_HEALTH_HREF]: "canSeeAgentHealth",
+  // 3.3: the Super Manager's correction tool. Admins and Managers read the trail
+  // from a person's day report (the page itself is open to every portal role).
+  [FOCUS_ADJUSTMENTS_HREF]: "canAdjustFocus",
+};
 
 /**
  * Every destination, once (SPEC 7.1). The sidebar and the phone menu both show
@@ -35,6 +48,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard/organisations", label: "Organisations", icon: Building2 },
       { href: "/dashboard/overview", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/team", label: "Team", icon: Users },
+      { href: AGENT_HEALTH_HREF, label: "Agent health", icon: HeartPulse },
       { href: APPROVALS_HREF, label: "Approvals", icon: ClipboardCheck },
       { href: CHAT_HREF, label: "Messages", icon: MessageSquare },
     ],
@@ -58,7 +72,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     heading: "Reports",
-    items: [{ href: "/dashboard/reports", label: "Reports", icon: FileChartColumn }],
+    items: [
+      { href: "/dashboard/reports", label: "Reports", icon: FileChartColumn },
+      { href: FOCUS_ADJUSTMENTS_HREF, label: "Focus adjustments", icon: SlidersHorizontal },
+    ],
   },
   {
     heading: "Organisation",
@@ -72,18 +89,21 @@ export const NAV_SECTIONS: NavSection[] = [
 
 export interface NavContext {
   grants?: Grants | null;
-  /** Super Admin: whether an organisation is selected. */
+  /** Super Admin, Super Manager: whether an organisation is selected. */
   hasOrg?: boolean;
+  /** GET /me permissions: items in PERMISSION_GATES show only when theirs is true. */
+  permissions?: Partial<MePermissions> | null;
 }
 
 /** The menu one person sees. */
 export function navFor(role: Role | null, ctx: NavContext = {}): NavSection[] {
-  const needsOrg = role === "SUPER_ADMIN" && !ctx.hasOrg;
+  const needsOrg = seesEveryOrg(role) && !ctx.hasOrg;
   return NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter(
       (item) =>
         canAccess(role, item.href, { grants: ctx.grants ?? null }) &&
+        (!PERMISSION_GATES[item.href] || ctx.permissions?.[PERMISSION_GATES[item.href]] === true) &&
         (!needsOrg || isOrgFreeRoute(item.href)),
     ),
   })).filter((section) => section.items.length > 0);

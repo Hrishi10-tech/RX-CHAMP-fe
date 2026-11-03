@@ -156,13 +156,23 @@ function FilterField({ label, children }: { label: string; children: ReactNode }
  * Approvals for Managers (what was routed to them) and Super Admins (theirs, the
  * Super Admin pool and every escalated item, or every team): off-schedule
  * breaks, minutes asked back, skipped breaks and meetings.
+ *
+ * 3.3: the Super Manager sees every item of the organisation in view, and on
+ * "All organisations" (she and the Super Admin) one combined list with an
+ * organisation chip per row; she decides any of them without switching.
  */
 export function ApprovalsView({
   isSuperAdmin,
+  isSuperManager = false,
+  mixed = false,
   myId,
   myName,
 }: {
   isSuperAdmin: boolean;
+  /** 3.3: everything in view, never a "mine"; reopens any decision. */
+  isSuperManager?: boolean;
+  /** 3.3: "All organisations" is in view: an organisation chip on every row. */
+  mixed?: boolean;
   myId?: string;
   myName?: string;
 }) {
@@ -227,10 +237,11 @@ export function ApprovalsView({
       ...(people.data ?? []).map((p) => ({
         value: p.id,
         label: p.name,
-        description: p.department ?? undefined,
+        description:
+          [p.department, mixed ? p.companyName : null].filter(Boolean).join(" · ") || undefined,
       })),
     ],
-    [people.data],
+    [people.data, mixed],
   );
 
   function toggle(item: ApprovalItemView) {
@@ -479,8 +490,13 @@ export function ApprovalsView({
                     selected={selected.has(keyOf(item))}
                     onToggle={() => toggle(item)}
                     gutter={decidable.length > 0}
-                    canReopen={mayReopen(item, { id: myId, name: myName, isSuperAdmin })}
+                    canReopen={mayReopen(item, {
+                      id: myId,
+                      name: myName,
+                      isSuperAdmin: isSuperAdmin || isSuperManager,
+                    })}
                     me={me}
+                    showOrg={mixed}
                   />
                 ))}
               </div>

@@ -5,9 +5,11 @@ import type { InternalAxiosRequestConfig } from "axios";
 
 import { OrgSwitcher } from "./OrgSwitcher";
 import * as api from "@/features/organisations/api/organisations";
+import * as choices from "@/features/organisations/api/orgChoices";
 import { apiClient } from "@/lib/api/client";
 import { orgScopedHash } from "@/lib/query/QueryProvider";
 import {
+  adoptOrgFromUrl,
   getSelectedOrg,
   orgHeaderValue,
   resetOrgSelectionForTests,
@@ -19,8 +21,13 @@ import type { OrganisationView } from "@/features/organisations/types";
 jest.mock("@/features/organisations/api/organisations", () => ({
   getOrganisations: jest.fn(),
 }));
+jest.mock("@/features/organisations/api/orgChoices", () => ({
+  ...jest.requireActual("@/features/organisations/api/orgChoices"),
+  getSuperManagerOrgChoices: jest.fn(),
+}));
 
 const mocked = api as jest.Mocked<typeof api>;
+const mockedChoices = choices as jest.Mocked<typeof choices>;
 
 function org(id: string, name: string, admin = true): OrganisationView {
   return {
@@ -33,11 +40,11 @@ function org(id: string, name: string, admin = true): OrganisationView {
   };
 }
 
-function renderSwitcher(onChange = jest.fn()) {
+function renderSwitcher(onChange = jest.fn(), superManager = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <OrgSwitcher onChange={onChange} />
+      <OrgSwitcher onChange={onChange} superManager={superManager} />
     </QueryClientProvider>,
   );
   return onChange;
@@ -167,5 +174,71 @@ describe("X-Org-Id and the cache", () => {
     // Who is signed in and the platform list are not one organisation's.
     expect(orgScopedHash(["me"], "o1")).toBe(orgScopedHash(["me"], "o2"));
     expect(orgScopedHash(["organisations"], "o1")).toBe(orgScopedHash(["organisations"], ""));
+  });
+});
+
+describe("OrgSwitcher for the Super Manager (3.3)", () => {
+  beforeEach(() => {
+    mocked.getOrganisations.mockClear();
+    mockedChoices.getSuperManagerOrgChoices.mockResolvedValue([
+      { id: "o1", name: "Xelements Health", hint: "12 staff" },
+      { id: "o2", name: "RhythmRx", hint: "3 staff" },
+    ]);
+  });
+
+  it("lists her organisations (GET /companies), not the Super Admin's list", async () => {
+    renderSwitcher(jest.fn(), true);
+    await userEvent.click(screen.getByRole("button", { name: /Organisation: All organisations/ }));
+    expect(await screen.findByRole("option", { name: /RhythmRx.*3 staff/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /All organisations.*every organisation/ }),
+    ).toBeInTheDocument();
+    expect(mocked.getOrganisations).not.toHaveBeenCalled();
+  });
+
+  it("selects one, remembers it and sends it as X-Org-Id", async () => {
+    const onChange = renderSwitcher(jest.fn(), true);
+    await userEvent.click(screen.getByRole("button", { name: /Change organisation/ }));
+    await userEvent.click(await screen.findByRole("option", { name: /Xelements Health/ }));
+    expect(onChange).toHaveBeenCalledWith({ id: "o1", name: "Xelements Health" });
+    expect(JSON.parse(window.localStorage.getItem("rxv.org") ?? "{}")).toEqual({
+      id: "o1",
+      name: "Xelements Health",
+    });
+    expect((await headersSent())["X-Org-Id"]).toBe("o1");
+  });
+
+  it("fills in the name of an organisation picked by link", async () => {
+    selectOrg({ id: "o2", name: "" });
+    renderSwitcher(jest.fn(), true);
+    await waitFor(() => expect(getSelectedOrg()).toEqual({ id: "o2", name: "RhythmRx" }));
+    expect(
+      await screen.findByRole("button", { name: /Organisation: RhythmRx/ }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("?org= links (3.3)", () => {
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("picks the organisation named in the address and removes the parameter", () => {
+    window.history.replaceState(null, "", "/dashboard/people?org=o2&tab=x");
+    expect(adoptOrgFromUrl()).toBe(true);
+    expect(getSelectedOrg()).toEqual({ id: "o2", name: "" });
+    expect(window.location.search).toBe("?tab=x");
+  });
+
+  it("?org=all goes back to the combined view", () => {
+    selectOrg({ id: "o1", name: "Xelements Health" });
+    window.history.replaceState(null, "", "/dashboard/people?org=all");
+    expect(adoptOrgFromUrl()).toBe(true);
+    expect(getSelectedOrg()).toBeNull();
+  });
+
+  it("is ignored for anyone who cannot switch", () => {
+    setOrgSwitching(false);
+    window.history.replaceState(null, "", "/dashboard/people?org=o2");
+    expect(adoptOrgFromUrl()).toBe(false);
+    expect(window.location.search).toBe("?org=o2");
   });
 });

@@ -3,13 +3,17 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * The organisation a Super Admin is acting in (SPEC 1.4, 7.1). Kept per browser
+ * The organisation a Super Admin or the Super Manager (3.3) is acting in (SPEC
+ * 1.4, 7.1). Kept per browser
  * (localStorage), read by the API client to send `X-Org-Id`, and by the query
  * client so every cached answer belongs to exactly one organisation.
  *
- * Only a Super Admin can select one: for every other role the selection is
+ * Only those two roles can select one: for every other role the selection is
  * ignored (the server ignores the header for them too), so a shared browser that
  * a Super Admin used never leaks its choice into an Admin's session.
+ *
+ * A link may name the organisation to open with `?org=<companyId>` (or `?org=all`);
+ * see adoptOrgFromUrl.
  */
 
 export interface SelectedOrg {
@@ -21,7 +25,7 @@ const STORAGE_KEY = "rxv.org";
 
 let selected: SelectedOrg | null = null;
 let loaded = false;
-/** True while the signed-in person is a Super Admin. */
+/** True while the signed-in person is a Super Admin or the Super Manager. */
 let switching = false;
 const listeners = new Set<() => void>();
 const goneListeners = new Set<(org: SelectedOrg) => void>();
@@ -50,7 +54,7 @@ function ensureLoaded(): void {
   selected = read();
 }
 
-/** Turns the selection on for a Super Admin and off for everyone else. */
+/** Turns the selection on for a Super Admin or the Super Manager, off for everyone else. */
 export function setOrgSwitching(enabled: boolean): void {
   ensureLoaded();
   if (switching === enabled) return;
@@ -113,6 +117,39 @@ export function dropMissingOrg(sentId: string | null | undefined): boolean {
 export function onOrgGone(listener: (org: SelectedOrg) => void): () => void {
   goneListeners.add(listener);
   return () => goneListeners.delete(listener);
+}
+
+/**
+ * 3.3 links: `?org=<companyId>` opens that organisation, `?org=all` the combined
+ * view. Only while switching is on (Super Admin, Super Manager); the parameter is
+ * removed from the address bar once used. The name is filled in by the switcher
+ * when its list arrives. True when the selection changed.
+ */
+export function adoptOrgFromUrl(): boolean {
+  ensureLoaded();
+  if (!switching || typeof window === "undefined") return false;
+  let url: URL;
+  try {
+    url = new URL(window.location.href);
+  } catch {
+    return false;
+  }
+  const wanted = url.searchParams.get("org")?.trim();
+  if (!wanted) return false;
+  url.searchParams.delete("org");
+  try {
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  } catch {
+    // A sandboxed frame may refuse; the choice still applies.
+  }
+  if (wanted === "all") {
+    if (!selected) return false;
+    selectOrg(null);
+    return true;
+  }
+  if (selected?.id === wanted) return false;
+  selectOrg({ id: wanted, name: "" });
+  return true;
 }
 
 /** Test helper: forget everything (module state survives between tests). */

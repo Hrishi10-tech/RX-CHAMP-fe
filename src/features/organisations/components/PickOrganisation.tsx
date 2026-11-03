@@ -6,14 +6,15 @@ import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { selectOrg } from "@/lib/org/selection";
-import { useOrganisations } from "@/features/organisations/hooks/useOrganisations";
+import { useOrgChoices } from "@/features/organisations/hooks/useOrganisations";
 
 /**
  * Shown by the dashboard instead of an organisation's page while a Super Admin
- * has "All organisations" selected (SPEC 1.4: those endpoints need one).
+ * or the Super Manager (3.3) has "All organisations" selected (SPEC 1.4: those
+ * endpoints need one).
  */
-export function PickOrganisation() {
-  const orgs = useOrganisations();
+export function PickOrganisation({ superManager = false }: { superManager?: boolean }) {
+  const orgs = useOrgChoices(superManager);
   return (
     <div className={`${cardBase} mx-auto max-w-xl overflow-hidden`}>
       <div className="flex flex-col items-center gap-2 border-b border-slate-100 px-6 py-8 text-center">
@@ -32,7 +33,9 @@ export function PickOrganisation() {
         <ErrorState message={errorMessage(orgs.error)} onRetry={() => void orgs.refetch()} />
       ) : orgs.data.length === 0 ? (
         <p className="px-6 py-8 text-center text-sm text-slate-500">
-          No organisations yet. Add one under Organisations.
+          {superManager
+            ? "No organisations yet."
+            : "No organisations yet. Add one under Organisations."}
         </p>
       ) : (
         <ul className="max-h-[50vh] divide-y divide-slate-100 overflow-y-auto">
@@ -45,11 +48,7 @@ export function PickOrganisation() {
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold text-slate-800">{o.name}</span>
-                  <span className="block text-xs text-slate-400">
-                    {o.counts.staff} staff · {o.counts.managers}{" "}
-                    {o.counts.managers === 1 ? "manager" : "managers"}
-                    {o.admin ? "" : " · no admin yet"}
-                  </span>
+                  {o.hint && <span className="block text-xs text-slate-400">{o.hint}</span>}
                 </span>
                 <ChevronRight className="h-4 w-4 text-slate-300" aria-hidden />
               </button>

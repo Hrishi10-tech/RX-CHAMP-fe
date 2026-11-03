@@ -91,3 +91,16 @@ describe("approvalPath", () => {
     expect(approvalPath("MEETING", "m 2", "reopen")).toBe("/api/v1/approvals/meeting/m%202/reopen");
   });
 });
+
+describe("3.3 combined approvals: companyId", () => {
+  it("sends the organisation filter when set, and only then", () => {
+    expect(buildApprovalsQuery({ status: "PENDING", companyId: "org-b" }, false)).toEqual({
+      status: "PENDING",
+      companyId: "org-b",
+    });
+    expect(paramsForFilters({ ...base, companyId: "org-b" })).toMatchObject({
+      companyId: "org-b",
+    });
+    expect(paramsForFilters({ ...base, companyId: "" }).companyId).toBeUndefined();
+  });
+});

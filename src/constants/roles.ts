@@ -1,6 +1,9 @@
 /**
  * The four 4.0 roles (SPEC 1.1), the same as the backend:
  *   SUPER_ADMIN  the platform; acts inside one organisation by selecting it
+ *   SUPER_MANAGER (3.3) every organisation, read and decide: a Manager's views of
+ *                everyone, adds Staff, adjusts focus time; never settings, shifts,
+ *                departments, organisations, locks or roles
  *   ADMIN        exactly one organisation
  *   MANAGER      one organisation, one or more departments (read-only on people)
  *   USER         Staff: the agent only, never the portal
@@ -10,6 +13,7 @@
  */
 export const ROLES = {
   SUPER_ADMIN: "SUPER_ADMIN",
+  SUPER_MANAGER: "SUPER_MANAGER",
   ADMIN: "ADMIN",
   MANAGER: "MANAGER",
   USER: "USER",
@@ -22,6 +26,7 @@ const ROLE_VALUES = Object.values(ROLES) as Role[];
 /** What people see. USER is "Staff" everywhere in the UI. */
 export const ROLE_LABEL: Record<Role, string> = {
   SUPER_ADMIN: "Super Admin",
+  SUPER_MANAGER: "Super Manager",
   ADMIN: "Admin",
   MANAGER: "Manager",
   USER: "Staff",
@@ -61,6 +66,7 @@ export const OVERVIEW_ROUTE = "/dashboard/overview";
 
 export const roleHomeRoute: Record<Role, string> = {
   SUPER_ADMIN: OVERVIEW_ROUTE,
+  SUPER_MANAGER: OVERVIEW_ROUTE,
   ADMIN: OVERVIEW_ROUTE,
   MANAGER: OVERVIEW_ROUTE,
   USER: STAFF_REFUSED_ROUTE,
@@ -75,7 +81,14 @@ export function resolveHomeRoute(role?: string | null): string {
 
 /** True for the roles that may use the portal at all. */
 export function isPortalRole(role: Role | null | undefined): role is Exclude<Role, "USER"> {
-  return role === "SUPER_ADMIN" || role === "ADMIN" || role === "MANAGER";
+  return (
+    role === "SUPER_ADMIN" || role === "SUPER_MANAGER" || role === "ADMIN" || role === "MANAGER"
+  );
+}
+
+/** The Super Manager or a Super Admin: they see every organisation (3.3). */
+export function seesEveryOrg(role: Role | null | undefined): boolean {
+  return role === "SUPER_ADMIN" || role === "SUPER_MANAGER";
 }
 
 /** Super Admin or the organisation's Admin: everything inside the organisation. */
@@ -83,9 +96,11 @@ export function isOrgAdmin(role: Role | null | undefined): boolean {
   return role === "SUPER_ADMIN" || role === "ADMIN";
 }
 
-/** Who decides approvals and watches team breaks (SPEC 1.2). */
+/** Who decides approvals and watches team breaks (SPEC 1.2; 3.3 adds the Super Manager). */
 export function isApprover(role: Role | null | undefined): boolean {
-  return role === "SUPER_ADMIN" || role === "ADMIN" || role === "MANAGER";
+  return (
+    role === "SUPER_ADMIN" || role === "SUPER_MANAGER" || role === "ADMIN" || role === "MANAGER"
+  );
 }
 
 export function hasAnyGrant(grants: Grants | null | undefined): boolean {
@@ -97,7 +112,7 @@ export function hasAnyGrant(grants: Grants | null | undefined): boolean {
  * Admins see everything; a manager exactly their grants.
  */
 export function effectiveGrants(role: Role | null | undefined, grants?: Grants | null): Grants {
-  if (isOrgAdmin(role)) return ALL_GRANTS;
+  if (isOrgAdmin(role) || role === "SUPER_MANAGER") return ALL_GRANTS;
   if (role === "MANAGER") return { ...NO_GRANTS, ...(grants ?? {}) };
   return NO_GRANTS;
 }
@@ -131,7 +146,9 @@ export function viewerGrants(
 }
 
 const ADMINS: Role[] = ["SUPER_ADMIN", "ADMIN"];
-const PORTAL: Role[] = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
+const PORTAL: Role[] = ["SUPER_ADMIN", "SUPER_MANAGER", "ADMIN", "MANAGER"];
+/** Admins plus the Super Manager (3.3): People (Staff only for her). */
+const OVERSEERS: Role[] = ["SUPER_ADMIN", "SUPER_MANAGER", "ADMIN"];
 
 /**
  * Who may open which part of the dashboard (SPEC 7.1). The longest matching
@@ -142,17 +159,23 @@ export const routeRoles: Record<string, Role[]> = {
   "/dashboard/organisations": ["SUPER_ADMIN"],
   "/dashboard/overview": PORTAL,
   "/dashboard/team": PORTAL,
-  "/dashboard/people": ADMINS,
+  "/dashboard/people": OVERSEERS,
   "/dashboard/departments": ADMINS,
   "/dashboard/approvals": PORTAL,
   "/dashboard/breaks": PORTAL,
   "/dashboard/reports": PORTAL,
-  "/dashboard/shifts": ADMINS,
+  // 3.3: the Super Manager reads and assigns shifts; creating and editing stay the admins'.
+  "/dashboard/shifts": OVERSEERS,
+  "/dashboard/shifts/new": ADMINS,
+  "/dashboard/shifts/edit": ADMINS,
+  "/dashboard/shifts/assign": OVERSEERS,
   "/dashboard/calendar": PORTAL,
   "/dashboard/tracking": ADMINS,
   "/dashboard/signout-keys": ADMINS,
   "/dashboard/settings": ADMINS,
   "/dashboard/chat": PORTAL,
+  "/dashboard/agent-health": PORTAL,
+  "/dashboard/focus-adjustments": PORTAL,
   "/dashboard/instructions": PORTAL,
 };
 
@@ -162,10 +185,17 @@ export const routeRoles: Record<string, Role[]> = {
  */
 export const GRANT_ROUTES = ["/dashboard/team"];
 
-/** Pages that work without an organisation selected (Super Admin, SPEC 1.4). */
+/** Pages that work without an organisation selected (Super Admin, Super Manager; SPEC 1.4). */
 export const ORG_FREE_ROUTES = [
+  "/dashboard/agent-health",
+  "/dashboard/focus-adjustments",
   "/dashboard/organisations",
   "/dashboard/overview",
+  // 3.3: People lists everyone in every organisation on the combined view.
+  "/dashboard/people",
+  // 3.3: combined approvals and team breaks (an organisation chip on every row).
+  "/dashboard/approvals",
+  "/dashboard/breaks/team",
   "/dashboard/chat",
   "/dashboard/instructions",
 ];

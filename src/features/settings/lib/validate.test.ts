@@ -90,3 +90,20 @@ describe("settingsFieldOf", () => {
     expect(settingsFieldOf(undefined)).toBeNull();
   });
 });
+
+describe("focus adjustments switch (3.3)", () => {
+  it("is on by default and on when an older server leaves it out", () => {
+    expect(DEFAULT_SETTINGS.focusAdjustmentsEnabled).toBe(true);
+    const { focusAdjustmentsEnabled: _, ...older } = DEFAULT_SETTINGS;
+    void _;
+    expect(draftFromSettings(older as typeof DEFAULT_SETTINGS).focusAdjustmentsEnabled).toBe(true);
+  });
+
+  it("round-trips through the form and is sent only when changed", () => {
+    const draft = { ...draftFromSettings(DEFAULT_SETTINGS), focusAdjustmentsEnabled: false };
+    const { values } = validateSettings(draft);
+    expect(values?.focusAdjustmentsEnabled).toBe(false);
+    expect(settingsPatch(DEFAULT_SETTINGS, values!)).toEqual({ focusAdjustmentsEnabled: false });
+    expect(settingsFieldOf({ field: "focusAdjustmentsEnabled" })).toBe("focusAdjustmentsEnabled");
+  });
+});

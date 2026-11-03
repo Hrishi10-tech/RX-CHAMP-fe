@@ -98,3 +98,19 @@ describe("optimistic decisions, undone row by row", () => {
     });
   });
 });
+
+describe("approval summary keys (3.3)", () => {
+  it("keeps the badge's key when no option is set, and one key per organisation otherwise", () => {
+    expect(approvalKeys.summary()).toEqual(["approvals", "summary"]);
+    expect(approvalKeys.summary({})).toEqual(["approvals", "summary"]);
+    expect(approvalKeys.summary({ scope: "all", companyId: "org-b" })).toEqual([
+      "approvals",
+      "summary",
+      { scope: "all", companyId: "org-b" },
+    ]);
+    // Every summary still starts with the badge's key, so one invalidation refreshes them all.
+    expect(approvalKeys.summary({ companyId: "org-b" }).slice(0, 2)).toEqual(
+      approvalKeys.summary(),
+    );
+  });
+});

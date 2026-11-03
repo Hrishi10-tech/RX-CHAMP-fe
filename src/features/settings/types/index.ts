@@ -13,9 +13,17 @@ export interface AppSettingsView {
   autoCloseAfterShiftEndMin: number;
   /** 4.0: paid break minutes on top of the scheduled breaks, per day (SPEC 2.4). */
   breakBufferMin: number;
+  /**
+   * 3.3: the Super Manager may add minutes to or take minutes off a person's day
+   * by hand. On by default; an older server leaves it out (read as on).
+   */
+  focusAdjustmentsEnabled: boolean;
 }
 
-export type NumericSettingKey = Exclude<keyof AppSettingsView, "blockManagerEndDayWhenOverdue">;
+export type NumericSettingKey = Exclude<
+  keyof AppSettingsView,
+  "blockManagerEndDayWhenOverdue" | "focusAdjustmentsEnabled"
+>;
 
 /** `PATCH /settings` takes any subset. */
 export type AppSettingsPatch = Partial<AppSettingsView>;

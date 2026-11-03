@@ -4,6 +4,7 @@ import { roleLabel } from "@/constants/roles";
 import type { Column } from "@/components/ui/types";
 import { readGrants } from "@/features/auth/api/getMe";
 import { DepartmentIcon } from "@/features/departments/components/DepartmentIcon";
+import { OrgChip } from "@/features/organisations/components/OrgChip";
 import { formatDay, dateKeyOf } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
 import type { User, UserDepartment } from "@/features/users/types";
@@ -86,11 +87,13 @@ export function mapUserToMember(u: User): TeamMember {
     agentStatus: u.agentStatus ?? "OFFLINE",
     agentLastSeenAt: u.agentLastSeenAt ?? null,
     joined: formatJoined(u.createdAt),
+    companyId: u.companyId ?? null,
+    companyName: u.companyName ?? u.company ?? null,
   };
 }
 
 export function RolePill({ role }: { role: string }) {
-  const admin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const admin = role === "ADMIN" || role === "SUPER_ADMIN" || role === "SUPER_MANAGER";
   const manager = role === "MANAGER";
   return (
     <span
@@ -263,3 +266,15 @@ export const memberColumns: Column<TeamMember>[] = [
   },
   { key: "joined", header: "Joined", align: "right" },
 ];
+
+/** 3.3: the person's organisation, a column only on the combined view ("All organisations"). */
+export const memberOrgColumn: Column<TeamMember> = {
+  key: "organisation",
+  header: "Organisation",
+  render: (m) =>
+    m.companyName ? (
+      <OrgChip name={m.companyName} />
+    ) : (
+      <span className="text-sm text-slate-400">—</span>
+    ),
+};

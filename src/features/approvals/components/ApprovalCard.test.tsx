@@ -332,3 +332,42 @@ describe("ApprovalCard", () => {
     expect(await screen.findByRole("button", { name: /^Approve Asha Kumar/ })).toBeInTheDocument();
   });
 });
+
+describe("ApprovalCard organisation chip (3.3)", () => {
+  function renderCard(showOrg: boolean) {
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <ApprovalCard
+          item={makeItem({
+            user: {
+              id: "u-1",
+              name: "Bea Rao",
+              email: "",
+              role: "USER",
+              department: "Sales",
+              companyId: "org-b",
+              companyName: "Beta Ltd",
+            },
+          })}
+          fetchedAt={Date.now()}
+          selected={false}
+          onToggle={() => undefined}
+          gutter={false}
+          canReopen
+          showOrg={showOrg}
+        />
+      </QueryClientProvider>,
+    );
+  }
+
+  it("names the organisation on a combined list", () => {
+    renderCard(true);
+    expect(screen.getByTitle("Organisation: Beta Ltd")).toHaveTextContent("Beta Ltd");
+  });
+
+  it("leaves it out inside one organisation", () => {
+    renderCard(false);
+    expect(screen.queryByTitle("Organisation: Beta Ltd")).not.toBeInTheDocument();
+  });
+});

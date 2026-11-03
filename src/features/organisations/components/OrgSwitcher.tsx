@@ -1,22 +1,37 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { Building2, Check, ChevronsUpDown, Globe2, Search } from "lucide-react";
 
-import { useOrganisations } from "@/features/organisations/hooks/useOrganisations";
+import { useOrgChoices } from "@/features/organisations/hooks/useOrganisations";
 import { selectOrg, useSelectedOrg, type SelectedOrg } from "@/lib/org/selection";
 
 /**
- * The Super Admin's organisation switcher (SPEC 7.1): search, "All
- * organisations" (the platform view) and every organisation. The choice is kept
- * per browser and sent as X-Org-Id on every request.
+ * The organisation switcher (SPEC 7.1) of the Super Admin and, since 3.3, the
+ * Super Manager: search, "All organisations" (the platform or combined view) and
+ * every organisation. The choice is kept per browser and sent as X-Org-Id on
+ * every request; a `?org=<companyId>` link picks one (lib/org/selection).
  */
-export function OrgSwitcher({ onChange }: { onChange?: (org: SelectedOrg | null) => void }) {
+export function OrgSwitcher({
+  onChange,
+  superManager = false,
+}: {
+  onChange?: (org: SelectedOrg | null) => void;
+  /** The Super Manager: her list comes from GET /companies, and "All" is the combined view. */
+  superManager?: boolean;
+}) {
   const selected = useSelectedOrg();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const orgs = useOrganisations(open || !selected);
+  const orgs = useOrgChoices(superManager, open || !selected || !selected.name);
+
+  // A link (?org=) names the organisation by id only: take its name from the list.
+  useEffect(() => {
+    if (!selected || selected.name) return;
+    const found = orgs.data?.find((o) => o.id === selected.id);
+    if (found) selectOrg({ id: found.id, name: found.name });
+  }, [selected, orgs.data]);
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -76,7 +91,7 @@ export function OrgSwitcher({ onChange }: { onChange?: (org: SelectedOrg | null)
             <OrgOption
               icon={<Globe2 className="h-4 w-4" aria-hidden />}
               name="All organisations"
-              hint="Platform overview"
+              hint={superManager ? "Everyone, every organisation" : "Platform overview"}
               selected={!selected}
               onSelect={() => choose(null)}
             />
@@ -90,7 +105,7 @@ export function OrgSwitcher({ onChange }: { onChange?: (org: SelectedOrg | null)
                 key={o.id}
                 icon={<Building2 className="h-4 w-4" aria-hidden />}
                 name={o.name}
-                hint={o.admin ? `Admin ${o.admin.name}` : "No admin yet"}
+                hint={o.hint}
                 selected={selected?.id === o.id}
                 onSelect={() => choose({ id: o.id, name: o.name })}
               />

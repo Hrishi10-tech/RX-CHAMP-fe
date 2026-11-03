@@ -103,11 +103,13 @@ export const DEFAULT_SETTINGS: AppSettingsView = {
   quietHoursFlag: 4,
   autoCloseAfterShiftEndMin: 240,
   breakBufferMin: 10,
+  focusAdjustmentsEnabled: true,
 };
 
 /** The form keeps numbers as typed, so a field can be empty mid-edit. */
 export type SettingsDraft = Record<NumericSettingKey, string> & {
   blockManagerEndDayWhenOverdue: boolean;
+  focusAdjustmentsEnabled: boolean;
 };
 
 export type SettingsErrors = Partial<Record<keyof AppSettingsView, string>>;
@@ -115,6 +117,8 @@ export type SettingsErrors = Partial<Record<keyof AppSettingsView, string>>;
 export function draftFromSettings(settings: AppSettingsView): SettingsDraft {
   const draft = {
     blockManagerEndDayWhenOverdue: settings.blockManagerEndDayWhenOverdue,
+    // 3.3: an older server sends no such key: on, as 3.3 starts.
+    focusAdjustmentsEnabled: settings.focusAdjustmentsEnabled ?? true,
   } as SettingsDraft;
   for (const meta of NUMERIC_SETTINGS) {
     const value = settings[meta.key];
@@ -139,6 +143,7 @@ export function validateSettings(draft: SettingsDraft): {
   const errors: SettingsErrors = {};
   const values = {
     blockManagerEndDayWhenOverdue: Boolean(draft.blockManagerEndDayWhenOverdue),
+    focusAdjustmentsEnabled: Boolean(draft.focusAdjustmentsEnabled),
   } as AppSettingsView;
 
   for (const meta of NUMERIC_SETTINGS) {

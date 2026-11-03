@@ -27,6 +27,8 @@ export const NOTIFICATION_TYPES_40 = {
   AWAY_REQUESTED: "AWAY_REQUESTED",
   AWAY_DECIDED: "AWAY_DECIDED",
   CALENDAR_CHANGED: "CALENDAR_CHANGED",
+  /** 3.3: the Super Manager changed the reader's focus time by hand (or undid it). */
+  FOCUS_ADJUSTED: "FOCUS_ADJUSTED",
 } as const;
 
 const T = NOTIFICATION_TYPES_31;
@@ -52,6 +54,7 @@ const LINKS: Record<string, string> = {
   // A decision on someone's own break, meeting or away time is read in the RX
   // Vision app's History (4.0 has no personal page in the portal), so
   // BREAK_DECIDED, MEETING_DECIDED and AWAY_DECIDED have nowhere to go here.
+  // FOCUS_ADJUSTED (3.3) likewise: the notice itself says what changed and why.
 };
 
 /** The page a notification opens, or null for types that have nowhere to go. */

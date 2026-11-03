@@ -26,6 +26,8 @@ export interface FocusView {
   pendingPlusSec: number;
   rejectedMinusSec: number;
   pendingMinusSec: number;
+  /** 3.3: signed seconds added by hand by the Super Manager; absent from older servers. */
+  adjustedSec?: number;
 }
 
 export interface SkipNeedingComment {

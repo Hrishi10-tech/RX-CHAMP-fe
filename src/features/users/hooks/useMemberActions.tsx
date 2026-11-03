@@ -26,7 +26,7 @@ import { errorMessage } from "@/lib/api";
 import { DownloadAgentRowButton } from "@/features/agent/components/DownloadAgentRowButton";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { deleteUser } from "@/features/users/api/deleteUser";
-import { canChangeMember } from "@/features/users/lib/memberAccess";
+import { canChangeMember, readOnlyReason } from "@/features/users/lib/memberAccess";
 import { setUserIdle } from "@/features/users/api/access";
 import { setUserScreenshots } from "@/features/users/api/setUserScreenshots";
 import { setUserStatus } from "@/features/users/api/setUserStatus";
@@ -268,6 +268,9 @@ export function useMemberActions({
       const self = String(m.id) === myId;
       const manager = m.role === "MANAGER";
       const admin = m.role === "ADMIN" || m.role === "SUPER_ADMIN";
+      // 3.3: a Super Manager account has no organisation, department or agent.
+      const superManagerAccount = m.role === "SUPER_MANAGER";
+      const viewerIsSuperManager = viewerRole === "SUPER_MANAGER";
       if (!canChangeMember(viewerRole, myId, m)) {
         return (
           <div className="flex justify-end gap-2">
@@ -275,16 +278,28 @@ export function useMemberActions({
               // Your own computer: the plain installer (the API issues none for yourself).
               <DownloadAgentRowButton userId={String(m.id)} userName={m.name} self />
             ) : (
-              <span className="text-xs text-slate-400">No changes here</span>
+              <span
+                className="text-xs text-slate-400"
+                title={readOnlyReason(viewerRole, myId, m) ?? undefined}
+              >
+                {viewerIsSuperManager ? "Read-only" : "No changes here"}
+              </span>
             )}
           </div>
         );
       }
       return (
         <div className="flex justify-end gap-2">
-          <ScreenshotsMemberButton member={m} onSelect={setScreenshotsTarget} />
-          <IdleMemberButton member={m} onSet={setIdle} />
-          <DownloadAgentRowButton userId={String(m.id)} userName={m.name} />
+          {!superManagerAccount && (
+            <ScreenshotsMemberButton member={m} onSelect={setScreenshotsTarget} />
+          )}
+          {/* Input tracking is the organisation admin's (the Super Manager gets 403). */}
+          {!superManagerAccount && !viewerIsSuperManager && (
+            <IdleMemberButton member={m} onSet={setIdle} />
+          )}
+          {!superManagerAccount && (
+            <DownloadAgentRowButton userId={String(m.id)} userName={m.name} />
+          )}
           <button
             type="button"
             onClick={(e) => {
@@ -302,7 +317,7 @@ export function useMemberActions({
             label={`More actions for ${m.name}`}
             triggerClassName={`${rowActionButtonClass} ${rowActionHover.primary} data-[state=open]:bg-slate-50`}
             items={[
-              ...(admin
+              ...(admin || superManagerAccount
                 ? []
                 : [
                     {

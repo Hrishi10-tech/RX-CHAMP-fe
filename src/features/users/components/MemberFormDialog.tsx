@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
-import { Crown, Loader2, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
+import { Crown, Globe2, Loader2, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
@@ -24,12 +24,15 @@ import { useDepartments } from "@/features/departments/hooks/useDepartments";
 import { useShifts } from "@/features/shifts/hooks/useShifts";
 import { shiftSelectOptions } from "@/features/shifts/components/shiftOptions";
 import { createUser } from "@/features/users/api/createUser";
+import { createSuperManager } from "@/features/users/api/superManagers";
 import { updateUser } from "@/features/users/api/updateUser";
 import { GrantsEditor } from "@/features/users/components/GrantsEditor";
 import {
   EMPTY_MEMBER_DRAFT,
   createInput,
+  detailsInput,
   draftFromMember,
+  superManagerInput,
   updateInput,
   validateMemberDraft,
   type MemberDraft,
@@ -55,7 +58,16 @@ const ROLE_CARDS: {
     detail: "Approves and reports for one or more departments. Never edits people.",
     icon: Crown,
   },
+  {
+    value: "SUPER_MANAGER",
+    label: "Super Manager",
+    detail: "Every organisation: sees and approves like a Manager, adds Staff. Belongs to none.",
+    icon: Globe2,
+  },
 ];
+
+/** The roles an Admin offers; the page narrows or widens them per viewer (3.3). */
+const DEFAULT_ROLES: MemberDraft["role"][] = ["USER", "MANAGER"];
 
 /** Select value for "no shift of their own" (Radix needs a non-empty value). */
 const FOLLOW_DEFAULT = "__default__";
@@ -77,35 +89,48 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
  * department(s) with icons (one for staff, any number for a manager), a
  * manager's view grants, and the shift. Admins are created per organisation by
  * the Super Admin; editing one here changes only their details.
+ *
+ * 3.3: `roles` limits the role cards (the Super Manager adds Staff only; the
+ * Super Admin adds a Super Manager from the platform view). A Super Manager has
+ * no organisation, so no department, grants or shift, and is created through
+ * POST /super-managers; editing one changes only their details.
  */
 export function MemberFormDialog({
   open,
   member,
   onClose,
   onSaved,
+  roles = DEFAULT_ROLES,
 }: {
   open: boolean;
   /** null to add someone. */
   member: TeamMember | null;
   onClose: () => void;
   onSaved: () => void;
+  /** The role cards offered when adding someone (and when editing a Manager or Staff). */
+  roles?: MemberDraft["role"][];
 }) {
   const uid = useId();
   const isEdit = member !== null;
-  const fixedRole = member && (member.role === "ADMIN" || member.role === "SUPER_ADMIN");
-  const departments = useDepartments(open);
-  const shifts = useShifts(open);
+  const superManagerAccount = member?.role === "SUPER_MANAGER";
+  const fixedRole =
+    member && (member.role === "ADMIN" || member.role === "SUPER_ADMIN" || superManagerAccount);
+  const firstRole = roles[0] ?? "USER";
   const [draft, setDraft] = useState<MemberDraft>(EMPTY_MEMBER_DRAFT);
+  // A Super Manager belongs to no organisation: no department, grants or shift.
+  const noOrg = superManagerAccount || (!isEdit && draft.role === "SUPER_MANAGER");
+  const departments = useDepartments(open && !noOrg);
+  const shifts = useShifts(open && !noOrg);
   const [errors, setErrors] = useState<MemberDraftErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setDraft(member ? draftFromMember(member) : EMPTY_MEMBER_DRAFT);
+    setDraft(member ? draftFromMember(member) : { ...EMPTY_MEMBER_DRAFT, role: firstRole });
     setErrors({});
     setFormError(null);
-  }, [open, member]);
+  }, [open, member, firstRole]);
 
   function set<K extends keyof MemberDraft>(key: K, value: MemberDraft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -131,7 +156,12 @@ export function MemberFormDialog({
     setSaving(true);
     setFormError(null);
     try {
-      if (member) {
+      if (member && superManagerAccount) {
+        await updateUser(member.id, detailsInput(draft));
+        toast.success("Super Manager saved", {
+          description: `${draft.firstName} ${draft.lastName}`.trim(),
+        });
+      } else if (member) {
         const input = updateInput(draft);
         if (fixedRole) {
           delete input.role;
@@ -142,6 +172,11 @@ export function MemberFormDialog({
         await updateUser(member.id, input);
         toast.success("Member saved", {
           description: `${draft.firstName} ${draft.lastName}`.trim(),
+        });
+      } else if (draft.role === "SUPER_MANAGER") {
+        await createSuperManager(superManagerInput(draft));
+        toast.success("Super Manager added", {
+          description: `${draft.firstName} can sign in to the portal and pick an organisation.`,
         });
       } else {
         await createUser(createInput(draft));
@@ -202,7 +237,11 @@ export function MemberFormDialog({
       description={
         isEdit
           ? "Changes apply straight away."
-          : "A Manager or a Staff member in this organisation."
+          : roles.length === 1 && roles[0] === "SUPER_MANAGER"
+            ? "A Super Manager: every organisation, read and decide, adds Staff."
+            : roles.length === 1 && roles[0] === "USER"
+              ? "A Staff member in this organisation."
+              : "A Manager or a Staff member in this organisation."
       }
       className="max-w-2xl"
     >
@@ -247,7 +286,9 @@ export function MemberFormDialog({
         {fixedRole ? (
           <p className="flex items-center gap-2 rounded-xl bg-violet-50 px-3 py-2.5 text-sm text-violet-800">
             <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
-            This is the organisation&apos;s Admin. Their role is set from Organisations.
+            {superManagerAccount
+              ? "This is a Super Manager. They belong to no organisation; their role does not change here."
+              : "This is the organisation’s Admin. Their role is set from Organisations."}
           </p>
         ) : (
           <>
@@ -257,7 +298,9 @@ export function MemberFormDialog({
                 aria-label="Role"
                 className="grid grid-cols-1 gap-3 sm:grid-cols-2"
               >
-                {ROLE_CARDS.map(({ value, label, detail, icon: Icon }) => {
+                {ROLE_CARDS.filter(
+                  (c) => roles.includes(c.value) || (isEdit && c.value === draft.role),
+                ).map(({ value, label, detail, icon: Icon }) => {
                   const selected = draft.role === value;
                   return (
                     <button
@@ -291,24 +334,26 @@ export function MemberFormDialog({
               </div>
             </Section>
 
-            <Section
-              title={draft.role === "MANAGER" ? "Departments" : "Department"}
-              hint={
-                draft.role === "MANAGER"
-                  ? "The departments this manager approves and reports for."
-                  : "Where this person works."
-              }
-            >
-              <DepartmentPicker
-                departments={departments.data ?? []}
-                value={draft.departmentIds}
-                onChange={(ids) => set("departmentIds", ids)}
-                multiple={draft.role === "MANAGER"}
-                label={draft.role === "MANAGER" ? "Departments" : "Department"}
-                invalid={Boolean(errors.departmentIds)}
-              />
-              {errors.departmentIds && <p className={errorText}>{errors.departmentIds}</p>}
-            </Section>
+            {!noOrg && (
+              <Section
+                title={draft.role === "MANAGER" ? "Departments" : "Department"}
+                hint={
+                  draft.role === "MANAGER"
+                    ? "The departments this manager approves and reports for."
+                    : "Where this person works."
+                }
+              >
+                <DepartmentPicker
+                  departments={departments.data ?? []}
+                  value={draft.departmentIds}
+                  onChange={(ids) => set("departmentIds", ids)}
+                  multiple={draft.role === "MANAGER"}
+                  label={draft.role === "MANAGER" ? "Departments" : "Department"}
+                  invalid={Boolean(errors.departmentIds)}
+                />
+                {errors.departmentIds && <p className={errorText}>{errors.departmentIds}</p>}
+              </Section>
+            )}
 
             {draft.role === "MANAGER" && (
               <Section
@@ -321,14 +366,16 @@ export function MemberFormDialog({
           </>
         )}
 
-        <Section title="Shift">
-          <Select
-            value={draft.shiftId || FOLLOW_DEFAULT}
-            onValueChange={(v) => set("shiftId", v === FOLLOW_DEFAULT ? "" : v)}
-            options={shiftOptions}
-            aria-label="Shift"
-          />
-        </Section>
+        {!noOrg && (
+          <Section title="Shift">
+            <Select
+              value={draft.shiftId || FOLLOW_DEFAULT}
+              onValueChange={(v) => set("shiftId", v === FOLLOW_DEFAULT ? "" : v)}
+              options={shiftOptions}
+              aria-label="Shift"
+            />
+          </Section>
+        )}
 
         <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={saving}>

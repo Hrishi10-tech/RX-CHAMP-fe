@@ -41,4 +41,15 @@ describe("effect lines", () => {
       { tone: "minus", text: "−15 min taken off" },
     ]);
   });
+
+  it("says what the Super Manager changed by hand (3.3)", () => {
+    expect(
+      decidedEffectLines({ approvedPlusSec: 0, rejectedMinusSec: 0, adjustedSec: 30 * 60 }),
+    ).toEqual([{ tone: "plus", text: "+30 min adjusted by the Super Manager" }]);
+    expect(
+      decidedEffectLines({ approvedPlusSec: 0, rejectedMinusSec: 0, adjustedSec: -20 * 60 }),
+    ).toEqual([{ tone: "minus", text: "−20 min adjusted by the Super Manager" }]);
+    // An older server sends no adjustedSec: nothing extra.
+    expect(decidedEffectLines({ approvedPlusSec: 0, rejectedMinusSec: 0 })).toEqual([]);
+  });
 });

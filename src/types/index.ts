@@ -46,6 +46,9 @@ export interface TeamMember {
   /** Last activity report, for the "quiet since" tooltip. */
   agentLastSeenAt: string | null;
   joined: string;
+  /** 3.3: the person's organisation (the chip on the combined view). */
+  companyId?: string | null;
+  companyName?: string | null;
 }
 
 /**

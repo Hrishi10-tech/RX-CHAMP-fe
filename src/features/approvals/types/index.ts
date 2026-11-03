@@ -82,6 +82,9 @@ export interface ApprovalPerson {
   email: string;
   role: string;
   department: string | null;
+  /** 3.3: the person's organisation (a chip on combined lists). */
+  companyId?: string | null;
+  companyName?: string | null;
 }
 
 export interface ApprovalItemView {
@@ -160,6 +163,8 @@ export interface GetApprovalsParams {
   /** "YYYY-MM-DD". */
   date?: string;
   userId?: string;
+  /** 3.3: Super Admin or Super Manager on "All organisations": one organisation. */
+  companyId?: string;
   page?: number;
   limit?: number;
 }

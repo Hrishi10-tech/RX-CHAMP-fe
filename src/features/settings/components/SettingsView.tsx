@@ -35,6 +35,8 @@ const GROUPS: {
   description: string;
   keys: NumericSettingKey[];
   withBlock?: boolean;
+  /** 3.3: the switch for manual focus adjustments. */
+  withAdjustments?: boolean;
 }[] = [
   {
     title: "Approvals",
@@ -64,6 +66,13 @@ const GROUPS: {
     title: "Forgotten End Day",
     description: "When a day nobody ended is closed for them.",
     keys: ["autoCloseAfterShiftEndMin"],
+  },
+  {
+    title: "Focus adjustments",
+    description:
+      "Corrections by hand while a rollout beds in. Every adjustment keeps its reason and who made it.",
+    keys: [],
+    withAdjustments: true,
   },
 ];
 
@@ -244,6 +253,38 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
                 {errors.blockManagerEndDayWhenOverdue && (
                   <p className={errorText} role="alert">
                     {errors.blockManagerEndDayWhenOverdue}
+                  </p>
+                )}
+              </div>
+            )}
+            {group.withAdjustments && (
+              <div className="border-t border-slate-100 py-4 first:border-t-0">
+                <label className="flex cursor-pointer items-start gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className={`${checkboxBase} mt-0.5`}
+                    checked={draft.focusAdjustmentsEnabled}
+                    disabled={pending}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, focusAdjustmentsEnabled: e.target.checked }))
+                    }
+                    aria-describedby="adjustments-help"
+                  />
+                  <span>
+                    <span className="font-semibold text-slate-800">
+                      Manual focus adjustments by the Super Manager
+                    </span>
+                    <span id="adjustments-help" className="mt-0.5 block text-slate-500">
+                      While on, the Super Manager can add minutes to or take minutes off a
+                      person&apos;s day in this organisation, with a reason the person sees. Meant
+                      for a rollout&apos;s first weeks; switch it off once the agents are settled.
+                      The trail stays readable either way. Default on.
+                    </span>
+                  </span>
+                </label>
+                {errors.focusAdjustmentsEnabled && (
+                  <p className={errorText} role="alert">
+                    {errors.focusAdjustmentsEnabled}
                   </p>
                 )}
               </div>

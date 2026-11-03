@@ -129,3 +129,40 @@ describe("ApprovalsView paging", () => {
     expect(await screen.findByRole("article", { name: "Morning break skipped a" })).toBeVisible();
   });
 });
+
+describe("ApprovalsView on All organisations (3.3)", () => {
+  function renderCombined(mixed: boolean) {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <ApprovalsView isSuperAdmin={false} isSuperManager mixed={mixed} myId="sm-1" />
+      </QueryClientProvider>,
+    );
+  }
+
+  const fromOrg = (id: string, companyName: string): ApprovalItemView => ({
+    ...item(id),
+    user: { ...item(id).user, companyId: `org-${id}`, companyName },
+  });
+
+  it("names each row's organisation when every organisation is in view", async () => {
+    mocked.getApprovals.mockResolvedValue({
+      items: [fromOrg("a", "Acme"), fromOrg("b", "Beta")],
+      meta: meta(1, 2),
+    });
+    renderCombined(true);
+    expect(await screen.findByTitle("Organisation: Acme")).toBeVisible();
+    expect(screen.getByTitle("Organisation: Beta")).toBeVisible();
+    // Decided without switching: every row keeps its buttons.
+    expect(screen.getAllByRole("button", { name: /^Approve/ }).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("shows no chips inside one organisation", async () => {
+    mocked.getApprovals.mockResolvedValue({ items: [fromOrg("a", "Acme")], meta: meta(1, 1) });
+    renderCombined(false);
+    await screen.findByRole("article", { name: "Morning break skipped a" });
+    expect(screen.queryByTitle("Organisation: Acme")).not.toBeInTheDocument();
+  });
+});

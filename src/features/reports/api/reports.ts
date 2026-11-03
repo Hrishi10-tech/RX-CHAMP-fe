@@ -105,6 +105,7 @@ export function daySummaryOf(d: PersonDaySummary): PersonDaySummary {
     awayRejectedSec: num(d.awayRejectedSec),
     awayUnexplainedSec: num(d.awayUnexplainedSec),
     unverifiedSec: num(d.unverifiedSec),
+    adjustedSec: num(d.adjustedSec),
     paidSec: paidSecOf(d),
     label: typeof d.label === "string" && d.label ? d.label : null,
     // Activity figures a manager without the grant gets as null.
@@ -134,6 +135,7 @@ export async function getPersonDayReport(userId: string, date: string): Promise<
     meetings: list(r.meetings),
     approvals: list(r.approvals),
     hourly: list(r.hourly),
+    adjustments: list(r.adjustments),
   };
 }
 

@@ -16,6 +16,7 @@ import {
   textareaBase,
 } from "@/components/ui/classes";
 import { roleLabel } from "@/constants/roles";
+import { OrgChip } from "@/features/organisations/components/OrgChip";
 import { errorCode, errorMessage, errorStatus } from "@/lib/api";
 import { formatSignedAmount } from "@/lib/format/duration";
 import { relativeDay } from "@/lib/time/businessTime";
@@ -79,6 +80,7 @@ export function ApprovalCard({
   gutter,
   canReopen,
   me,
+  showOrg = false,
 }: {
   item: ApprovalItemView;
   /**
@@ -95,6 +97,8 @@ export function ApprovalCard({
   canReopen: boolean;
   /** The signed-in person, for the optimistic "Approved by ..." line. */
   me?: Decider;
+  /** 3.3: "All organisations" is in view: name the person's organisation. */
+  showOrg?: boolean;
 }) {
   const [mode, setMode] = useState<"approve" | "reject" | null>(null);
   const [note, setNote] = useState("");
@@ -265,6 +269,7 @@ export function ApprovalCard({
           <div className="min-w-0 lg:col-start-1 lg:row-start-1">
             <p className="break-words font-semibold text-slate-900">{name}</p>
             {who && <p className="break-words text-xs text-slate-500">{who}</p>}
+            <OrgChip name={item.user?.companyName} show={showOrg} className="mt-1" />
           </div>
 
           {/* What and when */}

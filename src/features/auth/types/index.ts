@@ -88,6 +88,12 @@ export interface MePermissions {
   canUseMessages: boolean;
   canUsePortal: boolean;
   needsOrganisation: boolean;
+  /** 3.3: the caller is the Super Manager. */
+  isSuperManager: boolean;
+  /** 3.3: may adjust focus time by hand (the Super Manager only). */
+  canAdjustFocus: boolean;
+  /** 3.3: may open Agent health. */
+  canSeeAgentHealth: boolean;
 }
 
 export interface AuthState {

@@ -10,13 +10,20 @@ import {
   getPlatformOverview,
   renameOrganisation,
 } from "@/features/organisations/api/organisations";
-import type { CreateAdminInput } from "@/features/organisations/types";
+import {
+  choiceOf,
+  getSuperManagerOrgChoices,
+  type OrgChoice,
+} from "@/features/organisations/api/orgChoices";
+import type { CreateAdminInput, OrganisationView } from "@/features/organisations/types";
 import { getSelectedOrg, selectOrg } from "@/lib/org/selection";
 
 /** Platform data: not tied to one organisation (QueryProvider leaves these unscoped). */
 export const organisationKeys = {
   all: ["organisations"] as const,
   platform: ["platform-overview"] as const,
+  /** 3.3: the Super Manager's switcher list (unscoped: the head is "organisations"). */
+  choices: ["organisations", "choices"] as const,
 };
 
 export function useOrganisations(enabled = true) {
@@ -26,6 +33,30 @@ export function useOrganisations(enabled = true) {
     enabled,
     staleTime: 60_000,
   });
+}
+
+const toChoices = (list: OrganisationView[]): OrgChoice[] => list.map(choiceOf);
+
+/**
+ * The organisations the switcher offers: the Super Admin's from GET /organisations
+ * (shared with the Organisations page), the Super Manager's (3.3) from GET
+ * /companies on the combined view.
+ */
+export function useOrgChoices(superManager: boolean, enabled = true) {
+  const admin = useQuery({
+    queryKey: organisationKeys.all,
+    queryFn: getOrganisations,
+    enabled: enabled && !superManager,
+    staleTime: 60_000,
+    select: toChoices,
+  });
+  const manager = useQuery({
+    queryKey: organisationKeys.choices,
+    queryFn: getSuperManagerOrgChoices,
+    enabled: enabled && superManager,
+    staleTime: 60_000,
+  });
+  return superManager ? manager : admin;
 }
 
 /** The Super Admin's platform overview, refreshed every minute. */

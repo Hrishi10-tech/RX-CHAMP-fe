@@ -22,7 +22,11 @@ const EMPTY_TOTALS: TeamTodayTotals = {
 
 /** The query for `GET /team/today`: only the date and manager that are set. */
 export function buildTeamTodayQuery(params: GetTeamTodayParams): Record<string, string> {
-  return cleanParams({ date: params.date, managerId: params.managerId }) as Record<string, string>;
+  return cleanParams({
+    date: params.date,
+    managerId: params.managerId,
+    companyId: params.companyId,
+  }) as Record<string, string>;
 }
 
 /**

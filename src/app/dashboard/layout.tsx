@@ -23,6 +23,7 @@ import {
   isApprover,
   isOrgFreeRoute,
   resolveHomeRoute,
+  seesEveryOrg,
 } from "@/constants/roles";
 import { UserMenu } from "@/components/layout/UserMenu";
 import PageWrapper from "@/components/layout/PageWrapper";
@@ -81,13 +82,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useChatNotifier(live);
   const chatUnread = useAppSelector((state) => state.chat.unreadTotal);
   const approver = isApprover(role);
-  const isSuperAdmin = role === "SUPER_ADMIN";
+  // The Super Admin and the Super Manager (3.3) switch organisations from the header.
+  const isSuperAdmin = seesEveryOrg(role);
+  const isSuperManager = role === "SUPER_MANAGER";
   const needsOrg = isSuperAdmin && !org && !isOrgFreeRoute(pathname);
   // GET /approvals/summary, polled every 60 s: the badge counts what is pending
-  // and turns red once anything is overdue. A Super Admin has none without an org.
-  const { data: approvalSummary } = useApprovalsSummary(
-    live && approver && (!isSuperAdmin || Boolean(org)),
-  );
+  // and turns red once anything is overdue. 3.3: on "All organisations" the Super
+  // Admin and the Super Manager get the combined count.
+  const { data: approvalSummary } = useApprovalsSummary(live && approver);
   const approvalsWaiting = Math.max(0, approvalSummary?.pending ?? 0);
   const approvalsOverdue = Math.max(0, approvalSummary?.overdue ?? 0);
 
@@ -140,8 +142,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const closeNotifications = useCallback(() => setNotifOpen(false), []);
 
   const navSections = useMemo(
-    () => navFor(role, { grants: me?.grants ?? null, hasOrg: Boolean(org) }),
-    [role, me?.grants, org],
+    () =>
+      navFor(role, {
+        grants: me?.grants ?? null,
+        hasOrg: Boolean(org),
+        permissions: me?.permissions ?? null,
+      }),
+    [role, me?.grants, me?.permissions, org],
   );
 
   if (!ready || !user) return <FullScreenMessage>Loading…</FullScreenMessage>;
@@ -284,6 +291,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex min-w-0 items-center gap-2">
             {isSuperAdmin && (
               <OrgSwitcher
+                superManager={isSuperManager}
                 onChange={(next) => {
                   // "All organisations" has nothing to show on an organisation's page.
                   if (!next && !isOrgFreeRoute(pathname)) router.push("/dashboard/overview");
@@ -323,7 +331,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Keyed by organisation too: switching remounts the page, so nothing from
               the previous organisation stays on screen. */}
           <PageWrapper key={`${org?.id ?? ""}:${pathname}`}>
-            {needsOrg ? <PickOrganisation /> : allowed ? children : null}
+            {needsOrg ? (
+              <PickOrganisation superManager={isSuperManager} />
+            ) : allowed ? (
+              children
+            ) : null}
           </PageWrapper>
         </main>
       </div>

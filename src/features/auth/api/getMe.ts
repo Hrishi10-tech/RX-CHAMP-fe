@@ -59,6 +59,9 @@ const PERMISSION_KEYS: (keyof MePermissions)[] = [
   "canUseMessages",
   "canUsePortal",
   "needsOrganisation",
+  "isSuperManager",
+  "canAdjustFocus",
+  "canSeeAgentHealth",
 ];
 
 /** `permissions` as booleans (a missing key is false), or null when the API sent none. */

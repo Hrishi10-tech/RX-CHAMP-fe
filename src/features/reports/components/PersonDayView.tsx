@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ClipboardCheck, Info, Users } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Info, SlidersHorizontal, Users } from "lucide-react";
 
 import { Chip } from "@/components/ui/Chip";
 import {
@@ -12,13 +12,16 @@ import {
   LoadingState,
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
-import { cardBase, thBase } from "@/components/ui/classes";
+import { btnSmall, cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage, errorStatus } from "@/lib/api";
 import { formatDuration, formatSignedAmount } from "@/lib/format/duration";
 import { formatMinutes, todayKey } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
 import { formatMonth, monthOfDate } from "@/lib/time/months";
-import { roleLabel } from "@/constants/roles";
+import { canAccess, roleLabel } from "@/constants/roles";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { AdjustFocusDialog } from "@/features/adjustments/components/AdjustFocusDialog";
+import { AdjustmentsList } from "@/features/adjustments/components/AdjustmentsList";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
 import { usePersonDayReport } from "@/features/reports/hooks/useReports";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
@@ -374,6 +377,17 @@ export function PersonDayView({
   const settings = useAppSettings();
   const report = query.data;
   const name = report?.person.name ?? "Day report";
+  // 3.3: the Super Manager corrects a day's focus time by hand from here, while
+  // the organisation allows it; everyone who reads the day sees the trail.
+  const { role, me } = useSession();
+  const [adjusting, setAdjusting] = useState(false);
+  const canAdjust =
+    me?.permissions?.canAdjustFocus === true &&
+    settings.data?.focusAdjustmentsEnabled !== false &&
+    report?.person.id !== me?.id;
+  const adjustments = report?.adjustments ?? [];
+  const liveAdjustments = adjustments.filter((a) => !a.voidedAt);
+  const adjustmentsHref = "/dashboard/focus-adjustments";
 
   const rows = useMemo(() => (report ? breakRows(report) : []), [report]);
 
@@ -651,6 +665,54 @@ export function PersonDayView({
         <ApprovalsList items={report.approvals} fetchedAt={query.dataUpdatedAt} />
       </ReportSection>
 
+      {(canAdjust || adjustments.length > 0) && (
+        <ReportSection
+          title="Adjusted by hand"
+          subtitle={
+            liveAdjustments.length
+              ? `${liveAdjustments.length} in force: ${formatSignedAmount(
+                  liveAdjustments.reduce((sum, a) => sum + a.deltaSec, 0),
+                )} on this day's focus time, paid time and reports.`
+              : "Nothing changed by hand on this day."
+          }
+          aside={
+            canAdjust ? (
+              <button
+                type="button"
+                onClick={() => setAdjusting(true)}
+                className={`${btnSmall} print:hidden`}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+                Adjust focus time
+              </button>
+            ) : canAccess(role, adjustmentsHref) ? (
+              <Link
+                href={adjustmentsHref}
+                className="text-sm font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline print:hidden"
+              >
+                All adjustments
+              </Link>
+            ) : null
+          }
+          flush={adjustments.length > 0}
+        >
+          {adjustments.length > 0 ? (
+            <AdjustmentsList
+              items={adjustments}
+              canVoid={canAdjust}
+              showOrg={false}
+              showPerson={false}
+              embedded
+            />
+          ) : (
+            <p className="text-sm text-slate-500">
+              When an agent missed something and the day&apos;s focus time is wrong, add or take off
+              minutes here. {name} is told, with the reason, and every report follows.
+            </p>
+          )}
+        </ReportSection>
+      )}
+
       <ReportSection
         title="Keyboard and mouse activity, by hour"
         subtitle="Active minutes in each hour. It never changes focus time."
@@ -667,6 +729,15 @@ export function PersonDayView({
           />
         </ActivityGate>
       </ReportSection>
+
+      {canAdjust && (
+        <AdjustFocusDialog
+          open={adjusting}
+          onClose={() => setAdjusting(false)}
+          person={{ id: report.person.id, name: report.person.name }}
+          date={date}
+        />
+      )}
     </div>,
   );
 }

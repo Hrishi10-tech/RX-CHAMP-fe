@@ -21,6 +21,7 @@ export function buildApprovalsQuery(
     overdue: params.overdue === true ? true : undefined,
     date: params.date,
     userId: params.userId,
+    companyId: params.companyId,
     page: params.page,
     limit: params.limit,
   });
@@ -65,6 +66,8 @@ export interface ApprovalsFilters {
   category: CategoryFilter;
   userId: string;
   scope: "mine" | "all";
+  /** 3.3: one organisation on the combined view ("" or absent: every one). */
+  companyId?: string;
   page: number;
   limit: number;
 }
@@ -82,6 +85,7 @@ export function paramsForFilters(filters: ApprovalsFilters): GetApprovalsParams 
     overdue: filters.tab === "overdue" ? true : undefined,
     scope: filters.scope,
     userId: filters.userId || undefined,
+    companyId: filters.companyId || undefined,
     page: filters.page,
     limit: filters.limit,
   };
