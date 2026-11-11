@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { TeamView } from "./TeamView";
@@ -10,6 +10,9 @@ import type { TeamPerson } from "@/features/team/types";
 jest.mock("@/features/team/api/team", () => ({
   ...jest.requireActual("@/features/team/api/team"),
   getTeam: jest.fn(),
+}));
+jest.mock("@/features/departments/api/departments", () => ({
+  getDepartments: jest.fn().mockResolvedValue([]),
 }));
 jest.mock("@/features/presence/hooks/usePresenceRefresh", () => ({
   usePresenceRefresh: jest.fn(),
@@ -68,15 +71,16 @@ beforeEach(() => {
       ended: 0,
     },
     people,
+    meta: null,
   });
 });
 
 describe("TeamView", () => {
-  it("asks for the whole team once and shows the active people first", async () => {
+  it("asks for the first page of active people and shows them", async () => {
     renderTeam();
     const list = await screen.findByRole("list");
     expect(mocked.getTeam).toHaveBeenCalledTimes(1);
-    expect(mocked.getTeam).toHaveBeenCalledWith({ view: "all" });
+    expect(mocked.getTeam).toHaveBeenCalledWith({ view: "active", page: 1, limit: 10 });
     expect(within(list).getByText("Asha K")).toBeInTheDocument();
     expect(within(list).getByText("Chitra S")).toBeInTheDocument();
     expect(within(list).queryByText("Bala R")).not.toBeInTheDocument();
@@ -124,7 +128,84 @@ describe("TeamView", () => {
     renderTeam();
     await screen.findByRole("list");
     await userEvent.type(screen.getByRole("searchbox", { name: "Search people" }), "chit");
-    expect(screen.queryByText("Asha K")).not.toBeInTheDocument();
+    // The search goes to the server once typing pauses.
+    await waitFor(() =>
+      expect(mocked.getTeam).toHaveBeenLastCalledWith({
+        view: "active",
+        q: "chit",
+        page: 1,
+        limit: 10,
+      }),
+    );
+    await waitFor(() => expect(screen.queryByText("Asha K")).not.toBeInTheDocument());
     expect(screen.getByText("Chitra S")).toBeInTheDocument();
+  });
+
+  it("pages through the team with numbered buttons, asking the server for each page", async () => {
+    mocked.getTeam.mockImplementation(async (query) => ({
+      date: "2026-10-19",
+      counts: {
+        all: 23,
+        active: 23,
+        working: 23,
+        onBreak: 0,
+        inMeeting: 0,
+        away: 0,
+        notStarted: 0,
+        ended: 0,
+      },
+      people: [
+        { ...base, id: `p${query?.page}`, name: `Person ${query?.page}`, status: "WORKING" },
+      ],
+      meta: { page: query?.page ?? 1, limit: 10, total: 23, totalPages: 3 },
+    }));
+    renderTeam();
+    expect(await screen.findByText("Person 1")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Pagination" })).toHaveTextContent(
+      "1–10 of 23 people",
+    );
+    expect(screen.getByRole("button", { name: "Page 1" })).toHaveAttribute("aria-current", "page");
+
+    await userEvent.click(screen.getByRole("button", { name: "Page 3" }));
+    expect(await screen.findByText("Person 3")).toBeInTheDocument();
+    expect(mocked.getTeam).toHaveBeenLastCalledWith({ view: "active", page: 3, limit: 10 });
+    expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Previous page" }));
+    expect(await screen.findByText("Person 2")).toBeInTheDocument();
+  });
+
+  it("goes back to page 1 when the filter changes", async () => {
+    mocked.getTeam.mockImplementation(async (query) => ({
+      date: "2026-10-19",
+      counts: {
+        all: 23,
+        active: 23,
+        working: 23,
+        onBreak: 0,
+        inMeeting: 0,
+        away: 0,
+        notStarted: 0,
+        ended: 0,
+      },
+      people: [
+        { ...base, id: `p${query?.page}`, name: `Person ${query?.page}`, status: "WORKING" },
+      ],
+      meta: { page: query?.page ?? 1, limit: 10, total: 23, totalPages: 3 },
+    }));
+    renderTeam();
+    await screen.findByText("Person 1");
+    await userEvent.click(screen.getByRole("button", { name: "Page 2" }));
+    await screen.findByText("Person 2");
+    await userEvent.click(screen.getByRole("tab", { name: /All/ }));
+    await waitFor(() =>
+      expect(mocked.getTeam).toHaveBeenLastCalledWith({ view: "all", page: 1, limit: 10 }),
+    );
+  });
+
+  it("shows no pager when the server sends everyone in one answer", async () => {
+    renderTeam();
+    await screen.findByRole("list");
+    expect(screen.queryByRole("navigation", { name: "Pagination" })).not.toBeInTheDocument();
   });
 });

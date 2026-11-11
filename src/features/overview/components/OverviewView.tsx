@@ -624,7 +624,7 @@ export function OverviewView() {
   const org = useOrgScope();
   const queryClient = useQueryClient();
   const key = overviewKeys.org(org);
-  const overview = useQuery({ queryKey: key, queryFn: getOverview, refetchInterval: 60_000 });
+  const overview = useQuery({ queryKey: key, queryFn: () => getOverview(), refetchInterval: 60_000 });
   usePresenceRefresh(() => void queryClient.invalidateQueries({ queryKey: key }));
 
   if (overview.isPending) {

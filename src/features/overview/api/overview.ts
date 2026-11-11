@@ -109,7 +109,12 @@ export function readOverview(raw: unknown): OverviewView {
   };
 }
 
-export async function getOverview(): Promise<OverviewView> {
-  const { data } = await apiClient.get<ApiResponse<unknown>>("/api/v1/overview");
+/** The backend pages the overview: page and limit are always sent (1 and 10 by default). */
+export async function getOverview(
+  params: { page?: number; limit?: number } = {},
+): Promise<OverviewView> {
+  const { data } = await apiClient.get<ApiResponse<unknown>>("/api/v1/overview", {
+    params: { page: params.page ?? 1, limit: params.limit ?? 10 },
+  });
   return readOverview(unwrap(data, "Failed to load the overview"));
 }

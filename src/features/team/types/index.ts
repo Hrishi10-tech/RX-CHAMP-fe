@@ -46,7 +46,19 @@ export interface TeamView {
   /** The business day the statuses are for (YYYY-MM-DD), when the server says. */
   date: string | null;
   counts: TeamCounts;
+  /** This page of people (the server pages the list). */
   people: TeamPerson[];
+  /** The server's paging, or null when it sent everyone in one answer. */
+  meta: { page: number; limit: number; total: number; totalPages: number } | null;
+}
+
+/** What the Team page asks GET /team for. */
+export interface TeamQuery {
+  view: TeamFilterView;
+  departmentId?: string;
+  q?: string;
+  page: number;
+  limit: number;
 }
 
 export type TeamFilterView = "active" | "all";

@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Layers, Lock, Search, Users, Wifi, WifiOff } from "lucide-react";
 
 import { Chip } from "@/components/ui/Chip";
+import { Pager } from "@/components/ui/Pager";
 import { Select } from "@/components/ui/Select";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import {
@@ -20,16 +21,21 @@ import { errorCode, errorMessage } from "@/lib/api";
 import { formatDuration } from "@/lib/format/duration";
 import { offlineText } from "@/lib/format/payroll";
 import { formatTime12 } from "@/lib/time/format";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { roleLabel } from "@/constants/roles";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
 import { DepartmentIcon } from "@/features/departments/components/DepartmentIcon";
 import { departmentIcon } from "@/features/departments/lib/icons";
+import { useDepartments } from "@/features/departments/hooks/useDepartments";
 import { useTeam } from "@/features/team/hooks/useTeam";
 import { filterTeam, focusShare, teamCounts, teamStatusLook } from "@/features/team/lib/team";
-import type { TeamFilterView, TeamPerson } from "@/features/team/types";
+import type { TeamFilterView, TeamPerson, TeamQuery } from "@/features/team/types";
 
 /** Select value for every department (Radix needs a non-empty value). */
 const ALL = "__all__";
+
+/** People per page, as the backend pages GET /team. */
+export const TEAM_PAGE_SIZE = 10;
 
 const ROW_GRID =
   "md:grid md:grid-cols-[minmax(12rem,1.6fr)_minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(10rem,1.2fr)_2rem] md:items-center md:gap-4";
@@ -163,22 +169,52 @@ function PersonRow({ person }: { person: TeamPerson }) {
 
 /**
  * SPEC 7.2 Team: who is working now. Active / All, counts, search and
- * department filter; a row opens the person's productivity dashboard.
+ * department filter; a row opens the person's productivity dashboard. The
+ * server filters and pages the list, TEAM_PAGE_SIZE people at a time.
  */
 export function TeamView() {
-  const team = useTeam();
   const [view, setView] = useState<TeamFilterView>("active");
   const [departmentChoice, setDepartmentChoice] = useState(ALL);
   const departmentId = departmentChoice === ALL ? "" : departmentChoice;
   const [q, setQ] = useState("");
+  // Searching waits for a pause in typing, so each key press isn't a request.
+  const search = useDebouncedValue(q.trim(), 300);
+  const [page, setPage] = useState(1);
+
+  // A new filter is a new list: back to its first page.
+  useEffect(() => setPage(1), [view, departmentId, search]);
+
+  const query: TeamQuery = useMemo(
+    () => ({
+      view,
+      departmentId: departmentId || undefined,
+      q: search || undefined,
+      page,
+      limit: TEAM_PAGE_SIZE,
+    }),
+    [view, departmentId, search, page],
+  );
+  const team = useTeam(query);
+  const departmentList = useDepartments();
 
   const people = useMemo(() => team.data?.people ?? [], [team.data]);
+  const meta = team.data?.meta ?? null;
+  const lastPage = Math.max(1, meta?.totalPages ?? 1);
 
+  // A page that no longer exists (people left, or the list shrank): go to the last one.
+  useEffect(() => {
+    if (team.data && !team.isPlaceholderData && page > lastPage) setPage(lastPage);
+  }, [team.data, team.isPlaceholderData, page, lastPage]);
+
+  // Every department from GET /departments, plus any on this page it didn't list.
   const departments = useMemo(() => {
     const map = new Map<string, { id: string; name: string; icon: string }>();
-    for (const p of people) if (p.department) map.set(p.department.id, p.department);
+    for (const d of departmentList.data ?? [])
+      map.set(d.id, { id: d.id, name: d.name, icon: d.icon });
+    for (const p of people)
+      if (p.department && !map.has(p.department.id)) map.set(p.department.id, p.department);
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [people]);
+  }, [departmentList.data, people]);
 
   const departmentOptions: SelectOption[] = useMemo(
     () => [
@@ -188,16 +224,17 @@ export function TeamView() {
     [departments],
   );
 
-  // Counts follow the department and search, so the tabs and tiles match the rows.
-  const scoped = useMemo(
-    () => filterTeam(people, { view: "all", departmentId, q }),
-    [people, departmentId, q],
-  );
-  const counts = useMemo(() => teamCounts(scoped), [scoped]);
+  // The server's counts cover everyone the department and search match, not just
+  // this page; worked out from the rows only when it sends none.
+  const counts = useMemo(() => team.data?.counts ?? teamCounts(people), [team.data, people]);
+  // The server already filtered; this only keeps a stale page from showing
+  // rows the new filter would drop while the next page loads.
   const rows = useMemo(
-    () => filterTeam(people, { view, departmentId, q }),
-    [people, view, departmentId, q],
+    () => filterTeam(people, { view, departmentId, q: search }),
+    [people, view, departmentId, search],
   );
+  // The server's total, or (when it didn't page) everyone it sent.
+  const total = meta?.total ?? rows.length;
 
   const tiles: { label: string; value: number; dot: string }[] = [
     { label: "Working", value: counts.working, dot: "bg-emerald-500" },
@@ -297,7 +334,7 @@ export function TeamView() {
             onRetry={() => void team.refetch()}
             retrying={team.isFetching}
           />
-        ) : rows.length === 0 ? (
+        ) : rows.length === 0 && page <= 1 ? (
           <EmptyState
             icon={Users}
             title={
@@ -312,11 +349,28 @@ export function TeamView() {
             }
           />
         ) : (
-          <ul className="divide-y divide-slate-100">
-            {rows.map((p) => (
-              <PersonRow key={p.id} person={p} />
-            ))}
-          </ul>
+          <>
+            <ul
+              className={`divide-y divide-slate-100 transition-opacity ${team.isPlaceholderData ? "opacity-60" : ""}`}
+              aria-busy={team.isPlaceholderData}
+            >
+              {rows.map((p) => (
+                <PersonRow key={p.id} person={p} />
+              ))}
+            </ul>
+            {meta && (
+              <Pager
+                page={page}
+                pageSize={meta.limit || TEAM_PAGE_SIZE}
+                total={total}
+                pageCount={lastPage}
+                onPageChange={setPage}
+                noun="person"
+                plural="people"
+                numbered
+              />
+            )}
+          </>
         )}
       </section>
     </div>

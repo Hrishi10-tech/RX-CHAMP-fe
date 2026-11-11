@@ -28,7 +28,7 @@ export function readItems<T>(data: unknown): T[] {
   return [];
 }
 
-function readMeta(value: unknown): PaginationMeta | undefined {
+export function readMeta(value: unknown): PaginationMeta | undefined {
   if (!isRecord(value)) return undefined;
   const { total, page, limit, totalPages } = value;
   if (typeof total !== "number") return undefined;

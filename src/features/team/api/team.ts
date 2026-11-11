@@ -1,14 +1,14 @@
 import { apiClient, type ApiResponse } from "@/lib/api";
-import { unwrap } from "@/lib/api/list";
+import { readMeta, unwrap } from "@/lib/api/list";
 import { paidSecOf } from "@/lib/format/payroll";
 import { teamCounts } from "@/features/team/lib/team";
 import type { TeamCounts, TeamPerson, TeamStatus, TeamView } from "@/features/team/types";
 
 /**
- * SPEC 5.4 `GET /team?view=active|all&departmentId=&q=` (Admin, Super Admin,
- * Manager with a grant): everyone in scope with today's status and focus, in
- * one request. The page asks for `view=all` once and filters on the client, so
- * flipping Active / All or searching never waits for the network.
+ * SPEC 5.4 `GET /team?view=active|all&departmentId=&q=&page=&limit=` (Admin,
+ * Super Admin, Manager with a grant): one page of the people in scope with
+ * today's status and focus. The server filters and pages; `counts` covers
+ * everyone the filters match and `meta` says how many pages there are.
  */
 const STATUSES: TeamStatus[] = ["WORKING", "BREAK", "MEETING", "AWAY", "NOT_STARTED", "ENDED"];
 
@@ -56,9 +56,20 @@ export function readTeamPerson(raw: unknown): TeamPerson | null {
 }
 
 export async function getTeam(
-  params: { view?: "active" | "all"; departmentId?: string; q?: string } = {},
+  params: {
+    view?: "active" | "all";
+    departmentId?: string;
+    q?: string;
+    page?: number;
+    limit?: number;
+  } = {},
 ): Promise<TeamView> {
-  const query: Record<string, string> = { view: params.view ?? "all" };
+  // The backend pages the list: page and limit are always sent (1 and 10 by default).
+  const query: Record<string, string | number> = {
+    view: params.view ?? "all",
+    page: params.page ?? 1,
+    limit: params.limit ?? 10,
+  };
   if (params.departmentId) query.departmentId = params.departmentId;
   if (params.q) query.q = params.q;
   const { data } = await apiClient.get<ApiResponse<unknown>>("/api/v1/team", { params: query });
@@ -80,5 +91,7 @@ export async function getTeam(
           ended: num(c.ended),
         }
       : teamCounts(people);
-  return { date: strOrNull(body.date), counts, people };
+  // `meta` inside `data`, or beside it (the 3.0 list shape).
+  const meta = readMeta(body.meta) ?? readMeta(rec(data).meta) ?? null;
+  return { date: strOrNull(body.date), counts, people, meta };
 }
