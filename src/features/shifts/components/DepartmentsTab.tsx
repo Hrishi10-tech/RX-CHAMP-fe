@@ -13,6 +13,22 @@ import { AssignDepartmentDialog } from "@/features/shifts/components/AssignDepar
 import { shiftRefLabel } from "@/features/shifts/components/ShiftBadges";
 import type { DatedShift, DepartmentAssignmentView, ShiftView } from "@/features/shifts/types";
 
+/** 4.1: the department's other shifts (Start Day picks the one that is on). */
+function ExtraShifts({ row }: { row: DepartmentAssignmentView }) {
+  const extras = row.extraShifts ?? [];
+  if (!extras.length) return null;
+  return (
+    <div className="mt-1 min-w-0">
+      {extras.map((s) => (
+        <p key={s.id} className="font-semibold text-slate-900">
+          {shiftRefLabel(s)}
+        </p>
+      ))}
+      <p className="text-xs text-slate-500">Picked by Start Day time</p>
+    </div>
+  );
+}
+
 function CurrentShift({
   current,
   defaultShift,
@@ -144,6 +160,7 @@ export function DepartmentsTab({
                   )}
                 </div>
                 <CurrentShift current={row.current} defaultShift={defaultShift} />
+                <ExtraShifts row={row} />
                 <dl className="grid grid-cols-2 gap-3 text-sm">
                   <div className="min-w-0">
                     <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -204,6 +221,7 @@ export function DepartmentsTab({
                     <td className="px-4 py-3.5 tabular-nums text-slate-700">{row.people}</td>
                     <td className="px-4 py-3.5">
                       <CurrentShift current={row.current} defaultShift={defaultShift} />
+                      <ExtraShifts row={row} />
                     </td>
                     <td className="px-4 py-3.5">
                       <Upcoming upcoming={row.upcoming} />

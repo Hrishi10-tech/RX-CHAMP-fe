@@ -56,12 +56,14 @@ export function DepartmentDialog({
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<string>(DEFAULT_DEPARTMENT_ICON);
   const [iconChosen, setIconChosen] = useState(false);
+  const [sharedComputer, setSharedComputer] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setName(department?.name ?? "");
     setIcon(department?.icon ?? DEFAULT_DEPARTMENT_ICON);
+    setSharedComputer(department?.sharedComputer ?? false);
     setIconChosen(Boolean(department));
     setError(null);
   }, [open, department]);
@@ -84,7 +86,10 @@ export function DepartmentDialog({
       return;
     }
     try {
-      await save.mutateAsync({ id: department?.id, input: { name: name.trim(), icon } });
+      await save.mutateAsync({
+        id: department?.id,
+        input: { name: name.trim(), icon, sharedComputer },
+      });
       toast.success(department ? "Department saved" : "Department added", {
         description: name.trim(),
       });
@@ -174,6 +179,23 @@ export function DepartmentDialog({
             />
           </div>
         </div>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
+          <input
+            type="checkbox"
+            checked={sharedComputer}
+            onChange={(e) => setSharedComputer(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[rgb(34_34_204)]"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-slate-800">Shared computer</span>
+            <span className="mt-0.5 block text-xs text-slate-500">
+              People here share one computer between shifts. Near the end of their shift the app
+              asks whether they are taking the next shift; if not, it ends their day and signs them
+              out at the shift end, so the next person can sign in.
+            </span>
+          </span>
+        </label>
 
         <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
           <button

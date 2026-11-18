@@ -38,6 +38,7 @@ export function readDepartment(raw: unknown): DepartmentView | null {
         ? idle.reasonKeys.filter((k): k is string => typeof k === "string")
         : null,
     },
+    sharedComputer: r.sharedComputer === true,
   };
 }
 

@@ -218,6 +218,13 @@ function DaysTable({
                   {d.autoClosed && (
                     <span className="block text-xs text-slate-500">closed automatically</span>
                   )}
+                  {d.extended && (
+                    <span className="block text-xs font-semibold text-indigo-700">
+                      {d.extendedSec && d.extendedSec >= 60
+                        ? `extended ${formatDuration(d.extendedSec)}`
+                        : "extended shift"}
+                    </span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
                   {worked(d) && (

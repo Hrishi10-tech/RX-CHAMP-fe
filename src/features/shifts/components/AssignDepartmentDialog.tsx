@@ -21,17 +21,13 @@ import { DEPARTMENT_NAMES } from "@/constants/departments";
 import { formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
 import { formatHmRange } from "@/features/shifts/lib/time";
 import { useAssignDepartment } from "@/features/shifts/hooks/useAssignments";
-import {
-  FALLBACK_SHIFT,
-  departmentFallbackOption,
-  shiftSelectOptions,
-} from "@/features/shifts/components/shiftOptions";
 import type { DepartmentAssignmentView, ShiftView } from "@/features/shifts/types";
 
 /**
- * Sets a department's shift from a day onward. Opened from a department's row
- * (department fixed) or from "Set a department's shift" (pick one, including a
- * department nobody is in yet).
+ * Sets a department's shifts from a day onward: tick one or more. With several, each
+ * person gets the one that's on when they press Start Day; the earliest-starting one
+ * counts on days nobody started. Opened from a department's row (department fixed) or
+ * from "Set a department's shift" (pick one, including a department nobody is in yet).
  */
 export function AssignDepartmentDialog({
   open,
@@ -49,16 +45,20 @@ export function AssignDepartmentDialog({
 }) {
   const today = todayKey();
   const [department, setDepartment] = useState("");
-  const [shiftId, setShiftId] = useState("");
   const [from, setFrom] = useState(today);
+  const [ids, setIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ department?: string; shift?: string; from?: string }>({});
   const assign = useAssignDepartment();
 
   useEffect(() => {
     if (!open) return;
     setDepartment(row?.department ?? "");
-    setShiftId(row?.current?.shift?.id ?? (row?.current ? FALLBACK_SHIFT : ""));
     setFrom(todayKey());
+    const current = row?.current?.shift?.id;
+    setIds([
+      ...(current ? [current] : []),
+      ...(row?.extraShifts ?? []).map((s) => s.id).filter((id) => id !== current),
+    ]);
     setErrors({});
     assign.reset();
     // Reset each time the dialog opens.
@@ -75,26 +75,39 @@ export function AssignDepartmentDialog({
       .map((name) => ({ value: name, label: name, icon: Briefcase }));
   }, [departments]);
 
-  const defaultShift = shifts?.find((s) => s.isDefault);
-  const shiftOptions = useMemo(
-    () => [departmentFallbackOption(defaultShift), ...shiftSelectOptions(shifts)],
-    [shifts, defaultShift],
-  );
-
-  const chosen = shifts?.find((s) => s.id === shiftId);
   const target =
     row ?? departments.find((d) => d.department.toLowerCase() === department.toLowerCase());
+  /** 4.1: only a shared-computer department may hold more than one shift. */
+  const shared = !!target?.sharedComputer;
+  /** Ticked shifts, earliest start first: the first one is the department's main shift. */
+  const chosen = useMemo(() => {
+    const ticked = (shifts ?? [])
+      .filter((s) => ids.includes(s.id))
+      .sort((a, b) => a.start.localeCompare(b.start));
+    return shared ? ticked : ticked.slice(0, 1);
+  }, [shifts, ids, shared]);
   const pending = assign.isPending;
 
   function close() {
     if (!pending) onClose();
   }
 
+  function toggle(id: string) {
+    if (!shared) {
+      // One shift: ticking another one replaces it.
+      setIds(chosen[0]?.id === id ? [] : [id]);
+      return;
+    }
+    setIds((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
+  }
+
+  const names = chosen.map((s) => `${s.name} (${formatHmRange(s.start, s.end)})`).join(", ");
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     const found: typeof errors = {};
     if (!department.trim()) found.department = "Pick a department.";
-    if (!shiftId) found.shift = "Pick a shift.";
+    if (!chosen.length) found.shift = "Tick at least one shift.";
     if (!from) found.from = "Pick the first day.";
     else if (from < today) found.from = "Pick today or a later day. Past days keep their shift.";
     setErrors(found);
@@ -104,36 +117,35 @@ export function AssignDepartmentDialog({
       await assign.mutateAsync({
         department: department.trim(),
         companyId: target?.companyId ?? undefined,
-        shiftId: shiftId === FALLBACK_SHIFT ? null : shiftId,
+        shiftId: chosen[0].id,
         effectiveFrom: from,
+        extraShiftIds: chosen.slice(1).map((s) => s.id),
       });
-      toast.success("Department shift saved", {
-        description: `${department.trim()}: ${
-          chosen ? chosen.name : "the default shift"
-        } from ${formatDayWithWeekday(from)}.`,
+      toast.success("Department shifts saved", {
+        description: `${department.trim()}: ${chosen.map((s) => s.name).join(", ")} from ${formatDayWithWeekday(from)}.`,
       });
       onClose();
     } catch (err) {
       const message = errorMessage(err) ?? "Please try again.";
       if (errorCode(err) === "DATE_IN_PAST") setErrors({ from: message });
-      else toast.error("Couldn't set the department's shift", { description: message });
+      else toast.error("Couldn't set the department's shifts", { description: message });
     }
   }
 
   const preview =
-    department.trim() && shiftId && from
-      ? `From ${formatDayWithWeekday(from)}, ${department.trim()} works ${
-          chosen
-            ? `${chosen.name} (${formatHmRange(chosen.start, chosen.end)})`
-            : `the default shift${defaultShift ? ` (${defaultShift.name})` : ""}`
-        }. People with a personal override keep it.`
+    department.trim() && chosen.length && from
+      ? `From ${formatDayWithWeekday(from)}, ${department.trim()} works ${names}.${
+          chosen.length > 1
+            ? " Each person gets the shift that's on when they press Start Day (in a gap, the next one)."
+            : ""
+        } People with a personal override keep it.`
       : null;
 
   return (
     <Modal
       open={open}
       onClose={close}
-      title={row ? `Shift for ${row.department}` : "Set a department's shift"}
+      title={row ? `Shifts for ${row.department}` : "Set a department's shifts"}
       description="Applies from the day you pick. Past days keep the shift they had."
       className="max-w-lg"
     >
@@ -160,22 +172,41 @@ export function AssignDepartmentDialog({
           </div>
         )}
 
-        <div>
-          <label htmlFor="dept-shift" className={labelBase}>
-            Shift
-          </label>
-          <Select
-            id="dept-shift"
-            value={shiftId}
-            onValueChange={setShiftId}
-            options={shiftOptions}
-            placeholder="Pick a shift"
-            aria-label="Shift"
-            invalid={!!errors.shift}
-            disabled={pending}
-          />
+        <fieldset>
+          <legend className={labelBase}>Shifts</legend>
+          <p className={hintBase}>
+            {shared
+              ? "Tick one or more. With several, each person gets the shift that's on when they press Start Day; in a gap, the next one."
+              : "Pick one shift. To give a department several shifts, turn on Shared computer for it on the Departments page."}
+          </p>
+          <div
+            className={`mt-2 max-h-56 space-y-1.5 overflow-y-auto rounded-xl border px-3 py-2 ${
+              errors.shift ? "border-red-300" : "border-slate-200"
+            }`}
+          >
+            {(shifts ?? []).length === 0 && (
+              <p className="text-sm text-slate-500">No shifts yet. Create one first.</p>
+            )}
+            {(shifts ?? []).map((s) => (
+              <label
+                key={s.id}
+                className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+              >
+                <input
+                  type="checkbox"
+                  checked={chosen.some((c) => c.id === s.id)}
+                  onChange={() => toggle(s.id)}
+                  disabled={pending}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                <span>
+                  {s.name} <span className="text-slate-500">({formatHmRange(s.start, s.end)})</span>
+                </span>
+              </label>
+            ))}
+          </div>
           {errors.shift && <p className={errorText}>{errors.shift}</p>}
-        </div>
+        </fieldset>
 
         <div>
           <label htmlFor="dept-from" className={labelBase}>

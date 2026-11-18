@@ -51,6 +51,9 @@ function ShiftCell({ person }: { person: PersonShiftView }) {
       <p className="font-semibold text-slate-900">{shiftRefLabel(person.shift)}</p>
       <div className="flex flex-wrap items-center gap-1.5">
         <SourceChip source={person.source} />
+        {person.pickedByTime && (
+          <span className="text-xs text-slate-500">today, by Start Day time</span>
+        )}
         {person.override && (
           <span className="text-xs text-slate-500">{overrideText(person.override)}</span>
         )}
