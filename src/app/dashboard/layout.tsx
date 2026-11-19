@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronsLeft, ChevronsRight, Clock, Menu } from "lucide-react";
+import { Bell, ChevronsLeft, ChevronsRight, Menu } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -35,6 +36,7 @@ import { ErrorState } from "@/components/ui/StatePanel";
 import { clearSession } from "@/lib/auth/session";
 import { errorMessage } from "@/lib/api";
 import { initialsOf } from "@/lib/text/initials";
+import { BRAND } from "@/lib/brand";
 import { onOrgGone, useSelectedOrg } from "@/lib/org/selection";
 
 function Brand({ collapsed = false }: { collapsed?: boolean }) {
@@ -43,9 +45,15 @@ function Brand({ collapsed = false }: { collapsed?: boolean }) {
       href="/dashboard"
       className="flex items-center gap-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[rgb(74_74_230)] to-[rgb(34_34_204)] text-white shadow-sm shadow-[rgba(34,34,204,0.35)]">
-        <Clock className="h-5 w-5" aria-hidden />
-      </span>
+      <Image
+        src={BRAND.logo}
+        alt=""
+        aria-hidden
+        width={BRAND.width}
+        height={BRAND.height}
+        priority
+        className="h-9 w-auto shrink-0 rounded-xl"
+      />
       {!collapsed && (
         <span className="text-lg font-bold tracking-tight text-slate-900">Rx Vision</span>
       )}
