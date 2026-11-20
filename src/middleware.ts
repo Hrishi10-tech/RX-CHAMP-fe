@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { STAFF_REFUSED_ROUTE, canAccess, normalizeRole, resolveHomeRoute } from "@/constants/roles";
 import { SESSION_COOKIE, decodeSession } from "@/lib/auth/session";
+import { contentSecurityPolicy, newNonce } from "@/lib/security/csp";
 
 /**
  * Old addresses that live on elsewhere, so bookmarks and older notifications
@@ -44,8 +45,36 @@ function toLogin(req: NextRequest): NextResponse {
   return NextResponse.redirect(loginUrl);
 }
 
+/**
+ * Review S-4: every page answers with a Content-Security-Policy carrying a fresh nonce, which the
+ * framework reads from the request header and stamps on its own scripts. CSP_REPORT_ONLY=true
+ * sends it as a report-only header instead (to try a change without blocking anything).
+ */
+function withCsp(req: NextRequest, respond: (headers: Headers) => NextResponse): NextResponse {
+  const nonce = newNonce();
+  const csp = contentSecurityPolicy(nonce, {
+    socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL,
+    dev: process.env.NODE_ENV !== "production",
+  });
+  const headers = new Headers(req.headers);
+  headers.set("x-nonce", nonce);
+  headers.set("content-security-policy", csp);
+  const res = respond(headers);
+  res.headers.set(
+    process.env.CSP_REPORT_ONLY === "true"
+      ? "Content-Security-Policy-Report-Only"
+      : "Content-Security-Policy",
+    csp,
+  );
+  return res;
+}
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // Pages outside the dashboard (sign-in, the error pages) need no session: the policy only.
+  if (!pathname.startsWith("/dashboard")) {
+    return withCsp(req, (headers) => NextResponse.next({ request: { headers } }));
+  }
 
   const session = decodeSession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!session) return toLogin(req);
@@ -83,9 +112,11 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(home, req.url));
   }
 
-  return NextResponse.next();
+  return withCsp(req, (headers) => NextResponse.next({ request: { headers } }));
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  // Every page; never the API proxy, the framework's own files or pictures.
+  // Prefetches too: a prefetch of /dashboard must get the same redirect as a visit to it.
+  matcher: ["/((?!api/|socket.io|_next/static|_next/image|brand/|fonts/|icon.svg|favicon.ico).*)"],
 };
