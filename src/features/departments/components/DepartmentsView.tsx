@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Pencil, Plus, Trash2, UserRound, Users } from "lucide-react";
+import { Building2, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { btnPrimary, cardBase } from "@/components/ui/classes";
@@ -70,9 +71,9 @@ function DepartmentCard({
             {managers.map((m) => (
               <li
                 key={m.id}
-                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-slate-700"
               >
-                <UserRound className="h-3 w-3 text-slate-400" aria-hidden />
+                <PersonAvatar name={m.name} avatarId={m.avatarId} userId={m.id} size={20} />
                 {m.name}
               </li>
             ))}

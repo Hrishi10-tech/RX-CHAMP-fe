@@ -8,6 +8,8 @@ export interface ChatContact {
   department: string | null;
   /** How they relate to the caller: MANAGER, REPORT, PEER, ... */
   relation?: string;
+  /** Their effective avatar (3.6); null while they have no gender. */
+  avatarId?: string | null;
 }
 
 export interface ChatMessage {
@@ -15,6 +17,8 @@ export interface ChatMessage {
   fromUserId: string;
   toUserId: string;
   body: string;
+  /** The sender's effective avatar (3.6). */
+  avatarId?: string | null;
   mine: boolean;
   read: boolean;
   createdAt: string;

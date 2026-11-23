@@ -44,7 +44,7 @@ import {
 } from "@/features/productivity/components/PresenceTimelineChart";
 import { ExportTimesheetDialog } from "@/features/timesheet/components/ExportTimesheetDialog";
 import { FocusBar } from "@/features/team/components/TeamView";
-import { Avatar } from "@/components/ui/Avatar";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState, LoadingState, ErrorState } from "@/components/ui/StatePanel";
 import { btnPrimary, cardBase } from "@/components/ui/classes";
@@ -208,7 +208,7 @@ export function ProductivityDashboard({
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <Avatar name={name} className="h-12 w-12 text-sm" />
+          <PersonAvatar name={name} avatarId={person?.avatarId} userId={userId} size={48} />
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-bold tracking-tight text-slate-900">{name}</h1>
             <p className="text-sm text-slate-500">

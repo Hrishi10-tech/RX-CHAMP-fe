@@ -9,6 +9,8 @@ import { WfhPolicyPanel } from "@/features/wfh/components/WfhPolicyPanel";
 import { WfhRequestsPanel } from "@/features/wfh/components/WfhRequestsPanel";
 import type { WfhPolicyView, WfhRequestView } from "@/features/wfh/types";
 
+// These render with their hooks mocked and no query client: the avatar reads one (3.6).
+jest.mock("@/components/avatar/PersonAvatar", () => ({ PersonAvatar: () => null }));
 jest.mock("next/navigation", () => ({
   usePathname: () => "/dashboard/wfh",
   useRouter: () => ({ replace: jest.fn() }),

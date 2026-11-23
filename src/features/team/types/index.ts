@@ -12,6 +12,8 @@ export interface TeamDepartment {
 export interface TeamPerson {
   id: string;
   name: string;
+  /** 3.6: the effective avatar; null while they have no gender. */
+  avatarId?: string | null;
   role: string;
   designation: string | null;
   department: TeamDepartment | null;

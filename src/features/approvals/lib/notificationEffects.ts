@@ -104,6 +104,25 @@ export function refreshForApprovalChange(queryClient: QueryClient, kinds: Iterab
   refresh(OVERVIEW_KEY);
 }
 
+/**
+ * Whether a refresh for every kind (APPROVAL_KINDS) already re-reads this query: a
+ * reconnect that re-reads other lists too leaves these out, so nothing is read twice
+ * (the second invalidation would cancel the first read and start it again).
+ */
+export function coveredByApprovalRefresh(queryKey: readonly unknown[]): boolean {
+  return [
+    approvalKeys.all,
+    breakKeys.all,
+    leaveKeys.all,
+    wfhKeys.all,
+    teamTodayKeys.all,
+    workdayKeys.all,
+    reportKeys.all,
+    TEAM_KEY,
+    OVERVIEW_KEY,
+  ].some((root) => root.every((part, i) => queryKey[i] === part));
+}
+
 /** How long a burst of changes (a bulk approve) is gathered into one refresh. */
 export const APPROVALS_REFRESH_WAIT_MS = 300;
 

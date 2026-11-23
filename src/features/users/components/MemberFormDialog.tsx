@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Crown, Globe2, Loader2, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +19,8 @@ import {
 import type { SelectOption } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
 import { PASSWORD_RULE } from "@/features/auth/lib/passwordRules";
+import { useSession } from "@/features/auth/hooks/useSession";
+import type { Gender } from "@/features/avatars/types";
 import { DepartmentPicker } from "@/features/departments/components/DepartmentPicker";
 import { useDepartments } from "@/features/departments/hooks/useDepartments";
 import { useShifts } from "@/features/shifts/hooks/useShifts";
@@ -26,7 +28,13 @@ import { shiftSelectOptions } from "@/features/shifts/components/shiftOptions";
 import { createUser } from "@/features/users/api/createUser";
 import { createSuperManager } from "@/features/users/api/superManagers";
 import { updateUser } from "@/features/users/api/updateUser";
+import {
+  DefaultAvatarCard,
+  GenderField,
+  useDefaultAvatar,
+} from "@/features/users/components/GenderField";
 import { GrantsEditor } from "@/features/users/components/GrantsEditor";
+import { canSetGender, setsGender } from "@/features/users/lib/memberAccess";
 import {
   EMPTY_MEMBER_DRAFT,
   createInput,
@@ -65,6 +73,20 @@ const ROLE_CARDS: {
     icon: Globe2,
   },
 ];
+
+/** What saving this gender does to the person's avatar (3.6). */
+export function genderHint(
+  gender: Gender | null,
+  initial: Gender | null,
+  nextDefault: string | null,
+): string {
+  if (!gender) return "Not set yet. They show initials until you pick one.";
+  if (!initial) return `They start on the default avatar${nextDefault ? `, ${nextDefault}` : ""}.`;
+  if (gender !== initial) {
+    return `Their avatar goes back to the new default${nextDefault ? `, ${nextDefault}` : ""}, when you save.`;
+  }
+  return "Decides which avatars they can choose from.";
+}
 
 /** The roles an Admin offers; the page narrows or widens them per viewer (3.3). */
 const DEFAULT_ROLES: MemberDraft["role"][] = ["USER", "MANAGER"];
@@ -111,6 +133,7 @@ export function MemberFormDialog({
   roles?: MemberDraft["role"][];
 }) {
   const uid = useId();
+  const { user: me, role: viewerRole } = useSession();
   const isEdit = member !== null;
   const superManagerAccount = member?.role === "SUPER_MANAGER";
   const fixedRole =
@@ -124,6 +147,15 @@ export function MemberFormDialog({
   const [errors, setErrors] = useState<MemberDraftErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const genderRef = useRef<HTMLButtonElement>(null);
+  // 3.6: gender (the avatar library) is the organisation admin's or a Super Admin's to set:
+  // on someone they may edit, or when adding a Manager or Staff (a new Super Manager's is
+  // set by editing them afterwards).
+  const genderAllowed = member
+    ? canSetGender(viewerRole, me?.id, member)
+    : setsGender(viewerRole) && draft.role !== "SUPER_MANAGER";
+  const initialGender: Gender | null = member?.gender ?? null;
+  const nextDefault = useDefaultAvatar(genderAllowed && draft.gender ? draft.gender : null).id;
 
   useEffect(() => {
     if (!open) return;
@@ -149,20 +181,26 @@ export function MemberFormDialog({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const next = validateMemberDraft(draft, isEdit);
+    const next = validateMemberDraft(draft, isEdit, genderAllowed);
     if (fixedRole) delete next.departmentIds;
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length) {
+      if (next.gender && Object.keys(next).length === 1) genderRef.current?.focus();
+      return;
+    }
+    // Sent only by those who may set it, and on an edit only when it changed.
+    const gender =
+      genderAllowed && draft.gender && draft.gender !== initialGender ? draft.gender : undefined;
     setSaving(true);
     setFormError(null);
     try {
       if (member && superManagerAccount) {
-        await updateUser(member.id, detailsInput(draft));
+        await updateUser(member.id, { ...detailsInput(draft), ...(gender ? { gender } : {}) });
         toast.success("Super Manager saved", {
           description: `${draft.firstName} ${draft.lastName}`.trim(),
         });
       } else if (member) {
-        const input = updateInput(draft);
+        const input = { ...updateInput(draft), ...(gender ? { gender } : {}) };
         if (fixedRole) {
           delete input.role;
           delete input.departmentId;
@@ -179,7 +217,7 @@ export function MemberFormDialog({
           description: `${draft.firstName} can sign in to the portal and pick an organisation.`,
         });
       } else {
-        await createUser(createInput(draft));
+        await createUser({ ...createInput(draft), ...(gender ? { gender } : {}) });
         toast.success("Member added", {
           description: `${draft.firstName} can sign in once their RX Vision app is set up.`,
         });
@@ -262,6 +300,35 @@ export function MemberFormDialog({
             {text("email", "Email", "email")}
             {text("designation", "Designation")}
           </div>
+          {genderAllowed && (
+            <div>
+              <span id={`${uid}-gender`} className={labelBase}>
+                Gender
+              </span>
+              <GenderField
+                labelledBy={`${uid}-gender`}
+                value={draft.gender || null}
+                onChange={(g) => set("gender", g)}
+                disabled={saving}
+                invalid={Boolean(errors.gender)}
+                firstOptionRef={genderRef}
+              />
+              {errors.gender ? (
+                <p className={errorText}>{errors.gender}</p>
+              ) : isEdit ? (
+                <p className={hintBase}>
+                  {genderHint(draft.gender || null, initialGender, nextDefault)}
+                </p>
+              ) : null}
+              {!isEdit && draft.gender && (
+                <DefaultAvatarCard
+                  gender={draft.gender}
+                  firstName={draft.firstName}
+                  webToo={draft.role !== "USER"}
+                />
+              )}
+            </div>
+          )}
           {!isEdit && (
             <div>
               <label htmlFor={`${uid}-password`} className={labelBase}>

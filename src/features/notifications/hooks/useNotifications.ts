@@ -19,12 +19,22 @@ import { notificationHref } from "@/features/notifications/lib/links";
 import { refreshForNotification } from "@/features/breaks/lib/notificationEffects";
 import {
   APPROVAL_KINDS,
+  coveredByApprovalRefresh,
   createApprovalsRefresher,
   isApproverNotice,
   refreshFor31Notification,
   refreshForApprovalChange,
   type ApprovalsChanged,
 } from "@/features/approvals/lib/notificationEffects";
+import { avatarKeys } from "@/features/avatars/api/avatars";
+import { applyAvatarChange } from "@/features/avatars/hooks/useAvatars";
+import {
+  PEOPLE_LIST_KEYS,
+  clearLiveAvatars,
+  refreshLiveAvatars,
+} from "@/features/avatars/lib/liveAvatars";
+import type { AvatarChanged } from "@/features/avatars/types";
+import { useAppSelector } from "@/store/hooks";
 import type { NotificationView, UseNotificationsResult } from "@/features/notifications/types";
 
 export function useNotifications(enabled: boolean): UseNotificationsResult {
@@ -34,13 +44,16 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
   const socketRef = useRef<Socket | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const myId = useAppSelector((state) => state.auth.user?.id);
   // The socket effect must not reconnect whenever the router or the client
   // object changes identity, so it reads them through refs.
   const routerRef = useRef(router);
   const queryClientRef = useRef(queryClient);
+  const myIdRef = useRef(myId);
   useEffect(() => {
     routerRef.current = router;
     queryClientRef.current = queryClient;
+    myIdRef.current = myId;
   });
 
   const refresh = useCallback(async () => {
@@ -132,6 +145,18 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
       if (active) approvals.add(change.what);
     });
 
+    // 3.6: someone's avatar changed: yours or a colleague's, wherever it is on screen.
+    socket.on("avatar:changed", (change: AvatarChanged) => {
+      if (active) applyAvatarChange(queryClientRef.current, change, myIdRef.current);
+    });
+
+    // 3.6: your status or breaks changed: the avatar preview's ring and dot follow.
+    socket.on("workday:changed", () => {
+      if (active) {
+        void queryClientRef.current.invalidateQueries({ queryKey: avatarKeys.dayProgress() });
+      }
+    });
+
     // A Super Admin hears the selected organisation: reconnect when it changes.
     const detachOrg = attachOrgReconnect(socket);
 
@@ -145,6 +170,15 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
       refresh();
       // Whatever changed while the socket was down was not heard.
       refreshForApprovalChange(queryClientRef.current, APPROVAL_KINDS);
+      // 3.6: avatar pushes may have been missed: what was pushed goes, and the lists that
+      // show people read again (those the line above re-reads already, only once).
+      const client = queryClientRef.current;
+      void client.invalidateQueries({ queryKey: avatarKeys.mine() });
+      if (refreshLiveAvatars()) {
+        for (const queryKey of PEOPLE_LIST_KEYS) {
+          if (!coveredByApprovalRefresh(queryKey)) void client.invalidateQueries({ queryKey });
+        }
+      }
     });
 
     socket.connect();
@@ -157,6 +191,7 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
       socket.io.off("reconnect");
       socket.disconnect();
       socketRef.current = null;
+      clearLiveAvatars();
     };
   }, [enabled, refresh]);
 

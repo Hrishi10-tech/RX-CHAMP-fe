@@ -1,6 +1,6 @@
 import { Check, CheckCheck } from "lucide-react";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { formatTime12 } from "@/lib/time/format";
 import type { ChatMessage } from "@/features/chat/types";
 
@@ -43,7 +43,12 @@ export function ChatBubble({
     <div className="flex flex-col items-start">
       <div className="flex items-end gap-2.5">
         {firstInGroup ? (
-          <Avatar name={senderName ?? "?"} className="h-8 w-8 text-[10px]" />
+          <PersonAvatar
+            name={senderName ?? "?"}
+            avatarId={message.avatarId}
+            userId={message.fromUserId}
+            size={32}
+          />
         ) : (
           <span className="w-8 shrink-0" aria-hidden />
         )}

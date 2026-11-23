@@ -59,7 +59,8 @@ export type AttentionKind =
 export interface OverviewAttention {
   kind: AttentionKind | string;
   count: number;
-  people: { id: string; name: string }[];
+  /** 3.6: each with their effective avatar. */
+  people: { id: string; name: string; avatarId?: string | null }[];
 }
 
 export interface OverviewView {

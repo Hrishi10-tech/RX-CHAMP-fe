@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
@@ -247,9 +248,24 @@ function AttentionList({
                 {meta.label(a.count)}
               </span>
               {names && (
-                <span className="block truncate text-xs text-slate-500">
-                  {names}
-                  {more > 0 ? ` and ${more} more` : ""}
+                <span className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
+                  {/* 3.6: the first few people, as they show everywhere else. */}
+                  <span className="flex shrink-0 -space-x-1.5">
+                    {a.people.slice(0, 3).map((p) => (
+                      <PersonAvatar
+                        key={p.id}
+                        name={p.name}
+                        avatarId={p.avatarId}
+                        userId={p.id}
+                        size={18}
+                        className="ring-2 ring-white"
+                      />
+                    ))}
+                  </span>
+                  <span className="truncate">
+                    {names}
+                    {more > 0 ? ` and ${more} more` : ""}
+                  </span>
                 </span>
               )}
             </span>
@@ -624,7 +640,11 @@ export function OverviewView() {
   const org = useOrgScope();
   const queryClient = useQueryClient();
   const key = overviewKeys.org(org);
-  const overview = useQuery({ queryKey: key, queryFn: () => getOverview(), refetchInterval: 60_000 });
+  const overview = useQuery({
+    queryKey: key,
+    queryFn: () => getOverview(),
+    refetchInterval: 60_000,
+  });
   usePresenceRefresh(() => void queryClient.invalidateQueries({ queryKey: key }));
 
   if (overview.isPending) {

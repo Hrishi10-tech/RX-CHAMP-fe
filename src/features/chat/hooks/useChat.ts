@@ -23,6 +23,7 @@ import type {
 const MAX_BODY_LENGTH = 2000;
 
 /** Floor between two forced refetches of the same thread. */
+/** Floor between two forced refetches of the same thread, or of the contacts. */
 const REFETCH_COOLDOWN_MS = 5_000;
 
 function otherParty(m: ChatMessage): string {
@@ -57,13 +58,14 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
   const loadedRef = useRef<Set<string>>(new Set());
   const inFlightRef = useRef<Set<string>>(new Set());
   const lastFetchRef = useRef<Map<string, number>>(new Map());
+  const lastContactsFetchRef = useRef(0);
   const unreadRef = useRef<Record<string, number>>({});
   unreadRef.current = unread;
   /** Thread that has been read on screen but not yet acknowledged to the server. */
   const unacknowledgedRef = useRef<string | null>(null);
 
   const messages = useMemo<ChatMessage[]>(
-    () => (activeUserId ? threads[activeUserId] ?? [] : []),
+    () => (activeUserId ? (threads[activeUserId] ?? []) : []),
     [threads, activeUserId],
   );
 
@@ -218,6 +220,14 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
       // open one keeps its flag so the catch-up below stays silent.
       loadedRef.current = new Set(open && loadedRef.current.has(open) ? [open] : []);
       if (open) void loadMessages(open, true);
+      // 3.6: a contact's avatar may have changed meanwhile. A failure keeps the list on screen.
+      if (Date.now() - lastContactsFetchRef.current < REFETCH_COOLDOWN_MS) return;
+      lastContactsFetchRef.current = Date.now();
+      void getThreads()
+        .then((list) => {
+          if (active) setContacts(list);
+        })
+        .catch(() => undefined);
     };
 
     // Both by reference: the socket is shared with the notifier, and a bare

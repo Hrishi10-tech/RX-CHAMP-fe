@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { btnPrimary, btnSecondary, btnSmall, cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
@@ -116,8 +117,15 @@ function OrgCard({
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-bold text-slate-900">{org.name}</h2>
           {org.admin ? (
-            <p className="truncate text-sm text-slate-500">
-              Admin <span className="font-semibold text-slate-700">{org.admin.name}</span>
+            <p className="flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
+              Admin
+              <PersonAvatar
+                name={org.admin.name}
+                avatarId={org.admin.avatarId}
+                userId={org.admin.id}
+                size={20}
+              />
+              <span className="truncate font-semibold text-slate-700">{org.admin.name}</span>
             </p>
           ) : (
             <p className="inline-flex items-center gap-1 text-sm font-semibold text-amber-700">

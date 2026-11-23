@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronRight,
@@ -11,13 +12,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { ROLE_LABEL } from "@/constants/roles";
-import { initialsOf } from "@/lib/text/initials";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
+import { PROFILE_ROUTE, ROLE_LABEL, canAccess } from "@/constants/roles";
+import { useOwnAvatarId } from "@/features/avatars/hooks/useAvatars";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { ChangePasswordModal } from "@/features/auth/components/ChangePasswordModal";
 
 export function UserMenu() {
   const { user, role, logout } = useSession();
+  const router = useRouter();
+  const avatarId = useOwnAvatarId();
   const [open, setOpen] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -42,7 +46,7 @@ export function UserMenu() {
 
   if (!user) return null;
 
-  const initials = initialsOf(user.name ?? user.email);
+  const name = user.name ?? user.email;
   const roleLabel = role ? ROLE_LABEL[role] : undefined;
 
   return (
@@ -55,8 +59,8 @@ export function UserMenu() {
         aria-label="Open user menu"
         className="flex items-center gap-1.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.3)]"
       >
-        <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[rgb(34_34_204)] text-sm font-semibold text-white ring-2 ring-[rgba(34,34,204,0.15)]">
-          {initials}
+        <span className="relative flex">
+          <PersonAvatar name={name} avatarId={avatarId} userId={user.id} size={36} />
           <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
         </span>
         <ChevronDown className="h-4 w-4 text-slate-400" />
@@ -68,11 +72,11 @@ export function UserMenu() {
           className="absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
         >
           <div className="flex flex-col items-center px-5 pb-5 pt-6 text-center">
-            <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[rgb(34_34_204)] text-lg font-semibold text-white ring-4 ring-[rgba(34,34,204,0.1)]">
-              {initials}
+            <span className="relative flex">
+              <PersonAvatar name={name} avatarId={avatarId} userId={user.id} size={64} />
               <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             </span>
-            <p className="mt-3 text-sm font-semibold text-slate-900">{user.name ?? user.email}</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900">{name}</p>
             <p className="max-w-full truncate text-xs text-slate-500">{user.email}</p>
             {roleLabel && (
               <span className="mt-2 inline-flex items-center rounded-full bg-[rgba(34,34,204,0.08)] px-2.5 py-0.5 text-[11px] font-semibold text-[rgb(34_34_204)]">
@@ -84,7 +88,15 @@ export function UserMenu() {
           <div className="h-px bg-slate-100" />
 
           <div className="p-1.5">
-            <MenuRow icon={UserRound} label="My Profile" onClick={() => setOpen(false)} />
+            <MenuRow
+              icon={UserRound}
+              label="My Profile"
+              onClick={() => {
+                setOpen(false);
+                // 3.6: Settings, Profile (every portal role).
+                if (canAccess(role, PROFILE_ROUTE)) router.push(PROFILE_ROUTE);
+              }}
+            />
             <MenuRow icon={Settings} label="Settings" onClick={() => setOpen(false)} />
             <MenuRow
               icon={KeyRound}

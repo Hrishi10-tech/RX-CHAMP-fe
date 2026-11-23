@@ -20,10 +20,18 @@ import {
   FileArchive,
   SlidersHorizontal,
   UserCog,
+  UserRound,
   Users,
 } from "lucide-react";
 
-import { canAccess, isOrgFreeRoute, seesEveryOrg, type Grants, type Role } from "@/constants/roles";
+import {
+  PROFILE_ROUTE,
+  canAccess,
+  isOrgFreeRoute,
+  seesEveryOrg,
+  type Grants,
+  type Role,
+} from "@/constants/roles";
 import type { MePermissions } from "@/features/auth/types";
 import type { NavSection } from "./types";
 
@@ -100,6 +108,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard/signout-keys", label: "Sign-out keys", icon: KeyRound },
       { href: "/dashboard/settings", label: "Settings", icon: Settings },
       { href: "/dashboard/instructions", label: "Instructions", icon: BookOpenText },
+      // 3.6: your own profile and avatar, for every portal role.
+      { href: PROFILE_ROUTE, label: "Profile", icon: UserRound },
     ],
   },
 ];

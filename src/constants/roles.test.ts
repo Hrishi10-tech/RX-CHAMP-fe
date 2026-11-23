@@ -212,6 +212,9 @@ describe("canAccess (route guard)", () => {
     ["/dashboard/tracking", ADMINS],
     ["/dashboard/signout-keys", ADMINS],
     ["/dashboard/settings", ADMINS],
+    // 3.6: a wider child of the admins' Settings: your own profile and avatar, every portal role.
+    ["/dashboard/settings/profile", yes(true, true, true, true, false, true)],
+    ["/dashboard/settings/profile/avatar", yes(true, true, true, true, false, true)],
     ["/dashboard/chat", yes()],
     ["/dashboard/instructions", yes()],
     ["/dashboard/screenshots/archives", ADMINS],
@@ -260,5 +263,8 @@ describe("isOrgFreeRoute", () => {
     expect(isOrgFreeRoute("/dashboard/people")).toBe(true);
     expect(isOrgFreeRoute("/dashboard/team")).toBe(false);
     expect(isOrgFreeRoute("/dashboard/calendar")).toBe(false);
+    // 3.6: your own profile belongs to no organisation; the admins' Settings does.
+    expect(isOrgFreeRoute("/dashboard/settings/profile/avatar")).toBe(true);
+    expect(isOrgFreeRoute("/dashboard/settings")).toBe(false);
   });
 });

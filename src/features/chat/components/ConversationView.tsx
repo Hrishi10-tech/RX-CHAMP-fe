@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Paperclip, Send, ShieldCheck, Smile } from "lucide-react";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { ChatBubble } from "@/features/chat/components/ChatBubble";
 import type { ConversationViewProps } from "@/features/chat/types";
 
@@ -43,7 +43,12 @@ export function ConversationView({
       <header className="flex items-center border-b border-slate-100 px-5 py-3.5">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Avatar name={contact.name} className="h-10 w-10 text-xs" />
+            <PersonAvatar
+              name={contact.name}
+              avatarId={contact.avatarId}
+              userId={contact.userId}
+              size={40}
+            />
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
           </div>
           <div>

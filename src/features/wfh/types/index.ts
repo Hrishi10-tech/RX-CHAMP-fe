@@ -17,6 +17,8 @@ export interface WfhRequestView {
   id: string;
   userId: string;
   userName: string;
+  /** 3.6: the person's effective avatar; null while they have no gender. */
+  avatarId?: string | null;
   department: string | null;
   companyId: string | null;
   companyName: string | null;
@@ -76,6 +78,8 @@ export interface WfhScheduleView {
   id: string;
   userId: string;
   userName: string;
+  /** 3.6: the person's effective avatar; null while they have no gender. */
+  avatarId?: string | null;
   department: string | null;
   companyName: string | null;
   weekdays: number[];

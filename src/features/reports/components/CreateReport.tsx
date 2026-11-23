@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Select } from "@/components/ui/Select";
 import { ErrorState, LoadingState, RefreshFailedNotice } from "@/components/ui/StatePanel";
 import { btnPrimary, cardBase, checkboxBase, inputBase } from "@/components/ui/classes";
 import type { SelectOption } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
-import { initialsOf } from "@/lib/text/initials";
 import { todayKey } from "@/lib/time/businessTime";
 import { monthOfDate } from "@/lib/time/months";
 import { useReportPeople } from "@/features/reports/hooks/useReports";
@@ -175,12 +175,7 @@ function PeoplePicker({
                         checked={on}
                         onChange={() => toggle(p.id)}
                       />
-                      <span
-                        aria-hidden
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-bold text-indigo-800"
-                      >
-                        {initialsOf(p.name)}
-                      </span>
+                      <PersonAvatar name={p.name} avatarId={p.avatarId} userId={p.id} size={32} />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-semibold text-slate-900">
                           {p.name}

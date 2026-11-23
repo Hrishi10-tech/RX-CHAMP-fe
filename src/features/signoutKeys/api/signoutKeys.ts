@@ -12,9 +12,13 @@ export type SignOutScope = "USERS" | "DEPARTMENTS" | "ORG";
 export interface SignOutKeyView {
   id: string;
   scope: SignOutScope;
-  users: { id: string; name: string }[];
+  /** 3.6: each person with their effective avatar (null: no gender, or removed). */
+  users: { id: string; name: string; avatarId?: string | null }[];
   departments: { id: string; name: string }[];
   createdBy: string;
+  /** 3.6: who made the key, for their avatar; null from an older API. */
+  createdById: string | null;
+  createdByAvatarId: string | null;
   createdAt: string | null;
   expiresAt: string | null;
   revokedAt: string | null;
@@ -47,6 +51,18 @@ function refs(value: unknown): { id: string; name: string }[] {
     .map((x) => ({ id: x.id as string, name: typeof x.name === "string" ? x.name : "" }));
 }
 
+/** People, with the avatar each shows (3.6). */
+function personRefs(value: unknown): { id: string; name: string; avatarId: string | null }[] {
+  return (Array.isArray(value) ? value : [])
+    .map(rec)
+    .filter((x) => typeof x.id === "string")
+    .map((x) => ({
+      id: x.id as string,
+      name: typeof x.name === "string" ? x.name : "",
+      avatarId: str(x.avatarId),
+    }));
+}
+
 function str(value: unknown): string | null {
   return typeof value === "string" && value ? value : null;
 }
@@ -61,9 +77,11 @@ export function readSignOutKey(raw: unknown): SignOutKeyView | null {
   return {
     id: r.id,
     scope: scope === "USERS" || scope === "DEPARTMENTS" ? scope : "ORG",
-    users: refs(r.users),
+    users: personRefs(r.users),
     departments: refs(r.departments),
     createdBy: typeof by === "string" ? by : (str(rec(by).name) ?? ""),
+    createdById: str(rec(by).id),
+    createdByAvatarId: str(rec(by).avatarId),
     createdAt: str(r.createdAt),
     expiresAt,
     revokedAt,

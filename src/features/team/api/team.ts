@@ -32,6 +32,7 @@ export function readTeamPerson(raw: unknown): TeamPerson | null {
   return {
     id: r.id,
     name: typeof r.name === "string" ? r.name : "",
+    avatarId: strOrNull(r.avatarId),
     role: typeof r.role === "string" ? r.role : "USER",
     designation: strOrNull(r.designation),
     department:

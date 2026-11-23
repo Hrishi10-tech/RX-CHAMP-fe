@@ -9,6 +9,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { ROLES, ROLE_LABEL } from "@/constants/roles";
 import type { SelectOption } from "@/components/ui/types";
+import type { GenderFilter } from "@/features/avatars/types";
 import type {
   MemberFilters,
   MemberSortKey,
@@ -23,6 +24,7 @@ export const EMPTY_MEMBER_FILTERS: MemberFilters = {
   role: ANY,
   departmentId: ANY,
   status: ANY,
+  gender: ANY,
 };
 
 /** The people an organisation's members list holds (SPEC 1.1). */
@@ -53,8 +55,18 @@ export const SORT_OPTIONS: {
   { key: "role_desc", label: "Role (Z – A)", icon: UserRound },
 ];
 
+/** 3.6: the values GET /users?gender= accepts. Shown to the organisation admin and Super Admins. */
+export const genderFilterOptions: SelectOption[] = [
+  { value: ANY, label: "Any gender" },
+  { value: "MALE", label: "Male" },
+  { value: "FEMALE", label: "Female" },
+  { value: "UNSET", label: "Gender not set" },
+];
+
 export function countActiveFilters(filters: MemberFilters): number {
-  return [filters.role, filters.departmentId, filters.status].filter((v) => v && v !== ANY).length;
+  return [filters.role, filters.departmentId, filters.status, filters.gender].filter(
+    (v) => v && v !== ANY,
+  ).length;
 }
 
 /** A department filter's id, or undefined for every department. */
@@ -69,4 +81,9 @@ export function asRoleFilter(role: string): UserRoleFilter | undefined {
 
 export function asStatusFilter(status: string): UserStatus | undefined {
   return status === "ACTIVE" || status === "DISABLED" ? status : undefined;
+}
+
+/** Narrows the free-form filter value to what GetUsersParams.gender accepts. */
+export function asGenderFilter(gender: string | undefined): GenderFilter | undefined {
+  return gender === "MALE" || gender === "FEMALE" || gender === "UNSET" ? gender : undefined;
 }

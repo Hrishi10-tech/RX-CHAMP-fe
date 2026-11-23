@@ -36,3 +36,25 @@ export function readOnlyReason(
   if (viewerRole === "SUPER_MANAGER") return SUPER_MANAGER_READ_ONLY;
   return "Only the organisation admin can change people.";
 }
+
+/**
+ * 3.6: whether the viewer may set (and so sees) this person's gender, the API's
+ * canSetGender: the organisation admin for its Managers and Staff, a Super Admin for
+ * anyone but another Super Admin, and for themselves. Never the Super Manager, a
+ * Manager or Staff. Resetting someone's avatar follows the same rule.
+ */
+export function canSetGender(
+  viewerRole: string | null | undefined,
+  viewerId: string | null | undefined,
+  member: Pick<TeamMember, "id" | "role">,
+): boolean {
+  if (viewerId && String(member.id) === viewerId) return viewerRole === "SUPER_ADMIN";
+  if (viewerRole === "SUPER_ADMIN") return member.role !== "SUPER_ADMIN";
+  if (viewerRole === "ADMIN") return member.role === "MANAGER" || member.role === "USER";
+  return false;
+}
+
+/** 3.6: who sets gender when adding someone, and filters people by it. */
+export function setsGender(viewerRole: string | null | undefined): boolean {
+  return viewerRole === "SUPER_ADMIN" || viewerRole === "ADMIN";
+}

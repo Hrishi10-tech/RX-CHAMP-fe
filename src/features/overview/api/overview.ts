@@ -34,6 +34,18 @@ function people(value: unknown): { id: string; name: string }[] {
     .map((p) => ({ id: p.id as string, name: str(p.name) }));
 }
 
+/** The people an attention line names, with their avatar (3.6). */
+function attentionPeople(value: unknown): { id: string; name: string; avatarId: string | null }[] {
+  return list(value)
+    .map(rec)
+    .filter((p) => typeof p.id === "string")
+    .map((p) => ({
+      id: p.id as string,
+      name: str(p.name),
+      avatarId: typeof p.avatarId === "string" && p.avatarId ? p.avatarId : null,
+    }));
+}
+
 export function readOverview(raw: unknown): OverviewView {
   const r = rec(raw);
   const scope = rec(r.scope);
@@ -93,7 +105,11 @@ export function readOverview(raw: unknown): OverviewView {
     attention: list(r.attention)
       .map(rec)
       .filter((a) => typeof a.kind === "string")
-      .map((a) => ({ kind: a.kind as string, count: num(a.count), people: people(a.people) })),
+      .map((a) => ({
+        kind: a.kind as string,
+        count: num(a.count),
+        people: attentionPeople(a.people),
+      })),
     nextHolidays: list(r.nextHolidays)
       .map(rec)
       .filter((h) => typeof h.date === "string")

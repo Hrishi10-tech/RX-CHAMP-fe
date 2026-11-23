@@ -36,6 +36,8 @@ export interface ReportPerson {
   /** 3.3: the person's organisation (a chip on combined lists). */
   companyId?: string | null;
   companyName?: string | null;
+  /** 3.6: their effective avatar; null while they have no gender. */
+  avatarId?: string | null;
 }
 
 export interface PersonDaySummary {

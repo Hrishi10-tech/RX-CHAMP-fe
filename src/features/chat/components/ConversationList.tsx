@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { formatTime12 } from "@/lib/time/format";
 import type { ChatContactView, ConversationTab } from "@/features/chat/types";
 
@@ -38,7 +38,12 @@ function ConversationRow({
       }`}
     >
       <div className="relative shrink-0">
-        <Avatar name={contact.name} className="h-11 w-11 text-xs" />
+        <PersonAvatar
+          name={contact.name}
+          avatarId={contact.avatarId}
+          userId={contact.userId}
+          size={44}
+        />
         <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
       </div>
       <div className="min-w-0 flex-1">

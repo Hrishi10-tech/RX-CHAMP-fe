@@ -27,9 +27,13 @@ export function readDepartment(raw: unknown): DepartmentView | null {
     icon: typeof r.icon === "string" && r.icon ? r.icon : DEFAULT_DEPARTMENT_ICON,
     staffCount: num(r.staffCount),
     managers: Array.isArray(r.managers)
-      ? (r.managers as { id?: unknown; name?: unknown }[])
+      ? (r.managers as { id?: unknown; name?: unknown; avatarId?: unknown }[])
           .filter((m) => typeof m?.id === "string")
-          .map((m) => ({ id: m.id as string, name: typeof m.name === "string" ? m.name : "" }))
+          .map((m) => ({
+            id: m.id as string,
+            name: typeof m.name === "string" ? m.name : "",
+            avatarId: typeof m.avatarId === "string" ? m.avatarId : null,
+          }))
       : [],
     idle: {
       enabled: typeof idle.enabled === "boolean" ? idle.enabled : null,

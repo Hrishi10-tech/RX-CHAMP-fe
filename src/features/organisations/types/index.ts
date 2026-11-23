@@ -3,6 +3,8 @@ export interface OrganisationAdmin {
   id: string;
   name: string;
   email: string;
+  /** 3.6: the effective avatar; null while they have no gender. */
+  avatarId?: string | null;
 }
 
 export interface OrganisationCounts {

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Network, Search, Users } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Modal } from "@/components/ui/Modal";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { btnPrimary, btnSecondary } from "@/components/ui/classes";
@@ -170,6 +171,7 @@ export function OrgContentsDialog({
               ) : (
                 members.map((m) => (
                   <li key={m.id} className="flex items-center gap-3 px-3 py-2.5">
+                    <PersonAvatar name={m.name} avatarId={m.avatarId} userId={m.id} size={32} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-slate-900">{m.name}</p>
                       <p className="truncate text-xs text-slate-500">

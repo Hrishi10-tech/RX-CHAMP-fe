@@ -41,6 +41,7 @@ export function readOrganisation(raw: unknown): OrganisationView | null {
             id: admin.id,
             name: typeof admin.name === "string" ? admin.name : "",
             email: typeof admin.email === "string" ? admin.email : "",
+            avatarId: typeof admin.avatarId === "string" ? admin.avatarId : null,
           }
         : null,
     counts: {

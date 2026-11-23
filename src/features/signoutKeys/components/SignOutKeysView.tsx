@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DataTable } from "@/components/ui/DataTable";
@@ -97,9 +98,25 @@ export function SignOutKeysView() {
           const Icon = k.scope === "ORG" ? Building2 : k.scope === "DEPARTMENTS" ? Network : Users;
           return (
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]">
-                <Icon className="h-4 w-4" aria-hidden />
-              </span>
+              {k.scope === "USERS" && k.users.length > 0 ? (
+                // 3.6: the people themselves, up to three.
+                <span className="flex shrink-0 -space-x-2">
+                  {k.users.slice(0, 3).map((u) => (
+                    <PersonAvatar
+                      key={u.id}
+                      name={u.name}
+                      avatarId={u.avatarId}
+                      userId={u.id}
+                      size={28}
+                      className="ring-2 ring-white"
+                    />
+                  ))}
+                </span>
+              ) : (
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]">
+                  <Icon className="h-4 w-4" aria-hidden />
+                </span>
+              )}
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold text-slate-800">
                   {scopeText(k)}
@@ -144,7 +161,16 @@ export function SignOutKeysView() {
           <span className="text-sm text-slate-600">
             {whenText(k.createdAt)}
             {k.createdBy ? (
-              <span className="block text-xs text-slate-400">by {k.createdBy}</span>
+              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                by
+                <PersonAvatar
+                  name={k.createdBy}
+                  avatarId={k.createdByAvatarId}
+                  userId={k.createdById ?? undefined}
+                  size={18}
+                />
+                {k.createdBy}
+              </span>
             ) : null}
           </span>
         ),

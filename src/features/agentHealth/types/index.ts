@@ -27,6 +27,8 @@ export interface UploadRefusalView {
 export interface AgentHealthRow {
   userId: string;
   name: string;
+  /** 3.6: the effective avatar; null while they have no gender. */
+  avatarId?: string | null;
   email: string;
   role: string;
   department: string | null;

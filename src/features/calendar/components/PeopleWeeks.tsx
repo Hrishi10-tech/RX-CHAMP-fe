@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarDays, Eye, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip, type ChipTone } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
@@ -41,6 +42,8 @@ const SOURCE_TONE: Record<CalendarSource, ChipTone> = {
 interface Row {
   id: string;
   name: string;
+  /** 3.6 */
+  avatarId: string | null;
   department: string | null;
   source: Exclude<CalendarSource, "OVERRIDE">;
   summary: string;
@@ -97,6 +100,7 @@ export function PeopleWeeks({
         return {
           id: u.id,
           name: nameOf(u),
+          avatarId: u.avatarId ?? null,
           department: deptName,
           source,
           summary: week ? workWeekText(week) : orgWeek,
@@ -277,7 +281,8 @@ export function PeopleWeeks({
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
+                        <PersonAvatar name={r.name} avatarId={r.avatarId} userId={r.id} size={32} />
+                        <div className="min-w-0 flex-1">
                           <p className="truncate font-semibold text-slate-900">{r.name}</p>
                           <p className="text-xs text-slate-500">
                             {r.department ?? "No department"}
@@ -333,7 +338,15 @@ export function PeopleWeeks({
                         </td>
                       )}
                       <td className="px-3 py-3">
-                        <p className="font-semibold text-slate-900">{r.name}</p>
+                        <p className="flex items-center gap-2 font-semibold text-slate-900">
+                          <PersonAvatar
+                            name={r.name}
+                            avatarId={r.avatarId}
+                            userId={r.id}
+                            size={24}
+                          />
+                          {r.name}
+                        </p>
                         <p className="text-xs text-slate-500">{r.department ?? "No department"}</p>
                       </td>
                       <td className="px-3 py-3 text-slate-700">{r.summary}</td>

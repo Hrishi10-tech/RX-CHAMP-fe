@@ -11,7 +11,8 @@ export interface DepartmentView {
   name: string;
   icon: string;
   staffCount: number;
-  managers: { id: string; name: string }[];
+  /** 3.6: each with their effective avatar (null while they have no gender). */
+  managers: { id: string; name: string; avatarId?: string | null }[];
   idle: DepartmentIdle;
   /** 4.1: one computer shared between shifts (shift-end question, automatic sign-out). */
   sharedComputer: boolean;

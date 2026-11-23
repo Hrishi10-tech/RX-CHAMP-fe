@@ -2,6 +2,7 @@
 
 import { Check, Undo2, X } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { btnSmall } from "@/components/ui/classes";
 import { OrgChip } from "@/features/organisations/components/OrgChip";
 import { amountText, partTimesText } from "@/features/leave/lib/format";
@@ -41,6 +42,7 @@ export function RequestRow({
         <div className="min-w-0 flex-1">
           {approver && (
             <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+              <PersonAvatar name={r.userName} avatarId={r.avatarId} userId={r.userId} size={22} />
               <span className="truncate">{r.userName}</span>
               <OrgChip name={r.companyName} show={showOrg} />
               {r.department && (

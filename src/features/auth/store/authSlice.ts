@@ -35,6 +35,7 @@ const authSlice = createSlice({
         name: me.name,
         role: me.role,
         grants: me.grants,
+        avatarId: me.avatarId,
       };
       state.ready = true;
     },

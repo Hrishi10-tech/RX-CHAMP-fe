@@ -10,6 +10,8 @@ export type PunchSource = "PUSH" | "PULL" | "CSV" | "MANUAL";
 export interface PersonAttendanceView {
   userId: string;
   name: string;
+  /** 3.6: the person's effective avatar; null while they have no gender (or nobody). */
+  avatarId?: string | null;
   email: string;
   role: string;
   /** The department's name (4.0 keeps it in step with the person's department row). */
@@ -44,6 +46,8 @@ export interface PunchView {
   source: PunchSource;
   userId: string | null;
   userName: string | null;
+  /** 3.6: the person's effective avatar; null while they have no gender (or nobody). */
+  avatarId?: string | null;
   dayKey: string;
   note: string | null;
   addedBy: string | null;

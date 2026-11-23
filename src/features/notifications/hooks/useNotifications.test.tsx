@@ -56,6 +56,9 @@ jest.mock("@/features/notifications/api/markNotificationRead", () => ({
 }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 jest.mock("sonner", () => ({ toast: jest.fn() }));
+jest.mock("@/store/hooks", () => ({
+  useAppSelector: (select: (s: unknown) => unknown) => select({ auth: { user: { id: "me" } } }),
+}));
 jest.mock("@/features/approvals/api/approvals", () => ({
   ...jest.requireActual("@/features/approvals/api/approvals"),
   getApprovals: jest.fn(async () => ({ items: [], meta: { total: 0, page: 1, totalPages: 1 } })),

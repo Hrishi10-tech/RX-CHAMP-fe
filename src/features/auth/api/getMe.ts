@@ -101,6 +101,7 @@ export function readMe(raw: unknown): MeView {
     departments,
     grants: readGrants(raw.grants, raw),
     permissions: readPermissions(raw.permissions),
+    avatarId: typeof raw.avatarId === "string" && raw.avatarId ? raw.avatarId : null,
   };
 }
 

@@ -16,6 +16,8 @@ import { partTimesText } from "@/features/leave/lib/format";
 import type { CompOffCreditView } from "@/features/leave/types";
 import { CompOffClaimsPanel, decisionLine } from "@/features/leave/components/CompOffPanel";
 
+// These render with their hooks mocked and no query client: the avatar reads one (3.6).
+jest.mock("@/components/avatar/PersonAvatar", () => ({ PersonAvatar: () => null }));
 jest.mock("@/features/auth/hooks/useSession", () => ({ useSession: jest.fn() }));
 jest.mock("@/features/organisations/hooks/useOrgsInView", () => ({ useOrgsInView: jest.fn() }));
 jest.mock("@/features/users/hooks/usePeopleOptions", () => ({ usePeopleOptions: jest.fn() }));

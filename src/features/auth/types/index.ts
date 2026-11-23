@@ -17,6 +17,8 @@ export interface AuthUser {
    * themselves read them from GET /me.
    */
   grants?: Grants;
+  /** The effective avatar (3.6); null while the person has no gender. */
+  avatarId?: string | null;
 }
 
 export interface LoginData {
@@ -69,6 +71,8 @@ export interface MeView {
    * for them (Staff), whatever the role reads.
    */
   permissions: MePermissions | null;
+  /** 3.6: the effective avatar; null while the person has no gender. */
+  avatarId: string | null;
 }
 
 /** `GET /me` → `permissions`. */

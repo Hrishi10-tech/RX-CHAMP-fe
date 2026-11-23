@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Building2, Eye, Pencil, Plus, ShieldPlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { ActionMenu } from "@/components/ui/ActionMenu";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DataTable } from "@/components/ui/DataTable";
@@ -92,9 +93,17 @@ export function OrganisationsView() {
         header: "Admin",
         render: (o) =>
           o.admin ? (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-slate-800">{o.admin.name}</p>
-              <p className="truncate text-xs text-slate-400">{o.admin.email}</p>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <PersonAvatar
+                name={o.admin.name}
+                avatarId={o.admin.avatarId}
+                userId={o.admin.id}
+                size={28}
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-slate-800">{o.admin.name}</p>
+                <p className="truncate text-xs text-slate-400">{o.admin.email}</p>
+              </div>
             </div>
           ) : (
             <span className="text-sm font-semibold text-amber-700">No admin yet</span>

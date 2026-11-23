@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import {
   APPROVAL_KINDS,
+  coveredByApprovalRefresh,
   APPROVALS_REFRESH_GAP_MS,
   APPROVALS_REFRESH_WAIT_MS,
   createApprovalsRefresher,
@@ -207,5 +208,18 @@ describe("createApprovalsRefresher (3.6)", () => {
     refresher.cancel();
     jest.advanceTimersByTime(APPROVALS_REFRESH_WAIT_MS * 2);
     expect(calls).toEqual([]);
+  });
+});
+
+describe("coveredByApprovalRefresh (4.0)", () => {
+  it.each([["approvals", "list"], ["leave"], ["team", "org"], ["reports", "people"], ["overview"]])(
+    "%j is re-read by a refresh for every kind",
+    (...key) => {
+      expect(coveredByApprovalRefresh(key)).toBe(true);
+    },
+  );
+
+  it.each([["users"], ["departments"], ["teams"], ["calendar"]])("%j is not", (...key) => {
+    expect(coveredByApprovalRefresh(key)).toBe(false);
   });
 });

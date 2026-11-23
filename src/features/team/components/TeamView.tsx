@@ -14,7 +14,7 @@ import {
   LoadingState,
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
-import { Avatar } from "@/components/ui/Avatar";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { cardBase } from "@/components/ui/classes";
 import type { SelectOption } from "@/components/ui/types";
 import { errorCode, errorMessage } from "@/lib/api";
@@ -133,8 +133,13 @@ function PersonRow({ person }: { person: TeamPerson }) {
         className={`group block px-4 py-3.5 transition hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none sm:px-5 ${ROW_GRID}`}
       >
         <div className="flex min-w-0 items-center gap-3">
-          <span className="relative shrink-0">
-            <Avatar name={person.name} />
+          <span className="relative flex shrink-0">
+            <PersonAvatar
+              name={person.name}
+              avatarId={person.avatarId}
+              userId={person.id}
+              size={36}
+            />
             <span
               aria-hidden
               className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white ${

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Modal } from "@/components/ui/Modal";
 import { btnPrimary, btnSecondary, errorText } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
@@ -90,7 +90,7 @@ function PeoplePicker({ value, onChange }: { value: string[]; onChange: (ids: st
                 checked ? "bg-[rgba(34,34,204,0.06)]" : "hover:bg-slate-50"
               }`}
             >
-              <Avatar name={name} className="h-7 w-7 text-[10px]" />
+              <PersonAvatar name={name} avatarId={u.avatarId} userId={u.id} size={28} />
               <span className="min-w-0 flex-1 truncate font-semibold text-slate-800">{name}</span>
               <span
                 aria-hidden

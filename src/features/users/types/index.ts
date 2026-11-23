@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { PaginationMeta } from "@/lib/api";
 import type { Grants } from "@/constants/roles";
 import type { AgentStatus, TeamMember } from "@/types";
+import type { Gender, GenderFilter } from "@/features/avatars/types";
 
 /** A department as the people endpoints name it. */
 export interface UserDepartment {
@@ -52,6 +53,13 @@ export interface User {
   /** The shift override, or null when the person follows their department or the default. */
   shiftId?: string | null;
   createdAt?: string;
+  /** The effective avatar (3.6); null while the person has no gender. */
+  avatarId?: string | null;
+  /**
+   * 3.6: only in answers to someone who may set it (the organisation admin, or a Super
+   * Admin); null when not set.
+   */
+  gender?: Gender | null;
 }
 
 /** Roles a member list can filter by. */
@@ -99,6 +107,8 @@ export interface GetUsersParams {
   status?: UserStatus;
   /** Not in the 4.0 spec; the 3.x server honours it and a 4.0 one may ignore it. */
   sort?: MemberSortKey;
+  /** 3.6: the organisation admin or a Super Admin only (403 from anyone else). */
+  gender?: GenderFilter;
 }
 
 /** Sort tokens accepted by GET /users?sort= — also identifies the popover row. */
@@ -114,6 +124,8 @@ export interface MemberFilters {
   role: string;
   departmentId: string;
   status: string;
+  /** 3.6, the organisation admin or a Super Admin: a gender, UNSET, or ANY. */
+  gender: string;
 }
 
 export interface MemberSortPopoverProps {
@@ -136,6 +148,8 @@ export interface CreateUserInput {
   departmentIds?: string[];
   shiftId?: string | null;
   grants?: Grants;
+  /** 3.6, the organisation admin or a Super Admin: sets the default avatar. */
+  gender?: Gender;
 }
 
 /** SPEC 5.3 `PATCH /users/:id`: the same fields, all optional, no password. */
@@ -149,6 +163,8 @@ export interface UpdateUserInput {
   departmentIds?: string[];
   shiftId?: string | null;
   grants?: Grants;
+  /** 3.6, the organisation admin or a Super Admin: a change resets the avatar to the new default. */
+  gender?: Gender;
 }
 
 export interface UsersResult {

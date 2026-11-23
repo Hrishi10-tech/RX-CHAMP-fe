@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Fingerprint, Loader2, Monitor, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
@@ -45,6 +46,7 @@ export function SourceChip({ source }: { source: AttendanceSource }) {
 interface RowDraft {
   userId: string;
   name: string;
+  avatarId?: string | null;
   source: AttendanceSource;
   code: string;
 }
@@ -74,6 +76,7 @@ export function SetAttendanceDialog({
     setRows(
       people.map((p) => ({
         userId: p.userId,
+        avatarId: p.avatarId,
         name: p.name,
         source: p.attendanceSource,
         code: presetCode ?? p.biometricCode ?? "",
@@ -188,7 +191,10 @@ export function SetAttendanceDialog({
               key={r.userId}
               className="grid grid-cols-1 gap-2 px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_auto_11rem] sm:items-center"
             >
-              <span className="truncate text-sm font-semibold text-slate-900">{r.name}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <PersonAvatar name={r.name} avatarId={r.avatarId} userId={r.userId} size={24} />
+                <span className="truncate text-sm font-semibold text-slate-900">{r.name}</span>
+              </span>
               <SegmentedTabs
                 label={`${r.name}: source`}
                 size="sm"
@@ -366,7 +372,13 @@ export function PeoplePanel({ canEdit }: { canEdit: boolean }) {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
+                        <PersonAvatar
+                          name={p.name}
+                          avatarId={p.avatarId}
+                          userId={p.userId}
+                          size={32}
+                        />
+                        <div className="min-w-0 flex-1">
                           <p className="truncate font-semibold text-slate-900">{p.name}</p>
                           <p className="truncate text-xs text-slate-500">{departmentText(p)}</p>
                         </div>
@@ -457,7 +469,15 @@ export function PeoplePanel({ canEdit }: { canEdit: boolean }) {
                         </td>
                       )}
                       <td className="px-3 py-3">
-                        <p className="font-semibold text-slate-900">{p.name}</p>
+                        <p className="flex items-center gap-2 font-semibold text-slate-900">
+                          <PersonAvatar
+                            name={p.name}
+                            avatarId={p.avatarId}
+                            userId={p.userId}
+                            size={24}
+                          />
+                          {p.name}
+                        </p>
                         <p className="text-xs text-slate-500">{departmentText(p)}</p>
                       </td>
                       <td className="px-3 py-3">

@@ -49,6 +49,10 @@ export interface TeamMember {
   /** 3.3: the person's organisation (the chip on the combined view). */
   companyId?: string | null;
   companyName?: string | null;
+  /** The effective avatar (3.6); null while the person has no gender. */
+  avatarId?: string | null;
+  /** 3.6: only for a viewer who may set it (the organisation admin or a Super Admin). */
+  gender?: "MALE" | "FEMALE" | null;
 }
 
 /**

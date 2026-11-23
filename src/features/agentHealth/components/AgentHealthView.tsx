@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Building2, Camera, HeartPulse, Info, Search, Users } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Select } from "@/components/ui/Select";
@@ -367,17 +368,20 @@ export function AgentHealthView() {
             {rows.map((r) => (
               <li key={r.userId} className="space-y-3 px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <Link
-                      href={personHref(r)}
-                      className="block truncate font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
-                    >
-                      {r.name}
-                    </Link>
-                    <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
-                      <span>{[r.department, roleLabel(r.role)].filter(Boolean).join(" · ")}</span>
-                      <OrgChip name={r.companyName} show={mixed} />
-                    </p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <PersonAvatar name={r.name} avatarId={r.avatarId} userId={r.userId} size={32} />
+                    <div className="min-w-0">
+                      <Link
+                        href={personHref(r)}
+                        className="block truncate font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                      >
+                        {r.name}
+                      </Link>
+                      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+                        <span>{[r.department, roleLabel(r.role)].filter(Boolean).join(" · ")}</span>
+                        <OrgChip name={r.companyName} show={mixed} />
+                      </p>
+                    </div>
                   </div>
                   <Flags row={r} />
                 </div>
@@ -412,15 +416,27 @@ export function AgentHealthView() {
                 {rows.map((r) => (
                   <tr key={r.userId} className="align-top hover:bg-slate-50/70">
                     <td className="px-4 py-3">
-                      <Link
-                        href={personHref(r)}
-                        className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
-                      >
-                        {r.name}
-                      </Link>
-                      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
-                        <span>{[r.department, roleLabel(r.role)].filter(Boolean).join(" · ")}</span>
-                      </p>
+                      <div className="flex items-start gap-3">
+                        <PersonAvatar
+                          name={r.name}
+                          avatarId={r.avatarId}
+                          userId={r.userId}
+                          size={32}
+                        />
+                        <div className="min-w-0">
+                          <Link
+                            href={personHref(r)}
+                            className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                          >
+                            {r.name}
+                          </Link>
+                          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+                            <span>
+                              {[r.department, roleLabel(r.role)].filter(Boolean).join(" · ")}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
                     </td>
                     {mixed && (
                       <td className="px-4 py-3">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Award, Check, Gift, Hourglass, Undo2, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
@@ -182,6 +183,7 @@ export function CreditRow({
         <div className="min-w-0 flex-1">
           {approver && (
             <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+              <PersonAvatar name={c.userName} avatarId={c.avatarId} userId={c.userId} size={22} />
               {onPerson ? (
                 <button
                   type="button"

@@ -19,16 +19,18 @@ import {
   ANY,
   EMPTY_MEMBER_FILTERS,
   asDepartmentFilter,
+  asGenderFilter,
   asRoleFilter,
   asStatusFilter,
   countActiveFilters,
+  genderFilterOptions,
   roleFilterOptions,
   statusFilterOptions,
 } from "@/features/users/lib/memberQuery";
 import { seesEveryOrg } from "@/constants/roles";
 import { mapUserToMember, memberColumns, memberOrgColumn } from "@/features/users/lib/memberTable";
 import { useMemberActions } from "@/features/users/hooks/useMemberActions";
-import { canChangeMember } from "@/features/users/lib/memberAccess";
+import { canChangeMember, setsGender } from "@/features/users/lib/memberAccess";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { MemberFormDialog } from "@/features/users/components/MemberFormDialog";
 import type { MemberDraft } from "@/features/users/lib/memberForm";
@@ -120,6 +122,9 @@ export function MembersSection() {
         ? ["SUPER_MANAGER"]
         : ["USER", "MANAGER"];
   const canAdd = !(role === "SUPER_MANAGER" && combined);
+  // 3.6: gender is the organisation admin's and the Super Admins'; the API refuses the
+  // filter from anyone else.
+  const showGenderFilter = setsGender(role);
   const [query, setQuery] = useState("");
   const q = useDebouncedValue(query.trim(), 300);
   const [filters, setFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
@@ -138,9 +143,10 @@ export function MembersSection() {
       role: asRoleFilter(filters.role),
       departmentId: asDepartmentFilter(filters.departmentId),
       status: asStatusFilter(filters.status),
+      gender: showGenderFilter ? asGenderFilter(filters.gender) : undefined,
       sort: sort ?? undefined,
     }),
-    [page, q, filters, sort],
+    [page, q, filters, sort, showGenderFilter],
   );
 
   const list = useQuery({
@@ -315,6 +321,16 @@ export function MembersSection() {
                   aria-label="Status"
                 />
               </div>
+              {showGenderFilter && (
+                <div className="w-44">
+                  <Select
+                    value={filters.gender}
+                    onValueChange={(v) => filter("gender", v)}
+                    options={genderFilterOptions}
+                    aria-label="Gender"
+                  />
+                </div>
+              )}
               <MemberSortPopover
                 value={sort}
                 onApply={(next) => {

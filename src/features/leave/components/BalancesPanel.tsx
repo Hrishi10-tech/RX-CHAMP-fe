@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Eye, Search, SlidersHorizontal, UserCog } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { btnSmall, cardBase, inputBase } from "@/components/ui/classes";
@@ -106,7 +107,13 @@ export function BalancesPanel() {
             {rows.map((r) => (
               <li key={r.user.id} className="px-4 py-3.5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <PersonAvatar
+                    name={r.user.name}
+                    avatarId={r.user.avatarId}
+                    userId={r.user.id}
+                    size={32}
+                  />
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-slate-900">{r.user.name}</p>
                     <p className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
                       {r.user.department ?? "No department"}
@@ -182,7 +189,15 @@ export function BalancesPanel() {
                 {rows.map((r) => (
                   <tr key={r.user.id} className="align-top">
                     <td className="px-5 py-3">
-                      <p className="font-semibold text-slate-900">{r.user.name}</p>
+                      <p className="flex items-center gap-2 font-semibold text-slate-900">
+                        <PersonAvatar
+                          name={r.user.name}
+                          avatarId={r.user.avatarId}
+                          userId={r.user.id}
+                          size={24}
+                        />
+                        {r.user.name}
+                      </p>
                       <p className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
                         {[
                           r.user.department,

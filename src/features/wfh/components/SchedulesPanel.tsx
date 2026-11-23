@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarRange, CalendarX2, Pencil, Plus, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
@@ -51,6 +52,7 @@ function ScheduleRow({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+            <PersonAvatar name={s.userName} avatarId={s.avatarId} userId={s.userId} size={22} />
             <span className="truncate">{s.userName}</span>
             <OrgChip name={s.companyName} show={showOrg} />
             {s.department && (

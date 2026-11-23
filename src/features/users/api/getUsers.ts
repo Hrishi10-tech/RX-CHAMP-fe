@@ -15,6 +15,7 @@ export function buildUsersQuery(params: GetUsersParams): Record<string, string |
     departmentId: params.departmentId,
     status: params.status,
     sort: params.sort,
+    gender: params.gender,
   });
 }
 

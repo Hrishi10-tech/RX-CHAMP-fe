@@ -30,6 +30,8 @@ import {
   seesEveryOrg,
 } from "@/constants/roles";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
+import { useOwnAvatarId } from "@/features/avatars/hooks/useAvatars";
 import PageWrapper from "@/components/layout/PageWrapper";
 import { NotificationPanel } from "@/components/layout/NotificationPanel";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -45,7 +47,6 @@ import {
 import { ErrorState } from "@/components/ui/StatePanel";
 import { clearSession } from "@/lib/auth/session";
 import { errorMessage } from "@/lib/api";
-import { initialsOf } from "@/lib/text/initials";
 import { BRAND } from "@/lib/brand";
 import { onOrgGone, useSelectedOrg } from "@/lib/org/selection";
 
@@ -95,6 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const verified = Boolean(me) && !refused;
   const live = signedIn && verified;
   const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications(live);
+  const ownAvatarId = useOwnAvatarId();
   // Here rather than on the messages page: a popup about a new message is only
   // useful on the screens that are not already showing it, and so is the badge.
   useChatNotifier(live);
@@ -233,7 +235,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const displayName = user.name ?? user.email ?? "User";
-  const initials = initialsOf(displayName);
   const roleText = role ? ROLE_LABEL[role] : "Unknown role";
   const orgName = isSuperAdmin ? org?.name : me?.organisation?.name;
   const managerHint =
@@ -245,8 +246,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         compact ? "justify-center" : ""
       }`}
     >
-      <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[rgb(74_74_230)] to-[rgb(34_34_204)] text-xs font-semibold text-white">
-        {initials}
+      <span className="relative flex shrink-0">
+        <PersonAvatar name={displayName} avatarId={ownAvatarId} userId={user.id} size={36} />
         <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
       </span>
       {!compact && (

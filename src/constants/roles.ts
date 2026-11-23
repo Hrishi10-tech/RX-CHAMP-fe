@@ -173,6 +173,9 @@ export const routeRoles: Record<string, Role[]> = {
   "/dashboard/tracking": ADMINS,
   "/dashboard/signout-keys": ADMINS,
   "/dashboard/settings": ADMINS,
+  // 3.6: your own profile and avatar, for every portal role (Staff change theirs on the
+  // agent or the phone): a wider child of the admins' Settings.
+  "/dashboard/settings/profile": PORTAL,
   "/dashboard/chat": PORTAL,
   "/dashboard/agent-health": PORTAL,
   "/dashboard/focus-adjustments": PORTAL,
@@ -210,7 +213,13 @@ export const ORG_FREE_ROUTES = [
   "/dashboard/breaks/team",
   "/dashboard/chat",
   "/dashboard/instructions",
+  // 3.6: your own profile and avatar belong to no organisation.
+  "/dashboard/settings/profile",
 ];
+
+/** 3.6: Settings, Profile and its Avatar page. */
+export const PROFILE_ROUTE = "/dashboard/settings/profile";
+export const AVATAR_ROUTE = "/dashboard/settings/profile/avatar";
 
 function matches(path: string, prefix: string): boolean {
   return path === prefix || path.startsWith(`${prefix}/`);

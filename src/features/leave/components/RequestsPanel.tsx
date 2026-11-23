@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plane } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { cardBase } from "@/components/ui/classes";
@@ -142,6 +143,12 @@ export function RequestsPanel() {
             {awaySorted.map((r) => (
               <li key={r.id} className="px-4 py-3">
                 <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+                  <PersonAvatar
+                    name={r.userName}
+                    avatarId={r.avatarId}
+                    userId={r.userId}
+                    size={22}
+                  />
                   <span className="truncate">{r.userName}</span>
                   <OrgChip name={r.companyName} show={org.mixed} />
                 </p>

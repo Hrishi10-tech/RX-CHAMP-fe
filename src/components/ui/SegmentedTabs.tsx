@@ -21,6 +21,7 @@ export function SegmentedTabs<T extends string>({
   label,
   idPrefix,
   size = "md",
+  tone = "light",
 }: {
   tabs: SegmentedTab<T>[];
   value: T;
@@ -30,6 +31,8 @@ export function SegmentedTabs<T extends string>({
   /** When set, each tab gets id `${idPrefix}-tab-${value}` and controls `${idPrefix}-panel`. */
   idPrefix?: string;
   size?: "sm" | "md";
+  /** "dark" sits on the dark cards of the avatar screens (design page 10). */
+  tone?: "light" | "dark";
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -47,13 +50,18 @@ export function SegmentedTabs<T extends string>({
 
   // Tighter on phones so four tabs still fit a 390px screen without scrolling.
   const pad = size === "sm" ? "px-3 py-1.5 text-[13px]" : "px-2.5 py-2 text-sm sm:px-4";
+  const dark = tone === "dark";
+  // Nothing chosen (a value outside the tabs): the first tab keeps the keyboard's way in.
+  const noneSelected = !tabs.some((tab) => tab.value === value);
 
   return (
     <div className="scrollbar-none relative -mx-1 max-w-full overflow-x-auto px-1">
       <div
         role="tablist"
         aria-label={label}
-        className="inline-flex min-w-max items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm"
+        className={`inline-flex min-w-max items-center gap-1 rounded-xl border p-1 shadow-sm ${
+          dark ? "border-white/10 bg-[#131823]" : "border-slate-200 bg-white"
+        }`}
       >
         {tabs.map((tab, i) => {
           const selected = tab.value === value;
@@ -68,13 +76,21 @@ export function SegmentedTabs<T extends string>({
               id={idPrefix ? `${idPrefix}-tab-${tab.value}` : undefined}
               aria-controls={idPrefix ? `${idPrefix}-panel` : undefined}
               aria-selected={selected}
-              tabIndex={selected ? 0 : -1}
+              tabIndex={selected || (noneSelected && i === 0) ? 0 : -1}
               onClick={() => onChange(tab.value)}
               onKeyDown={(e) => move(e, i)}
-              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${pad} ${
-                selected
-                  ? "bg-[rgb(34_34_204)] text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 ${
+                dark
+                  ? "focus-visible:ring-[#6FC9B6]/60"
+                  : "focus-visible:ring-[rgba(34,34,204,0.35)]"
+              } ${pad} ${
+                dark
+                  ? selected
+                    ? "bg-[#2B3445] text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                  : selected
+                    ? "bg-[rgb(34_34_204)] text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
               {tab.label}

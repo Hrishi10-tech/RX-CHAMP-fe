@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Ban, Loader2, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
@@ -440,6 +441,14 @@ export function PunchesPanel({
                         {p.direction === "IN" ? " · In" : p.direction === "OUT" ? " · Out" : ""}
                       </p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm">
+                        {p.userName && (
+                          <PersonAvatar
+                            name={p.userName}
+                            avatarId={p.avatarId}
+                            userId={p.userId ?? undefined}
+                            size={20}
+                          />
+                        )}
                         {p.userName ?? <Chip tone="warning">Nobody has this ID</Chip>}
                         <span className="font-mono text-xs">{p.code}</span>
                         {p.lockedOut && (
@@ -503,6 +512,15 @@ export function PunchesPanel({
                         {dayTime(p.punchedAt)}
                       </td>
                       <td className="px-3 py-2.5">
+                        {p.userName && (
+                          <PersonAvatar
+                            name={p.userName}
+                            avatarId={p.avatarId}
+                            userId={p.userId ?? undefined}
+                            size={20}
+                            className="mr-1.5 align-middle"
+                          />
+                        )}
                         {p.userName ?? <Chip tone="warning">Nobody has this ID</Chip>}
                         {p.lockedOut && (
                           <span className="ml-1.5 inline-flex items-center gap-1 text-xs text-amber-700 no-underline">

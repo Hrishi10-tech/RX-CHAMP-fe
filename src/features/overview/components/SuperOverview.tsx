@@ -14,6 +14,7 @@ import {
   HeartPulse,
 } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { btnSmall, cardBase } from "@/components/ui/classes";
@@ -377,7 +378,8 @@ export function SuperOverview() {
               {problems.slice(0, 6).map((r) => (
                 <li key={r.userId} className="px-4 py-3 sm:px-5">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    <PersonAvatar name={r.name} avatarId={r.avatarId} userId={r.userId} size={28} />
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-slate-900">{r.name}</p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
                         <span>{r.department ?? "No department"}</span>

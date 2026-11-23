@@ -1,6 +1,7 @@
 import { NO_GRANTS, type Grants } from "@/constants/roles";
 import { newPasswordProblem } from "@/features/auth/lib/passwordRules";
 import type { CreateSuperManagerInput } from "@/features/users/api/superManagers";
+import type { Gender } from "@/features/avatars/types";
 import type { CreateUserInput, UpdateUserInput } from "@/features/users/types";
 import type { TeamMember } from "@/types";
 
@@ -17,6 +18,8 @@ export interface MemberDraft {
   grants: Grants;
   /** "" follows the department or the organisation's default shift. */
   shiftId: string;
+  /** 3.6: "" while not set (or not the viewer's to see). */
+  gender: Gender | "";
 }
 
 export type MemberDraftErrors = Partial<Record<keyof MemberDraft, string>>;
@@ -31,6 +34,7 @@ export const EMPTY_MEMBER_DRAFT: MemberDraft = {
   departmentIds: [],
   grants: { ...NO_GRANTS },
   shiftId: "",
+  gender: "",
 };
 
 export function draftFromMember(m: TeamMember): MemberDraft {
@@ -44,13 +48,21 @@ export function draftFromMember(m: TeamMember): MemberDraft {
     departmentIds: m.departments.map((d) => d.id),
     grants: { ...m.grants },
     shiftId: m.shiftId ?? "",
+    gender: m.gender ?? "",
   };
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Staff need exactly one department, managers at least one (SPEC 2.1). */
-export function validateMemberDraft(draft: MemberDraft, isEdit: boolean): MemberDraftErrors {
+/**
+ * Staff need exactly one department, managers at least one (SPEC 2.1). 3.6: whoever may
+ * set the gender says it when adding someone (`requireGender`), for the default avatar.
+ */
+export function validateMemberDraft(
+  draft: MemberDraft,
+  isEdit: boolean,
+  requireGender = false,
+): MemberDraftErrors {
   const errors: MemberDraftErrors = {};
   if (!draft.firstName.trim()) errors.firstName = "Enter a first name.";
   if (!draft.lastName.trim()) errors.lastName = "Enter a last name.";
@@ -65,6 +77,7 @@ export function validateMemberDraft(draft: MemberDraft, isEdit: boolean): Member
   if (draft.role === "MANAGER" && draft.departmentIds.length === 0) {
     errors.departmentIds = "Pick at least one department for this manager.";
   }
+  if (requireGender && !isEdit && !draft.gender) errors.gender = "Select male or female.";
   return errors;
 }
 

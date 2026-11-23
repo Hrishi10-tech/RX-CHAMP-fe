@@ -42,6 +42,19 @@ let refreshPromise: Promise<void> | null = null;
 /** Latched once a refresh fails: the session is gone, so stop asking. */
 let sessionDead = false;
 
+const refreshListeners = new Set<() => void>();
+
+/**
+ * Runs after every refresh that worked, for what cannot renew a sign-in by itself (an
+ * image's request never reaches the interceptor below). Answers how to stop listening.
+ */
+export function onAccessTokenRefreshed(listener: () => void): () => void {
+  refreshListeners.add(listener);
+  return () => {
+    refreshListeners.delete(listener);
+  };
+}
+
 /**
  * Re-issues the short-lived `accessToken` cookie. Single-flight, so a burst of
  * 401s — a dashboard's worth of parallel requests, or several sockets kicked at
@@ -53,7 +66,9 @@ export function refreshAccessToken(): Promise<void> {
 
   refreshPromise ??= axios
     .post(REFRESH_URL, null, { withCredentials: true })
-    .then(() => undefined)
+    .then(() => {
+      refreshListeners.forEach((listener) => listener());
+    })
     .catch((error: unknown) => {
       sessionDead = true;
       throw error;

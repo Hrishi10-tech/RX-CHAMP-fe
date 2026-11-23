@@ -1,4 +1,4 @@
-import { Avatar } from "@/components/ui/Avatar";
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { STATUS_DOT, type Status } from "@/components/ui/StatusBadge";
 import { roleLabel } from "@/constants/roles";
 import type { Column } from "@/components/ui/types";
@@ -89,6 +89,9 @@ export function mapUserToMember(u: User): TeamMember {
     joined: formatJoined(u.createdAt),
     companyId: u.companyId ?? null,
     companyName: u.companyName ?? u.company ?? null,
+    avatarId: u.avatarId ?? null,
+    // Left out of the answer for a viewer who may not set it: kept undefined, not null.
+    ...(u.gender !== undefined ? { gender: u.gender } : {}),
   };
 }
 
@@ -195,10 +198,11 @@ export function AgentStatusPill({
   );
 }
 
-export function MemberAvatar({ name, status }: { name: string; status: Status }) {
+export function MemberAvatar({ member }: { member: TeamMember }) {
+  const { name, status } = member;
   return (
-    <span className="relative shrink-0">
-      <Avatar name={name} />
+    <span className="relative flex shrink-0">
+      <PersonAvatar name={name} avatarId={member.avatarId} userId={String(member.id)} size={36} />
       <span
         title={status}
         aria-label={status}
@@ -241,7 +245,7 @@ export const memberColumns: Column<TeamMember>[] = [
     header: "Member",
     render: (m) => (
       <div className="flex items-center gap-3">
-        <MemberAvatar name={m.name} status={m.status} />
+        <MemberAvatar member={m} />
         <div className="min-w-0">
           <p className="truncate font-medium text-slate-900">{m.name}</p>
           <p className="truncate text-xs text-slate-400">{m.designation || m.email}</p>

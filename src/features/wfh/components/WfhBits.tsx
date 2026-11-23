@@ -2,6 +2,7 @@
 
 import { Check, Home, Smartphone, Undo2, X } from "lucide-react";
 
+import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { btnSmall } from "@/components/ui/classes";
 import { OrgChip } from "@/features/organisations/components/OrgChip";
@@ -66,6 +67,7 @@ export function WfhRequestRow({
         <div className="min-w-0 flex-1">
           {approver && (
             <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+              <PersonAvatar name={r.userName} avatarId={r.avatarId} userId={r.userId} size={22} />
               <span className="truncate">{r.userName}</span>
               <OrgChip name={r.companyName} show={showOrg} />
               {r.department && (

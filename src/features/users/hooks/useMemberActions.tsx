@@ -14,6 +14,7 @@ import {
   MousePointerClick,
   Network,
   Pencil,
+  RotateCcw,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -25,8 +26,9 @@ import { rowActionButtonClass, rowActionHover } from "@/components/ui/rowAction"
 import { errorMessage } from "@/lib/api";
 import { DownloadAgentRowButton } from "@/features/agent/components/DownloadAgentRowButton";
 import { useSession } from "@/features/auth/hooks/useSession";
+import { resetUserAvatar } from "@/features/avatars/api/avatars";
 import { deleteUser } from "@/features/users/api/deleteUser";
-import { canChangeMember, readOnlyReason } from "@/features/users/lib/memberAccess";
+import { canChangeMember, canSetGender, readOnlyReason } from "@/features/users/lib/memberAccess";
 import { setUserIdle } from "@/features/users/api/access";
 import { setUserScreenshots } from "@/features/users/api/setUserScreenshots";
 import { setUserStatus } from "@/features/users/api/setUserStatus";
@@ -176,6 +178,28 @@ export function useMemberActions({
 
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [avatarTarget, setAvatarTarget] = useState<TeamMember | null>(null);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+
+  async function handleConfirmAvatarReset() {
+    if (!avatarTarget) return;
+    setAvatarSaving(true);
+    try {
+      await resetUserAvatar(String(avatarTarget.id));
+      toast.success("Avatar reset", {
+        description: `${avatarTarget.name} is back on the default avatar.`,
+      });
+      setAvatarTarget(null);
+      onChanged("updated");
+    } catch (err) {
+      toast.error("Couldn't reset the avatar", {
+        description: errorMessage(err) ?? "Please try again.",
+      });
+    } finally {
+      setAvatarSaving(false);
+    }
+  }
 
   const setIdle = useCallback(
     async (member: TeamMember, enabled: boolean | null) => {
@@ -339,6 +363,17 @@ export function useMemberActions({
                     },
                   ]
                 : []),
+              // 3.6: back to the default for their gender; the organisation admin's or a
+              // Super Admin's, as gender is (canSetGender).
+              ...(m.avatarId && canSetGender(viewerRole, myId, m)
+                ? [
+                    {
+                      label: "Reset avatar",
+                      icon: RotateCcw,
+                      onSelect: () => setAvatarTarget(m),
+                    },
+                  ]
+                : []),
               ...(self
                 ? []
                 : [
@@ -435,6 +470,25 @@ export function useMemberActions({
               {statusTarget.block
                 ? "will be signed out and blocked from signing in. You can unblock them at any time."
                 : "will be able to sign in again."}
+            </>
+          ) : null
+        }
+      />
+
+      <ConfirmDialog
+        open={avatarTarget !== null}
+        onClose={() => {
+          if (!avatarSaving) setAvatarTarget(null);
+        }}
+        onConfirm={handleConfirmAvatarReset}
+        loading={avatarSaving}
+        title="Are you sure?"
+        confirmLabel={avatarSaving ? "Resetting…" : "Reset avatar"}
+        description={
+          avatarTarget ? (
+            <>
+              <span className="font-semibold text-slate-700">{avatarTarget.name}</span> goes back to
+              the default avatar for their gender. They can choose another one at any time.
             </>
           ) : null
         }

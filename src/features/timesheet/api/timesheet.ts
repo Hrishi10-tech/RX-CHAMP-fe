@@ -136,6 +136,8 @@ function readPerson(raw: unknown, userId: string, fallbackName?: string): Timesh
     designation: str(r.designation),
     department: typeof dept === "string" ? dept : str(rec(dept).name),
     organisation: typeof org === "string" ? org : str(rec(org).name),
+    // 3.6: kept out when the API leaves it out.
+    ...(str(r.avatarId) ? { avatarId: str(r.avatarId) } : {}),
   };
 }
 

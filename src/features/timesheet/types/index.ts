@@ -68,6 +68,8 @@ export interface TimesheetPerson {
   designation: string | null;
   department: string | null;
   organisation: string | null;
+  /** 3.6: the effective avatar, when the API sends it. */
+  avatarId?: string | null;
 }
 
 export interface Timesheet {

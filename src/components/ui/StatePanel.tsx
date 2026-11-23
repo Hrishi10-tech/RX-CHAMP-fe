@@ -24,23 +24,31 @@ export function ErrorState({
   message,
   onRetry,
   retrying = false,
+  tone = "light",
 }: {
   title?: string;
   message?: string;
   onRetry?: () => void;
   retrying?: boolean;
+  /** "dark" sits on the dark cards of the avatar screens. */
+  tone?: "light" | "dark";
 }) {
+  const dark = tone === "dark";
   return (
     <div
       role="alert"
-      className="flex flex-col items-center gap-3 px-6 py-12 text-center text-sm text-slate-600"
+      className={`flex flex-col items-center gap-3 px-6 py-12 text-center text-sm ${
+        dark ? "text-slate-300" : "text-slate-600"
+      }`}
     >
       <span className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-600">
         <AlertTriangle className="h-5 w-5" aria-hidden />
       </span>
       <div>
-        <p className="font-semibold text-slate-800">{title}</p>
-        <p className="mt-1 text-slate-500">{message ?? "Check your connection and try again."}</p>
+        <p className={`font-semibold ${dark ? "text-slate-100" : "text-slate-800"}`}>{title}</p>
+        <p className={`mt-1 ${dark ? "text-slate-300" : "text-slate-500"}`}>
+          {message ?? "Check your connection and try again."}
+        </p>
       </div>
       {onRetry && (
         <button type="button" onClick={onRetry} disabled={retrying} className={btnSecondary}>

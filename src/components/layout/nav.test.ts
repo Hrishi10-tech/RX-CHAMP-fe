@@ -29,6 +29,7 @@ describe("navFor", () => {
       "Sign-out keys",
       "Settings",
       "Instructions",
+      "Profile",
     ]);
   });
 
@@ -45,6 +46,7 @@ describe("navFor", () => {
       "Team management",
       "Team breaks",
       "Instructions",
+      "Profile",
     ]);
   });
 
@@ -76,6 +78,7 @@ describe("navFor", () => {
       "Calendar",
       "Reports",
       "Instructions",
+      "Profile",
     ]);
   });
 
@@ -92,6 +95,7 @@ describe("navFor", () => {
       "Calendar",
       "Reports",
       "Instructions",
+      "Profile",
     ]);
   });
 
