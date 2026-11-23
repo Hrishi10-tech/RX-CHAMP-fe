@@ -93,6 +93,27 @@ function StatusCell({ person }: { person: TeamPerson }) {
             : `on leave: ${person.leave.label.toLowerCase()}, ${person.leave.categories}`}
         </span>
       )}
+      {(person.wfhDays ?? 0) > 0 && (
+        <span className="text-xs font-medium text-[rgb(34_34_204)]">
+          {(person.wfhDays ?? 0) >= 1 ? "from home" : "from home, half day"}
+        </span>
+      )}
+      {person.attendance === "BIOMETRIC" && (
+        <span
+          className="text-xs font-medium text-slate-600"
+          title="Their day comes from the biometric device"
+        >
+          biometric
+        </span>
+      )}
+      {person.noCheckout && (
+        <span
+          className="text-xs font-medium text-amber-700"
+          title="No check-out was recorded; the day was closed at the last punch"
+        >
+          no check-out
+        </span>
+      )}
       {person.lateStartMin > 0 && (
         <span className="text-xs font-medium text-orange-600">
           started {formatDuration(person.lateStartMin * 60)} late

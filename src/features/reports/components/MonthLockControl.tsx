@@ -92,7 +92,12 @@ export function MonthLockControl({ month }: { month: string }) {
       });
     } catch (err) {
       const code = errorCode(err);
-      if (code === "PENDING_APPROVALS" || code === "OPEN_SESSIONS" || code === "PENDING_LEAVE") {
+      if (
+        code === "PENDING_APPROVALS" ||
+        code === "OPEN_SESSIONS" ||
+        code === "PENDING_LEAVE" ||
+        code === "PENDING_WFH"
+      ) {
         const details = errorDetails(err) ?? {};
         const raw = details.count;
         const items = Array.isArray(details.items)
@@ -103,6 +108,9 @@ export function MonthLockControl({ month }: { month: string }) {
           : [];
         const leave = Array.isArray(details.leave)
           ? (details.leave as NonNullable<MonthLockBlockers["leave"]>)
+          : [];
+        const wfh = Array.isArray(details.wfh)
+          ? (details.wfh as NonNullable<MonthLockBlockers["wfh"]>)
           : [];
         setRefusal({
           count: code === "PENDING_APPROVALS" && typeof raw === "number" ? raw : null,
@@ -117,6 +125,8 @@ export function MonthLockControl({ month }: { month: string }) {
             openSessions: sessions,
             leave,
             pendingLeave: code === "PENDING_LEAVE" && typeof raw === "number" ? raw : leave.length,
+            wfh,
+            pendingWfh: code === "PENDING_WFH" && typeof raw === "number" ? raw : wfh.length,
           },
         });
         void lock.refetch();
@@ -200,7 +210,8 @@ export function MonthLockControl({ month }: { month: string }) {
         !current &&
         (lock.data.pending > 0 ||
           (lock.data.blockers?.openSessions.length ?? 0) > 0 ||
-          (lock.data.blockers?.pendingLeave ?? 0) > 0) && (
+          (lock.data.blockers?.pendingLeave ?? 0) > 0 ||
+          (lock.data.blockers?.pendingWfh ?? 0) > 0) && (
           <LockBlockers
             month={month}
             pending={lock.data.pending}

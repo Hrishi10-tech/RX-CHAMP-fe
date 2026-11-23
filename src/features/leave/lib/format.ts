@@ -1,4 +1,5 @@
 import type { ChipTone } from "@/components/ui/Chip";
+import { formatTime12 } from "@/lib/time/format";
 import type {
   LeaveCategory,
   LeaveDraft,
@@ -28,6 +29,12 @@ export const CATEGORY_TEXT: Record<LeaveCategory, { label: string; name: string;
   {
     CLSL: { label: "CL/SL", name: "Casual or sick leave", tone: "info" },
     ELPL: { label: "EL/PL", name: "Earned or privilege leave", tone: "violet" },
+    /** 3.5: charged against comp off credits, not a yearly pool. */
+    COMPOFF: {
+      label: "Comp off",
+      name: "Compensatory off for an extra day worked",
+      tone: "success",
+    },
   };
 
 export const STATUS_LOOK: Record<LeaveStatus, { label: string; tone: ChipTone }> = {
@@ -93,4 +100,17 @@ export function isUpcoming(r: LeaveRequestView, today: string): boolean {
 export function amountText(r: Pick<LeaveRequestView, "kind" | "kindLabel" | "days">): string {
   if (r.kind === "FULL_DAY") return daysText(r.days);
   return r.kindLabel.replace(" (", ", ").replace(")", "");
+}
+
+/**
+ * A part day's hours on the 12 hour clock (4.0): the API sends "09:30 to 14:00";
+ * people read "9:30 AM to 2:00 PM". Anything else is shown as it came.
+ */
+export function partTimesText(partTimes: string | null | undefined): string {
+  if (!partTimes) return "";
+  const m = /^\s*(\d{1,2}:\d{2})\s+to\s+(\d{1,2}:\d{2})\s*$/.exec(partTimes);
+  if (!m) return partTimes;
+  const from = formatTime12(m[1]);
+  const to = formatTime12(m[2]);
+  return from && to ? `${from} to ${to}` : partTimes;
 }

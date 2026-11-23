@@ -50,7 +50,13 @@ import {
 } from "@/features/reports/components/ReportShell";
 import type { PersonDaySummary, PersonMonthReport } from "@/features/reports/types";
 import { blockingApprovalsHref } from "@/features/approvals/lib/query";
-import { holidayText, lateText, leaveText } from "@/features/reports/lib/dayNotes";
+import {
+  compOffEarnedText,
+  holidayText,
+  lateText,
+  leaveText,
+  wfhText,
+} from "@/features/reports/lib/dayNotes";
 
 function personLine(r: PersonMonthReport): string {
   const p = r.person;
@@ -138,6 +144,17 @@ function DaysTable({
             {leaveText(d) && (
               <p className="text-xs font-semibold text-violet-700">{leaveText(d)}</p>
             )}
+            {wfhText(d) && (
+              <p className="text-xs font-semibold text-[rgb(34_34_204)]">{wfhText(d)}</p>
+            )}
+            {compOffEarnedText(d) && (
+              <p className="text-xs font-semibold text-emerald-700">{compOffEarnedText(d)}</p>
+            )}
+            {d.noCheckout && (
+              <p className="text-xs font-semibold text-amber-700">
+                No check-out: closed at the last punch
+              </p>
+            )}
             {worked(d) && (
               <p className="text-xs text-slate-600">
                 {d.startedAt
@@ -223,6 +240,16 @@ function DaysTable({
                       {leaveText(d)}
                     </span>
                   )}
+                  {wfhText(d) && (
+                    <span className="mt-1 block max-w-[14rem] text-xs font-semibold text-[rgb(34_34_204)]">
+                      {wfhText(d)}
+                    </span>
+                  )}
+                  {compOffEarnedText(d) && (
+                    <span className="mt-1 block text-xs font-semibold text-emerald-700">
+                      {compOffEarnedText(d)}
+                    </span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-slate-700">
                   {d.startedAt
@@ -234,7 +261,11 @@ function DaysTable({
                     </span>
                   )}
                   {d.autoClosed && (
-                    <span className="block text-xs text-slate-500">closed automatically</span>
+                    <span className="block text-xs text-slate-500">
+                      {d.noCheckout
+                        ? "no check-out: closed at the last punch"
+                        : "closed automatically"}
+                    </span>
                   )}
                   {d.extended && (
                     <span className="block text-xs font-semibold text-indigo-700">
@@ -534,6 +565,32 @@ export function PersonMonthView({
             label="Leave"
             value={`${t.leaveDays} ${t.leaveDays === 1 || (t.leaveDays ?? 0) < 1 ? "day" : "days"}`}
             sub={`${t.clslDays ?? 0} CL/SL · ${t.elplDays ?? 0} EL/PL · ${formatDuration(t.leaveSec ?? 0)} paid as leave`}
+          />
+        )}
+        {((t.wfhDays ?? 0) > 0 || (t.wfhOverSec ?? 0) > 0) && (
+          <Kpi
+            label="Work from home"
+            value={`${t.wfhDays ?? 0} ${t.wfhDays === 1 || (t.wfhDays ?? 0) < 1 ? "day" : "days"}`}
+            sub={
+              (t.wfhOverSec ?? 0) > 0
+                ? `${formatDuration(t.wfhOverSec ?? 0)} at home over the cap, not counted`
+                : "Time from home counted within the cap"
+            }
+          />
+        )}
+        {((t.compOffDays ?? 0) > 0 || (t.compOffEarnedDays ?? 0) > 0) && (
+          <Kpi
+            label="Comp off"
+            value={`${t.compOffDays ?? 0} taken`}
+            sub={`${t.compOffEarnedDays ?? 0} ${t.compOffEarnedDays === 1 ? "day" : "days"} earned for extra days worked this month`}
+          />
+        )}
+        {(t.noCheckoutDays ?? 0) > 0 && (
+          <Kpi
+            label="No check-out"
+            value={`${t.noCheckoutDays} ${t.noCheckoutDays === 1 ? "day" : "days"}`}
+            tone="warning"
+            sub="Biometric days closed at the last punch; the organisation admin can add the missing punch"
           />
         )}
         {typeof t.paidSec === "number" && (

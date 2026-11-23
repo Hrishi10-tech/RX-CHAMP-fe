@@ -65,7 +65,7 @@ export function RequestsPanel() {
   );
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
       <section className={cardBase} aria-labelledby="leave-requests">
         <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
           <h2 id="leave-requests" className="text-sm font-bold text-slate-900">
@@ -97,9 +97,10 @@ export function RequestsPanel() {
             value={category}
             onChange={setCategory}
             tabs={[
-              { value: "ALL", label: "Both" },
+              { value: "ALL", label: "Every type" },
               { value: "CLSL", label: "CL/SL" },
               { value: "ELPL", label: "EL/PL" },
+              { value: "COMPOFF", label: "Comp off" },
             ]}
           />
         </div>

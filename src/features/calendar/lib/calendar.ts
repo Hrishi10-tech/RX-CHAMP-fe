@@ -2,7 +2,13 @@ import type {
   CalendarDayCell,
   CalendarMonthGrid,
   CalendarOverride,
+  CalendarSource,
+  CalendarView,
+  SaturdayRule,
   WeekPatternPeriod,
+  WorkWeekBody,
+  WorkWeekInput,
+  WorkWeekView,
 } from "@/features/calendar/types";
 
 /** SPEC 2.6: Monday to Saturday unless the organisation says otherwise. */
@@ -119,14 +125,24 @@ export function patternText(days: number[]): string {
   return sorted.map((d) => short[d - 1]).join(", ");
 }
 
-/** `isWorkingDay(org, date) = override?.isWorking ?? weekPattern.includes(isoWeekday(date))`. */
+/** A day set on the calendar for some departments only (3.5, a department holiday). */
+export function isForDepartments(o: CalendarOverride | null | undefined): boolean {
+  return Boolean(o?.departmentIds?.length);
+}
+
+/**
+ * `isWorkingDay(org, date) = override?.isWorking ?? weekPattern.includes(isoWeekday(date))`.
+ * A day set for some departments only is not the organisation's answer (3.5).
+ */
 export function isWorkingDay(
   date: string,
   weekPattern: PatternSource,
   overrides: Map<string, CalendarOverride>,
 ): boolean {
   const o = overrides.get(date);
-  return o ? o.isWorking : patternOf(weekPattern, date).includes(isoWeekday(date));
+  return o && !isForDepartments(o)
+    ? o.isWorking
+    : patternOf(weekPattern, date).includes(isoWeekday(date));
 }
 
 export function overrideMap(overrides: CalendarOverride[]): Map<string, CalendarOverride> {
@@ -161,6 +177,8 @@ export function buildYear(
         label: o?.label ?? null,
         overridden: Boolean(o),
         isToday: date === today,
+        departmentIds: o?.departmentIds?.length ? [...o.departmentIds] : [],
+        setWorking: o ? o.isWorking : null,
       });
     }
     while (cells.length % 7 !== 0) cells.push(null);
@@ -186,16 +204,242 @@ export function holidaysOf(overrides: CalendarOverride[], year: number): Calenda
 export function dayChange(
   date: string,
   weekPattern: number[],
-  choice: { isWorking: boolean; label: string },
-): { kind: "put"; isWorking: boolean; label: string | null } | { kind: "delete" } {
+  choice: { isWorking: boolean; label: string; departmentIds?: string[] },
+):
+  | { kind: "put"; isWorking: boolean; label: string | null; departmentIds: string[] }
+  | { kind: "delete" } {
   const label = choice.label.trim();
+  const departmentIds = [...new Set(choice.departmentIds ?? [])];
   const patternWorking = weekPattern.includes(isoWeekday(date));
-  if (choice.isWorking === patternWorking && !label) return { kind: "delete" };
-  return { kind: "put", isWorking: choice.isWorking, label: label || null };
+  // A day for some departments only is never "the pattern": their own weeks may differ.
+  if (choice.isWorking === patternWorking && !label && !departmentIds.length) {
+    return { kind: "delete" };
+  }
+  return { kind: "put", isWorking: choice.isWorking, label: label || null, departmentIds };
 }
 
 /** Toggles one ISO weekday in a pattern, keeping it sorted and never empty. */
 export function toggleWeekday(pattern: number[], day: number): number[] {
   const next = pattern.includes(day) ? pattern.filter((d) => d !== day) : [...pattern, day];
   return next.length ? next.sort((a, b) => a - b) : pattern;
+}
+
+/** "Sales, Support": the names of the departments a day is for (unknown ids are counted). */
+export function departmentsText(ids: string[], names: Map<string, string>): string {
+  const known = ids.map((id) => names.get(id)).filter((n): n is string => Boolean(n));
+  const missing = ids.length - known.length;
+  if (!known.length)
+    return ids.length ? `${ids.length} department${ids.length === 1 ? "" : "s"}` : "";
+  return missing ? `${known.join(", ")} and ${missing} more` : known.join(", ");
+}
+
+// ---- 3.5: Saturday rules and weeks of their own ---------------------------------------
+
+/** The API's labels (calendar.rules.ts `SATURDAY_RULE_LABEL`), the same words as 3.5. */
+export const SATURDAY_RULE_LABEL: Record<SaturdayRule, string> = {
+  EVERY: "Every Saturday is a working day",
+  NONE: "Every Saturday is off",
+  OFF_2_4: "2nd and 4th Saturdays off",
+  OFF_1_3: "1st and 3rd Saturdays off",
+  OFF_1_3_5: "1st, 3rd and 5th Saturdays off",
+  ALTERNATE: "Alternate Saturdays (every other week)",
+};
+
+export const SATURDAY_RULES = Object.keys(SATURDAY_RULE_LABEL) as SaturdayRule[];
+
+export const SATURDAY_OPTIONS: { value: SaturdayRule; label: string }[] = SATURDAY_RULES.map(
+  (value) => ({ value, label: SATURDAY_RULE_LABEL[value] }),
+);
+
+export function isSaturdayRule(value: unknown): value is SaturdayRule {
+  return typeof value === "string" && (SATURDAY_RULES as string[]).includes(value);
+}
+
+/** "Every Saturday is off" after a semicolon: "every Saturday is off" (the weekday keeps its capital). */
+export function lowerFirst(text: string): string {
+  return text ? text[0].toLowerCase() + text.slice(1) : text;
+}
+
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Which week of the month a Saturday falls in (1 to 5). */
+export function saturdayOrdinal(date: string): number {
+  return Math.floor((Number(date.slice(8, 10)) - 1) / 7) + 1;
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+}
+
+/** Whether a Saturday is worked under a rule (the API's `saturdayWorked`). */
+export function saturdayWorked(rule: SaturdayRule, anchor: string | null, date: string): boolean {
+  switch (rule) {
+    case "EVERY":
+      return true;
+    case "NONE":
+      return false;
+    case "OFF_2_4":
+      return ![2, 4].includes(saturdayOrdinal(date));
+    case "OFF_1_3":
+      return ![1, 3].includes(saturdayOrdinal(date));
+    case "OFF_1_3_5":
+      return ![1, 3, 5].includes(saturdayOrdinal(date));
+    case "ALTERNATE":
+      if (!anchor || !DATE_KEY.test(anchor)) return true;
+      return Math.abs(Math.round(daysBetween(anchor, date) / 7)) % 2 === 0;
+  }
+}
+
+/**
+ * The organisation's week on each day: the pattern in effect that day, without
+ * Saturday on a Saturday its rule takes off (3.5). Feeds `buildYear`.
+ */
+export function orgPatternSource(
+  view: Pick<CalendarView, "weekPattern" | "patternHistory" | "saturdays" | "saturdayAnchor">,
+): (date: string) => number[] {
+  return (date) => {
+    const days = patternOn(date, view.weekPattern, view.patternHistory);
+    if (
+      isoWeekday(date) === 6 &&
+      days.includes(6) &&
+      !saturdayWorked(view.saturdays, view.saturdayAnchor, date)
+    ) {
+      return days.filter((d) => d !== 6);
+    }
+    return days;
+  };
+}
+
+/** "Mon to Fri", "Mon, Wed, Fri", "Mon to Fri and Sun": the weekdays other than Saturday. */
+export function weekdaysText(days: number[]): string {
+  const short = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const set = [...new Set(days.filter((d) => d >= 1 && d <= 7 && d !== 6))].sort((a, b) => a - b);
+  if (!set.length) return "No weekdays";
+  const runs: number[][] = [];
+  for (const d of set) {
+    const last = runs[runs.length - 1];
+    if (last && d === last[last.length - 1] + 1) last.push(d);
+    else runs.push([d]);
+  }
+  const parts = runs.map((r) =>
+    r.length >= 3
+      ? `${short[r[0] - 1]} to ${short[r[r.length - 1] - 1]}`
+      : r.map((d) => short[d - 1]).join(", "),
+  );
+  return parts.length > 1
+    ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`
+    : parts[0];
+}
+
+/** The Saturday rule that really applies: every Saturday off when the week has no Saturday. */
+export function effectiveSaturdays(week: {
+  workDays: number[];
+  saturdays: SaturdayRule;
+}): SaturdayRule {
+  return week.workDays.includes(6) ? week.saturdays : "NONE";
+}
+
+/** "Mon to Fri; 2nd and 4th Saturdays off": a week with its Saturday rule, in a line. */
+export function workWeekText(week: { workDays: number[]; saturdays: SaturdayRule }): string {
+  return `${weekdaysText(week.workDays)}; ${lowerFirst(SATURDAY_RULE_LABEL[effectiveSaturdays(week)])}`;
+}
+
+/** The form's starting point for a saved week (Saturday folded into the rule). */
+export function workWeekInputOf(week: WorkWeekView | null | undefined): WorkWeekInput | null {
+  if (!week) return null;
+  const saturdays = effectiveSaturdays(week);
+  return {
+    workDays: week.workDays.filter((d) => d !== 6),
+    saturdays,
+    ...(saturdays === "ALTERNATE" && week.saturdayAnchor
+      ? { saturdayAnchor: week.saturdayAnchor }
+      : {}),
+  };
+}
+
+/**
+ * What `PUT /calendar/departments` and `PUT /calendar/people` take. The API works
+ * a Saturday only when the week has 6 and the rule allows it, so Saturday joins
+ * the week unless the rule is "every Saturday is off"; the anchor goes only with
+ * ALTERNATE.
+ */
+export function workWeekBody(ids: string[], input: WorkWeekInput): WorkWeekBody {
+  const weekdays = [
+    ...new Set(input.workDays.filter((d) => Number.isInteger(d) && d >= 1 && d <= 7 && d !== 6)),
+  ];
+  const workDays = (input.saturdays === "NONE" ? weekdays : [...weekdays, 6]).sort((a, b) => a - b);
+  return {
+    ids: [...new Set(ids)],
+    workDays,
+    saturdays: input.saturdays,
+    ...(input.saturdays === "ALTERNATE" && input.saturdayAnchor
+      ? { saturdayAnchor: input.saturdayAnchor }
+      : {}),
+  };
+}
+
+/** What `PUT /calendar/saturdays` takes. */
+export function saturdaysBody(
+  rule: SaturdayRule,
+  anchor?: string | null,
+): { saturdays: SaturdayRule; saturdayAnchor?: string } {
+  return rule === "ALTERNATE" && anchor
+    ? { saturdays: rule, saturdayAnchor: anchor }
+    : { saturdays: rule };
+}
+
+/** A problem with a Saturday rule before it is sent (ALTERNATE needs a worked Saturday). */
+export function saturdayAnchorProblem(
+  rule: SaturdayRule,
+  anchor: string | null | undefined,
+): string | null {
+  if (rule !== "ALTERNATE") return null;
+  return anchor && DATE_KEY.test(anchor) && isoWeekday(anchor) === 6
+    ? null
+    : "Pick a Saturday that is worked.";
+}
+
+/** The API's words for what decides a person's day (calendar.rules.ts). */
+export const CALENDAR_SOURCE_LABEL: Record<CalendarSource, string> = {
+  OVERRIDE: "A day set on the organisation calendar",
+  PERSON: "Their own calendar",
+  DEPARTMENT: "Their department's calendar",
+  ORGANISATION: "The organisation's week",
+};
+
+export function isCalendarSource(value: unknown): value is CalendarSource {
+  return typeof value === "string" && value in CALENDAR_SOURCE_LABEL;
+}
+
+/**
+ * What decides most of a person's days, as the API's person year says: their own
+ * week, else their department's, else the organisation's.
+ */
+export function personSource(
+  who: { id: string; departmentId?: string | null },
+  view: Pick<CalendarView, "people" | "departments">,
+): { source: Exclude<CalendarSource, "OVERRIDE">; week: WorkWeekView | null } {
+  const own = view.people.find((p) => p.id === who.id);
+  if (own) return { source: "PERSON", week: own };
+  const dept = who.departmentId ? view.departments.find((d) => d.id === who.departmentId) : null;
+  if (dept) return { source: "DEPARTMENT", week: dept };
+  return { source: "ORGANISATION", week: null };
+}
+
+/** The organisation's week in a line: "Mon to Sat; 2nd and 4th Saturdays off". */
+export function orgWeekText(view: Pick<CalendarView, "weekPattern" | "saturdays">): string {
+  if (!view.weekPattern.includes(6)) return patternText(view.weekPattern);
+  return workWeekText({ workDays: view.weekPattern, saturdays: view.saturdays });
+}
+
+/** Days of a person's year by what decides them, for the preview's tally. */
+export function countBySource(days: { source: CalendarSource }[]): Record<CalendarSource, number> {
+  const out: Record<CalendarSource, number> = {
+    OVERRIDE: 0,
+    PERSON: 0,
+    DEPARTMENT: 0,
+    ORGANISATION: 0,
+  };
+  for (const d of days) out[d.source] += 1;
+  return out;
 }

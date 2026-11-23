@@ -16,7 +16,8 @@ import { useChatNotifier } from "@/features/chat/hooks/useChatNotifier";
 import { useApprovalsSummary } from "@/features/approvals/hooks/useApprovals";
 import { OrgSwitcher } from "@/features/organisations/components/OrgSwitcher";
 import { PickOrganisation } from "@/features/organisations/components/PickOrganisation";
-import { useLeaveSummary } from "@/features/leave/hooks/useLeave";
+import { useCompOffSummary, useLeaveSummary } from "@/features/leave/hooks/useLeave";
+import { useWfhSummary } from "@/features/wfh/hooks/useWfh";
 import { useArchiveNudge } from "@/features/screenshots/hooks/useArchiveNudge";
 import { useAppSelector } from "@/store/hooks";
 import {
@@ -37,6 +38,7 @@ import {
   APPROVALS_HREF,
   CHAT_HREF,
   LEAVE_HREF,
+  WFH_HREF,
   activeHrefFor,
   navFor,
 } from "@/components/layout/nav";
@@ -107,9 +109,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Admin and the Super Manager get the combined count.
   const { data: approvalSummary } = useApprovalsSummary(live && approver);
   const approvalsWaiting = Math.max(0, approvalSummary?.pending ?? 0);
-  // 3.4: leave requests waiting on the caller (the organisation in view).
+  // 3.4: leave requests that wait on the caller (the organisation in view); 3.5: comp off
+  // claims on the same page, and work-from-home requests.
   const { data: leaveSummary } = useLeaveSummary(undefined, live && approver);
-  const leaveWaiting = Math.max(0, leaveSummary?.needsMe ?? 0);
+  const { data: compOffSummary } = useCompOffSummary(undefined, live && approver);
+  const leaveWaiting =
+    Math.max(0, leaveSummary?.needsMe ?? 0) + Math.max(0, compOffSummary?.needsMe ?? 0);
+  const { data: wfhSummary } = useWfhSummary(undefined, live && approver);
+  const wfhWaiting = Math.max(0, wfhSummary?.needsMe ?? 0);
   const approvalsOverdue = Math.max(0, approvalSummary?.overdue ?? 0);
   // 3.2: once a day, remind a Super Admin which month's screenshots to archive and delete.
   // 3.2, per organisation in 4.0: the organisation's admins, inside one organisation.
@@ -204,7 +211,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ? {
           count: leaveWaiting,
           tone: "info",
-          label: `${leaveWaiting} leave ${leaveWaiting === 1 ? "request waits" : "requests wait"} on you`,
+          label: `${leaveWaiting} leave ${leaveWaiting === 1 ? "request or comp off claim waits" : "requests or comp off claims wait"} on you`,
+        }
+      : undefined,
+    [WFH_HREF]: approver
+      ? {
+          count: wfhWaiting,
+          tone: "info",
+          label: `${wfhWaiting} work-from-home ${wfhWaiting === 1 ? "request waits" : "requests wait"} on you`,
         }
       : undefined,
     [APPROVALS_HREF]: approver
@@ -303,7 +317,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
             >
               <Menu className="h-5 w-5" />
-              {approvalsWaiting + chatUnread + leaveWaiting > 0 && (
+              {approvalsWaiting + chatUnread + leaveWaiting + wfhWaiting > 0 && (
                 <span
                   aria-hidden
                   className={`absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-slate-100 ${

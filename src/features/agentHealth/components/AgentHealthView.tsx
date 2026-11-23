@@ -124,6 +124,16 @@ function Tiles({
 }
 
 function Flags({ row }: { row: AgentHealthRow }) {
+  if (row.attendance === "BIOMETRIC") {
+    return (
+      <Chip
+        tone="neutral"
+        title="Their day comes from the biometric device; no desktop agent is expected"
+      >
+        Biometric
+      </Chip>
+    );
+  }
   if (row.flags.length === 0) {
     return (
       <Chip tone="success" dot>
@@ -146,7 +156,11 @@ function Flags({ row }: { row: AgentHealthRow }) {
 }
 
 function AgentCell({ row, now }: { row: AgentHealthRow; now: number }) {
-  const s = STATUS_COPY[row.agent.status];
+  // A biometric person needs no agent: a never-seen one is not a problem (3.5).
+  const s =
+    row.attendance === "BIOMETRIC" && row.agent.status === "NEVER"
+      ? { label: "Not needed", tone: "neutral" as const }
+      : STATUS_COPY[row.agent.status];
   const seen = row.agent.lastContactAt ?? row.agent.lastSampleAt;
   return (
     <div className="space-y-1">

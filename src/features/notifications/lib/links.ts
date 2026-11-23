@@ -7,6 +7,10 @@ export const CALENDAR_PAGE = "/dashboard/calendar";
 /** 3.4 */
 export const LEAVE_PAGE = "/dashboard/leave";
 export const LEAVE_REQUESTS_PAGE = "/dashboard/leave?tab=requests";
+/** 3.5 */
+export const WFH_PAGE = "/dashboard/wfh";
+export const WFH_REQUESTS_PAGE = "/dashboard/wfh?tab=requests";
+export const COMPOFF_PAGE = "/dashboard/leave?tab=compoff";
 
 /** @deprecated 3.1 name, kept for older imports. */
 export const APPROVALS_PAGE_31 = APPROVALS_PAGE;
@@ -39,6 +43,18 @@ export const NOTIFICATION_TYPES_40 = {
   LEAVE_REVOKED: "LEAVE_REVOKED",
   LEAVE_ADJUSTED: "LEAVE_ADJUSTED",
   LEAVE_UPDATED: "LEAVE_UPDATED",
+  /** 3.5: work from home, comp off, biometric. */
+  WFH_REQUESTED: "WFH_REQUESTED",
+  WFH_DECIDED: "WFH_DECIDED",
+  WFH_CANCELLED: "WFH_CANCELLED",
+  WFH_REVOKED: "WFH_REVOKED",
+  WFH_SCHEDULED: "WFH_SCHEDULED",
+  WFH_AUTO_ENDED: "WFH_AUTO_ENDED",
+  COMPOFF_CLAIMED: "COMPOFF_CLAIMED",
+  COMPOFF_DECIDED: "COMPOFF_DECIDED",
+  COMPOFF_CREDITED: "COMPOFF_CREDITED",
+  COMPOFF_EXPIRING: "COMPOFF_EXPIRING",
+  BIOMETRIC_NO_CHECKOUT: "BIOMETRIC_NO_CHECKOUT",
 } as const;
 
 const T = NOTIFICATION_TYPES_31;
@@ -72,6 +88,17 @@ const LINKS: Record<string, string> = {
   [T4.LEAVE_REVOKED]: LEAVE_PAGE,
   [T4.LEAVE_ADJUSTED]: LEAVE_PAGE,
   [T4.LEAVE_UPDATED]: LEAVE_PAGE,
+  // 3.5: requests, cancellations and claims go to the approver's queue; decisions to the page.
+  // WFH_AUTO_ENDED and BIOMETRIC_NO_CHECKOUT are about the reader's own day, read in the app.
+  [T4.WFH_REQUESTED]: WFH_REQUESTS_PAGE,
+  [T4.WFH_CANCELLED]: WFH_REQUESTS_PAGE,
+  [T4.WFH_DECIDED]: WFH_PAGE,
+  [T4.WFH_REVOKED]: WFH_PAGE,
+  [T4.WFH_SCHEDULED]: WFH_PAGE,
+  [T4.COMPOFF_CLAIMED]: COMPOFF_PAGE,
+  [T4.COMPOFF_DECIDED]: COMPOFF_PAGE,
+  [T4.COMPOFF_CREDITED]: COMPOFF_PAGE,
+  [T4.COMPOFF_EXPIRING]: COMPOFF_PAGE,
 };
 
 /** The page a notification opens, or null for types that have nowhere to go. */

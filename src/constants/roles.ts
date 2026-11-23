@@ -181,6 +181,10 @@ export const routeRoles: Record<string, Role[]> = {
   "/dashboard/screenshots/archives": ADMINS,
   // 3.4: approvers see requests and balances; the policy is the admins' (the page decides).
   "/dashboard/leave": PORTAL,
+  // 3.5: work from home (requests, schedules; the policy is the admins', the page decides);
+  // Attendance (biometric) for the organisation's admins, read by the Super Manager.
+  "/dashboard/wfh": PORTAL,
+  "/dashboard/attendance": OVERSEERS,
 };
 
 /**
@@ -201,6 +205,8 @@ export const ORG_FREE_ROUTES = [
   "/dashboard/approvals",
   // 3.4: leave requests and balances of every organisation, each row tagged.
   "/dashboard/leave",
+  // 3.5: work-from-home requests and schedules likewise.
+  "/dashboard/wfh",
   "/dashboard/breaks/team",
   "/dashboard/chat",
   "/dashboard/instructions",

@@ -8,7 +8,9 @@ import {
   Clock3,
   Coffee,
   FileChartColumn,
+  Fingerprint,
   HeartPulse,
+  House,
   KeyRound,
   LayoutDashboard,
   MessageSquare,
@@ -28,6 +30,9 @@ import type { NavSection } from "./types";
 export const APPROVALS_HREF = "/dashboard/approvals";
 /** 3.4 */
 export const LEAVE_HREF = "/dashboard/leave";
+/** 3.5 */
+export const WFH_HREF = "/dashboard/wfh";
+export const ATTENDANCE_HREF = "/dashboard/attendance";
 export const CHAT_HREF = "/dashboard/chat";
 export const AGENT_HEALTH_HREF = "/dashboard/agent-health";
 export const FOCUS_ADJUSTMENTS_HREF = "/dashboard/focus-adjustments";
@@ -56,6 +61,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: APPROVALS_HREF, label: "Approvals", icon: ClipboardCheck },
       // 3.4: requests, balances and the policy.
       { href: LEAVE_HREF, label: "Leave", icon: CalendarHeart },
+      // 3.5: requests, schedules and the policy.
+      { href: WFH_HREF, label: "Work from home", icon: House },
       { href: CHAT_HREF, label: "Messages", icon: MessageSquare },
     ],
   },
@@ -73,6 +80,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard/shifts", label: "Shifts", icon: Clock3 },
       { href: "/dashboard/shifts/assign", label: "Assign shifts", icon: CalendarClock },
       { href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
+      // 3.5: biometric attendance (the organisation's integration).
+      { href: ATTENDANCE_HREF, label: "Attendance", icon: Fingerprint },
       { href: "/dashboard/tracking", label: "Input tracking", icon: MousePointerClick },
     ],
   },

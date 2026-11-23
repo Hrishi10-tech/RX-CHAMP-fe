@@ -135,6 +135,16 @@ export function BalancesPanel() {
                     </p>
                     <Pool b={r.elpl} own={r.quota.elplDaysPerYear !== null} />
                   </div>
+                  {r.compOff && (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                        Comp off
+                      </p>
+                      <p className="font-semibold tabular-nums text-slate-900">
+                        {daysText(r.compOff.availableDays)}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 {canAdjust && (
                   <div className="mt-3 flex gap-2">
@@ -160,6 +170,7 @@ export function BalancesPanel() {
                   <th className="px-5 py-2.5">Person</th>
                   <th className="px-3 py-2.5">CL/SL left</th>
                   <th className="px-3 py-2.5">EL/PL left</th>
+                  <th className="px-3 py-2.5">Comp off</th>
                   <th className="px-3 py-2.5">Taken</th>
                   <th className="px-3 py-2.5">Coming up</th>
                   <th className="px-5 py-2.5 text-right">
@@ -189,7 +200,23 @@ export function BalancesPanel() {
                       <Pool b={r.elpl} own={r.quota.elplDaysPerYear !== null} />
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 tabular-nums text-slate-700">
-                      {daysText(r.clsl.takenDays + r.elpl.takenDays)}
+                      {r.compOff ? (
+                        <>
+                          <span className="font-semibold text-slate-900">
+                            {daysText(r.compOff.availableDays)}
+                          </span>
+                          {r.compOff.claimsWaitingDays > 0 && (
+                            <span className="block text-xs text-amber-700">
+                              {daysText(r.compOff.claimsWaitingDays)} claimed
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-slate-400">–</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3 tabular-nums text-slate-700">
+                      {daysText(r.clsl.takenDays + r.elpl.takenDays + (r.compOff?.takenDays ?? 0))}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 tabular-nums text-slate-700">
                       {r.upcomingDays ? daysText(r.upcomingDays) : "None"}

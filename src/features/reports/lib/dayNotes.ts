@@ -1,3 +1,4 @@
+import { formatMinutesShort } from "@/lib/format/duration";
 import type { PersonDaySummary } from "@/features/reports/types";
 
 /** "Holiday: Diwali", "Holiday", "Weekly day off", or null on a working day (3.2). */
@@ -27,6 +28,33 @@ export function leaveText(d: Pick<PersonDaySummary, "leave">): string | null {
   return l.pendingDays > 0 ? "Leave asked for, waiting for a decision" : null;
 }
 
+/** "From home, full day (9h 00m counted)", "From home, half day"; null without any (3.5). */
+export function wfhText(
+  d: Pick<PersonDaySummary, "wfhDays" | "wfhSec" | "wfhOverSec">,
+): string | null {
+  if (!d.wfhDays) return null;
+  const what =
+    d.wfhDays >= 1
+      ? d.wfhDays === 1
+        ? "full day"
+        : `${d.wfhDays} days`
+      : d.wfhDays === 0.5
+        ? "half day"
+        : d.wfhDays === 0.25
+          ? "quarter day"
+          : `${d.wfhDays} day`;
+  const over = d.wfhOverSec
+    ? `, ${Math.round(d.wfhOverSec / 60)} min over the cap not counted`
+    : "";
+  return `From home, ${what}${over}`;
+}
+
+/** "Comp off earned: 1 day" (3.5); null when none. */
+export function compOffEarnedText(d: Pick<PersonDaySummary, "compOffEarnedDays">): string | null {
+  if (!d.compOffEarnedDays) return null;
+  return `Comp off earned: ${d.compOffEarnedDays} ${d.compOffEarnedDays === 1 || d.compOffEarnedDays < 1 ? "day" : "days"}`;
+}
+
 /** Minutes late, or 0. */
 export function lateMinutes(d: Pick<PersonDaySummary, "lateStart">): number {
   return d.lateStart && d.lateStart.minutes > 0 ? d.lateStart.minutes : 0;
@@ -43,7 +71,8 @@ export function lateText(d: Pick<PersonDaySummary, "lateStart">): string | null 
   const min = lateMinutes(d);
   if (!min) return null;
   const reason = lateReason(d);
-  return reason ? `${min} min late: ${reason}` : `${min} min late, no reason given`;
+  const t = formatMinutesShort(min);
+  return reason ? `${t} late: ${reason}` : `${t} late, no reason given`;
 }
 
 export interface InputShare {

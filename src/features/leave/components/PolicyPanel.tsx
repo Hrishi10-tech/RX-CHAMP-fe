@@ -17,7 +17,10 @@ import {
 } from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import { formatDayWithWeekday } from "@/lib/time/businessTime";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
 import { useLeavePolicy, useSaveLeavePolicy } from "@/features/leave/hooks/useLeave";
+import { policyLockNote } from "@/features/leave/lib/compoff";
 import type { ApproverRoute, LeavePolicyPatch, LeavePolicyView } from "@/features/leave/types";
 
 interface Form {
@@ -30,10 +33,32 @@ interface Form {
   clslBackdateDays: string;
   approver: ApproverRoute;
   prorateJoiners: boolean;
+  // 3.5: comp off
+  compOffEnabled: boolean;
+  compOffValidityDays: string;
+  compOffFullDayPct: string;
+  compOffHalfDayPct: string;
+  compOffClaimWithinDays: string;
+  compOffApprover: ApproverRoute;
+  compOffCountLeaveDays: boolean;
+  compOffCapped: boolean;
+  compOffMaxBalanceDays: string;
 }
 
 function formOf(p: LeavePolicyView): Form {
   return {
+    compOffEnabled: p.compOffEnabled ?? true,
+    compOffValidityDays: String(p.compOffValidityDays ?? 60),
+    compOffFullDayPct: String(p.compOffFullDayPct ?? 80),
+    compOffHalfDayPct: String(p.compOffHalfDayPct ?? 40),
+    compOffClaimWithinDays: String(p.compOffClaimWithinDays ?? 30),
+    compOffApprover: p.compOffApprover ?? "MANAGER",
+    compOffCountLeaveDays: p.compOffCountLeaveDays ?? true,
+    compOffCapped: (p.compOffMaxBalanceDays ?? null) !== null,
+    compOffMaxBalanceDays:
+      p.compOffMaxBalanceDays === null || p.compOffMaxBalanceDays === undefined
+        ? "5"
+        : String(p.compOffMaxBalanceDays),
     enabled: p.enabled,
     clslDaysPerYear: String(p.clslDaysPerYear),
     elplDaysPerYear: String(p.elplDaysPerYear),
@@ -47,8 +72,9 @@ function formOf(p: LeavePolicyView): Form {
 }
 
 /**
- * The leave policy (3.4): the Super Admin and the Super Manager set it; who
- * approves is the Super Admin's. A change to the yearly days, the pro rata rule
+ * The leave policy (3.4), comp off included (3.5). 4.0: one per organisation; its
+ * admin (or a Super Admin acting in it) changes it, who approves included; the
+ * Super Manager and Managers read it. A change to the yearly days, the pro rata rule
  * or the carry-over cap applies to years not started yet, and to this year only
  * when asked.
  */
@@ -58,6 +84,8 @@ export function PolicyPanel() {
   const [form, setForm] = useState<Form | null>(null);
   const [applyNow, setApplyNow] = useState(false);
   const [problem, setProblem] = useState<{ field?: string; message: string } | null>(null);
+  const { role } = useSession();
+  const { mixed } = useOrgsInView();
 
   useEffect(() => {
     if (q.data) setForm(formOf(q.data));
@@ -84,6 +112,24 @@ export function PolicyPanel() {
     patch.clslBackdateDays = num(form.clslBackdateDays);
   if (form.approver !== p.approver) patch.approver = form.approver;
   if (form.prorateJoiners !== p.prorateJoiners) patch.prorateJoiners = form.prorateJoiners;
+  // 3.5: comp off, only on a server that has it.
+  const hasCompOff = p.compOffEnabled !== undefined;
+  if (hasCompOff) {
+    if (form.compOffEnabled !== p.compOffEnabled) patch.compOffEnabled = form.compOffEnabled;
+    if (num(form.compOffValidityDays) !== p.compOffValidityDays)
+      patch.compOffValidityDays = num(form.compOffValidityDays);
+    if (num(form.compOffFullDayPct) !== p.compOffFullDayPct)
+      patch.compOffFullDayPct = num(form.compOffFullDayPct);
+    if (num(form.compOffHalfDayPct) !== p.compOffHalfDayPct)
+      patch.compOffHalfDayPct = num(form.compOffHalfDayPct);
+    if (num(form.compOffClaimWithinDays) !== p.compOffClaimWithinDays)
+      patch.compOffClaimWithinDays = num(form.compOffClaimWithinDays);
+    if (form.compOffApprover !== p.compOffApprover) patch.compOffApprover = form.compOffApprover;
+    if (form.compOffCountLeaveDays !== p.compOffCountLeaveDays)
+      patch.compOffCountLeaveDays = form.compOffCountLeaveDays;
+    const coCap = form.compOffCapped ? num(form.compOffMaxBalanceDays) : null;
+    if (coCap !== (p.compOffMaxBalanceDays ?? null)) patch.compOffMaxBalanceDays = coCap;
+  }
   const dirty = Object.keys(patch).length > 0;
   const touchesYear =
     patch.clslDaysPerYear !== undefined ||
@@ -126,7 +172,12 @@ export function PolicyPanel() {
       | "elplDaysPerYear"
       | "elplCarryCapDays"
       | "elplNoticeDays"
-      | "clslBackdateDays",
+      | "clslBackdateDays"
+      | "compOffValidityDays"
+      | "compOffFullDayPct"
+      | "compOffHalfDayPct"
+      | "compOffClaimWithinDays"
+      | "compOffMaxBalanceDays",
     label: string,
     hint: string,
     step = 0.5,
@@ -161,7 +212,7 @@ export function PolicyPanel() {
           <h2 className="text-base font-bold text-slate-900">Leave policy</h2>
           <p className="text-sm text-slate-500">
             In use since {formatDayWithWeekday(p.startedOn)}.{" "}
-            {editable ? "" : "Only the Super Admin and the Super Manager change it."}
+            {policyLockNote(role, editable, mixed)}
           </p>
         </div>
         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -254,10 +305,10 @@ export function PolicyPanel() {
             {problem?.field === "approver" ? (
               problem.message
             ) : p.canRoute ? (
-              "Someone with nobody on the route goes to the Super Admins. Nobody decides their own."
+              "With nobody on the route, a request goes to the organisation admin. Nobody decides their own."
             ) : (
               <span className="inline-flex items-center gap-1">
-                <Lock className="h-3 w-3" aria-hidden /> Set by the Super Admin.
+                <Lock className="h-3 w-3" aria-hidden /> Set by the organisation admin.
               </span>
             )}
           </p>
@@ -276,6 +327,104 @@ export function PolicyPanel() {
           </label>
         </div>
       </fieldset>
+
+      {hasCompOff && (
+        <fieldset className="grid gap-4 sm:grid-cols-2">
+          <legend className="mb-2 flex w-full flex-wrap items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            <span>Comp off, for extra days worked</span>
+            <label className="flex items-center gap-2 text-sm font-semibold normal-case tracking-normal text-slate-700">
+              <input
+                type="checkbox"
+                className={checkboxBase}
+                checked={form.compOffEnabled}
+                disabled={!editable}
+                onChange={(e) => set("compOffEnabled", e.target.checked)}
+              />
+              Comp off on
+            </label>
+          </legend>
+          {numberField(
+            "compOffFullDayPct",
+            "A full day at (% of the expected time)",
+            "Worked at least this share of the shift's expected time on a weekly day off, a holiday or a day of leave.",
+            1,
+          )}
+          {numberField(
+            "compOffHalfDayPct",
+            "A half day at (%)",
+            "At least this share, below a full day. Must be less than the full day.",
+            1,
+          )}
+          {numberField(
+            "compOffValidityDays",
+            "Valid for (days after the day worked)",
+            "What is not taken by then lapses. The person is told 7 days before.",
+            1,
+          )}
+          {numberField(
+            "compOffClaimWithinDays",
+            "Claim within (days)",
+            "A day can be claimed this long after it was worked.",
+            1,
+          )}
+          <div>
+            <label htmlFor="policy-compOffApprover" className={labelBase}>
+              Who approves claims
+            </label>
+            <Select
+              id="policy-compOffApprover"
+              value={form.compOffApprover}
+              onValueChange={(v) => set("compOffApprover", v as ApproverRoute)}
+              options={p.routes.map((r) => ({ value: r.value, label: r.label }))}
+              disabled={!p.canRoute}
+              aria-label="Who approves comp off claims"
+            />
+            <p className={problem?.field === "compOffApprover" ? errorText : hintBase}>
+              {problem?.field === "compOffApprover" ? (
+                problem.message
+              ) : p.canRoute ? (
+                "Taking comp off is a leave request, decided on the leave route above."
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  <Lock className="h-3 w-3" aria-hidden /> Set by the organisation admin.
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className={checkboxBase}
+                checked={form.compOffCountLeaveDays}
+                disabled={!editable}
+                onChange={(e) => set("compOffCountLeaveDays", e.target.checked)}
+              />
+              A full day of leave that was worked anyway counts as an extra day
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className={checkboxBase}
+                checked={form.compOffCapped}
+                disabled={!editable}
+                onChange={(e) => set("compOffCapped", e.target.checked)}
+              />
+              Cap the balance
+            </label>
+            {form.compOffCapped && (
+              <div className="max-w-xs">
+                {numberField(
+                  "compOffMaxBalanceDays",
+                  "At most this many days held",
+                  "No new credit beyond it (available and waiting together).",
+                  0.5,
+                )}
+              </div>
+            )}
+          </div>
+        </fieldset>
+      )}
 
       {editable && touchesYear && (
         <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-900">

@@ -33,6 +33,12 @@ export interface TeamPerson {
   lateReason?: string | null;
   /** 3.4: leave that day, or null (absent from an older API). */
   leave?: { label: string; categories: string; full: boolean; pendingDays: number } | null;
+  /** 3.5: how the day is recorded (absent from an older API: the agent). */
+  attendance?: "AGENT" | "BIOMETRIC";
+  /** 3.5: work from home approved that day, in days (0.5 for half a day). */
+  wfhDays?: number;
+  /** 3.5: a biometric day closed at the last punch with no check-out. */
+  noCheckout?: boolean;
 }
 
 export interface TeamCounts {

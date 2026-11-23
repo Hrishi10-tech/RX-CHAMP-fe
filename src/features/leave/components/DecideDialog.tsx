@@ -16,7 +16,7 @@ import {
 import { errorCode, errorMessage } from "@/lib/api";
 import { usePresetsFor } from "@/features/settings/hooks/usePresets";
 import { useDecideLeave } from "@/features/leave/hooks/useLeave";
-import { amountText, NOTE_MAX, NOTE_MIN } from "@/features/leave/lib/format";
+import { amountText, NOTE_MAX, NOTE_MIN, partTimesText } from "@/features/leave/lib/format";
 import type { DecisionMode } from "@/features/leave/api/leave";
 import type { LeaveRequestView } from "@/features/leave/types";
 
@@ -91,7 +91,9 @@ export function DecideDialog({
     } catch (err) {
       const code = errorCode(err);
       if (code === "MONTH_LOCKED")
-        setProblem("That month is locked for payroll. A Super Admin must unlock it first.");
+        setProblem(
+          "That month is locked for payroll. The organisation admin must unlock it first.",
+        );
       else if (
         code === "NOT_ENOUGH_LEAVE" ||
         code === "ALREADY_DECIDED" ||
@@ -111,7 +113,7 @@ export function DecideDialog({
           </p>
           <p className="text-slate-600">
             {amountText(request)}
-            {request.partTimes ? ` (${request.partTimes})` : ""}
+            {request.partTimes ? ` (${partTimesText(request.partTimes)})` : ""}
           </p>
           <p className="mt-1 text-slate-500">&ldquo;{request.reason}&rdquo;</p>
         </div>

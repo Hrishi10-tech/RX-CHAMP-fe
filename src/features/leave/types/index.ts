@@ -3,7 +3,10 @@
  * quarter steps (0.25, 0.5, 1, 2.75); a debt is negative.
  */
 
-export type LeaveCategory = "CLSL" | "ELPL";
+/** 3.5: COMPOFF is a third type, charged against comp off credits rather than a yearly pool. */
+export type LeaveCategory = "CLSL" | "ELPL" | "COMPOFF";
+/** The two yearly pools (balances, quotas, adjustments). */
+export type PoolCategory = "CLSL" | "ELPL";
 export type LeaveKind = "FULL_DAY" | "HALF_DAY" | "QUARTER_DAY";
 export type LeavePart = "FIRST_HALF" | "SECOND_HALF" | "Q1" | "Q2" | "Q3" | "Q4";
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "REVOKED";
@@ -46,7 +49,7 @@ export interface LeaveRequestView {
 }
 
 export interface CategoryBalanceView {
-  category: LeaveCategory;
+  category: PoolCategory;
   label: string;
   name: string;
   year: number;
@@ -86,6 +89,16 @@ export interface LeavePolicyView {
   approver: ApproverRoute;
   approverLabel: string;
   prorateJoiners: boolean;
+  /** 3.5: comp off (absent on a 3.4 server). */
+  compOffEnabled?: boolean;
+  compOffValidityDays?: number;
+  compOffFullDayPct?: number;
+  compOffHalfDayPct?: number;
+  compOffClaimWithinDays?: number;
+  compOffApprover?: ApproverRoute;
+  compOffApproverLabel?: string;
+  compOffCountLeaveDays?: boolean;
+  compOffMaxBalanceDays?: number | null;
   startedOn: string;
   year: number;
   routes: { value: ApproverRoute; label: string }[];
@@ -93,8 +106,9 @@ export interface LeavePolicyView {
     category: LeaveCategory;
     label: string;
     name: string;
-    daysPerYear: number;
-    yearEnd: "LAPSES" | "CARRIES";
+    /** Null for comp off (3.5): no yearly days, each credit expires instead. */
+    daysPerYear: number | null;
+    yearEnd: "LAPSES" | "CARRIES" | "EXPIRES";
     rule: string;
   }[];
   kinds: {
@@ -119,6 +133,8 @@ export interface MyLeaveView {
   upcoming: LeaveRequestView[];
   requests: LeaveRequestView[];
   ledger: LedgerLine[];
+  /** 3.5: comp off in short (absent on a 3.4 server). */
+  compOff?: CompOffSummaryView;
 }
 
 export interface LeaveDraft {
@@ -167,6 +183,8 @@ export interface PersonBalanceRow {
   elpl: CategoryBalanceView;
   quota: { clslDaysPerYear: number | null; elplDaysPerYear: number | null };
   upcomingDays: number;
+  /** 3.5 */
+  compOff?: CompOffSummaryView;
 }
 
 export interface PersonLeaveView extends PersonBalanceRow {
@@ -212,7 +230,7 @@ export interface LeaveList {
 
 export interface AdjustLeaveInput {
   userId: string;
-  category: LeaveCategory;
+  category: PoolCategory;
   year?: number;
   mode: "ADD" | "SUBTRACT" | "SET";
   days: number;
@@ -230,6 +248,14 @@ export type LeavePolicyPatch = Partial<
     | "clslBackdateDays"
     | "approver"
     | "prorateJoiners"
+    | "compOffEnabled"
+    | "compOffValidityDays"
+    | "compOffFullDayPct"
+    | "compOffHalfDayPct"
+    | "compOffClaimWithinDays"
+    | "compOffApprover"
+    | "compOffCountLeaveDays"
+    | "compOffMaxBalanceDays"
   >
 > & { applyNow?: boolean };
 
@@ -243,4 +269,112 @@ export interface DayLeaveView {
   elplDays?: number;
   pendingDays: number;
   mask: number;
+}
+
+// ---- Comp off (3.5) --------------------------------------------------------------------
+
+export type CompOffDayKind = "WEEKLY_OFF" | "HOLIDAY" | "LEAVE" | "WORKING";
+
+/** The balance in short: on GET /leave/me, /leave/balances rows and /leave/comp-off/me. */
+export interface CompOffSummaryView {
+  enabled: boolean;
+  availableDays: number;
+  pendingDays: number;
+  takenDays: number;
+  earnedDays: number;
+  lapsedDays: number;
+  claimsWaitingDays: number;
+  nextExpiry: { date: string; label: string; days: number } | null;
+  validityDays: number;
+}
+
+/** An extra day worked (a weekly day off, a holiday, a full day of leave), with what it earns. */
+export interface ExtraDayView {
+  date: string;
+  label: string;
+  kind: CompOffDayKind;
+  dayLabel: string;
+  workedSec: number;
+  workedLabel: string;
+  earnsDays: number;
+  halfDayNeedsSec: number;
+  fullDayNeedsSec: number;
+  claimed: boolean;
+  claimId: string | null;
+  claimable: boolean;
+  why: string | null;
+}
+
+/** A claim, or a credit by hand, and what drew on it. */
+export interface CompOffCreditView {
+  id: string;
+  userId: string;
+  userName: string;
+  department: string | null;
+  companyName: string | null;
+  workedDate: string;
+  workedLabel: string;
+  dayKind: CompOffDayKind;
+  dayLabel: string;
+  workedSec: number;
+  workedTime: string;
+  askedDays: number;
+  days: number;
+  daysLabel: string;
+  reason: string;
+  source: "CLAIM" | "GRANT";
+  status: LeaveStatus;
+  statusLabel: string;
+  waitingFor: string | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  expiresOn: string | null;
+  expiresLabel: string | null;
+  usedDays: number;
+  heldDays: number;
+  leftDays: number;
+  lapsedDays: number;
+  createdAt: string;
+  can: { cancel: boolean; decide: boolean; revoke: boolean };
+}
+
+export interface MyCompOffView {
+  enabled: boolean;
+  today: string;
+  rules: {
+    validityDays: number;
+    claimWithinDays: number;
+    fullDayPct: number;
+    halfDayPct: number;
+    countLeaveDays: boolean;
+    maxBalanceDays: number | null;
+    rule: string;
+  };
+  balance: Omit<CompOffSummaryView, "enabled" | "validityDays">;
+  waitingFor: string | null;
+  extraDays: ExtraDayView[];
+  credits: CompOffCreditView[];
+}
+
+/** The balance as the cards show it: one person's view (below) has no next expiry. */
+export type CompOffBalanceView = Omit<
+  CompOffSummaryView,
+  "enabled" | "validityDays" | "nextExpiry"
+> & { nextExpiry?: CompOffSummaryView["nextExpiry"] };
+
+/** GET /leave/comp-off/people/:userId: one person's comp off, for an approver who sees them. */
+export interface PersonCompOffView {
+  userId: string;
+  userName: string;
+  balance: CompOffBalanceView;
+  extraDays: ExtraDayView[];
+  credits: CompOffCreditView[];
+  /** The caller may credit comp off to them by hand. */
+  canGrant: boolean;
+}
+
+export interface CompOffList {
+  items: CompOffCreditView[];
+  summary: { pending: number; needsMe: number };
 }

@@ -6,12 +6,14 @@ import { ChevronLeft, ChevronRight, Loader2, Lock, PartyPopper, RotateCcw } from
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import {
   btnGhost,
   btnPrimary,
   btnSecondary,
   cardBase,
+  errorText,
   hintBase,
   inputBase,
   labelBase,
@@ -26,13 +28,17 @@ import {
   setCalendarDay,
   setWeekPattern,
 } from "@/features/calendar/api/calendar";
+import { calendarKeys } from "@/features/calendar/hooks/useCalendar";
 import {
   WEEKDAY_NAMES,
   buildYear,
   currentPatternFrom,
   dayChange,
+  departmentsText,
   holidaysOf,
   isSinceAlways,
+  lowerFirst,
+  orgPatternSource,
   pastPatterns,
   patternOn,
   patternText,
@@ -41,14 +47,23 @@ import {
   weekLockedText,
 } from "@/features/calendar/lib/calendar";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
+import { DepartmentPicker } from "@/features/departments/components/DepartmentPicker";
+import { useDepartments } from "@/features/departments/hooks/useDepartments";
+import type { DepartmentView } from "@/features/departments/types";
 import type { CalendarDayCell, CalendarMonthGrid } from "@/features/calendar/types";
 
-export const calendarKeys = {
-  all: ["calendar"] as const,
-  year: (org: string, year: number) => [...calendarKeys.all, org, year] as const,
-};
+import { DepartmentWeeks } from "./DepartmentWeeks";
+import { PeopleWeeks } from "./PeopleWeeks";
+import { SaturdayRuleCard } from "./SaturdayRuleCard";
+
+export { calendarKeys };
+
+const NO_NAMES = new Map<string, string>();
 
 function dayClass(cell: CalendarDayCell): string {
+  // 3.5: a day set for some departments only; the square keeps the organisation's answer.
+  if (cell.departmentIds.length)
+    return `${cell.isWorking ? "bg-white text-slate-700" : "bg-slate-100 text-slate-500"} font-semibold ring-1 ring-inset ring-sky-400`;
   if (!cell.isWorking && cell.label) return "bg-violet-100 text-violet-800 font-semibold";
   if (!cell.isWorking) return "bg-slate-100 text-slate-400";
   if (cell.overridden)
@@ -56,19 +71,42 @@ function dayClass(cell: CalendarDayCell): string {
   return "bg-white text-slate-700";
 }
 
-function dayTitle(cell: CalendarDayCell): string {
+/** "Mon 9 Nov: Working day; day off for Sales, Diwali" for a day set for some departments. */
+export function dayTitle(cell: CalendarDayCell, departmentNames: Map<string, string> = NO_NAMES) {
   const kind = cell.isWorking ? "Working day" : "Day off";
+  if (cell.departmentIds.length) {
+    const set = cell.setWorking ? "working day" : "day off";
+    return `${formatDayWithWeekday(cell.date)}: ${kind}; ${set} for ${departmentsText(
+      cell.departmentIds,
+      departmentNames,
+    )}${cell.label ? `, ${cell.label}` : ""}`;
+  }
   return `${formatDayWithWeekday(cell.date)}: ${kind}${cell.label ? `, ${cell.label}` : ""}`;
+}
+
+/** A dot under a named day; a sky one under a day set for some departments. */
+function DayMark({ cell }: { cell: CalendarDayCell }) {
+  if (!cell.label && !cell.departmentIds.length) return null;
+  return (
+    <span
+      aria-hidden
+      className={`absolute bottom-0.5 h-1 w-1 rounded-full ${
+        cell.departmentIds.length ? "bg-sky-500" : "bg-current"
+      }`}
+    />
+  );
 }
 
 function MonthCard({
   grid,
   editable,
   onPick,
+  departmentNames,
 }: {
   grid: CalendarMonthGrid;
   editable: boolean;
   onPick: (cell: CalendarDayCell) => void;
+  departmentNames: Map<string, string>;
 }) {
   const monthIndex = Number(grid.month.slice(5, 7)) - 1;
   return (
@@ -98,31 +136,27 @@ function MonthCard({
                 type="button"
                 role="gridcell"
                 onClick={() => onPick(cell)}
-                title={dayTitle(cell)}
-                aria-label={dayTitle(cell)}
+                title={dayTitle(cell, departmentNames)}
+                aria-label={dayTitle(cell, departmentNames)}
                 className={`relative flex h-8 items-center justify-center rounded-md text-xs tabular-nums transition hover:ring-2 hover:ring-[rgba(34,34,204,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(34_34_204)] ${dayClass(cell)} ${
                   cell.isToday ? "outline outline-2 outline-[rgb(34_34_204)]" : ""
                 }`}
               >
                 {cell.day}
-                {cell.label && (
-                  <span
-                    aria-hidden
-                    className="absolute bottom-0.5 h-1 w-1 rounded-full bg-current"
-                  />
-                )}
+                <DayMark cell={cell} />
               </button>
             ) : (
               <span
                 key={cell.date}
                 role="gridcell"
-                title={dayTitle(cell)}
-                aria-label={dayTitle(cell)}
+                title={dayTitle(cell, departmentNames)}
+                aria-label={dayTitle(cell, departmentNames)}
                 className={`relative flex h-8 items-center justify-center rounded-md text-xs tabular-nums ${dayClass(cell)} ${
                   cell.isToday ? "outline outline-2 outline-[rgb(34_34_204)]" : ""
                 }`}
               >
                 {cell.day}
+                <DayMark cell={cell} />
               </span>
             )
           ) : (
@@ -141,31 +175,57 @@ export function DayDialog({
   onClose,
   onSave,
   saving,
+  departments = [],
+  saturdayNote = "",
 }: {
   cell: CalendarDayCell | null;
   weekPattern: number[];
   onClose: () => void;
   onSave: (date: string, change: ReturnType<typeof dayChange>) => void;
   saving: boolean;
+  /** 3.5: the departments a day can be set for. */
+  departments?: DepartmentView[];
+  /** 3.5: the organisation's Saturday rule, when it decides this Saturday. */
+  saturdayNote?: string;
 }) {
   const id = useId();
   const [working, setWorking] = useState(true);
   const [label, setLabel] = useState("");
+  const [some, setSome] = useState(false);
+  const [departmentIds, setDepartmentIds] = useState<string[]>([]);
+  const [touched, setTouched] = useState(false);
 
   useEffect(() => {
     if (!cell) return;
-    // Opening a working day suggests making it a day off, and the other way round.
-    setWorking(!cell.isWorking);
+    // Opening a working day suggests making it a day off, and the other way round;
+    // a day set for some departments opens as it was set.
+    setWorking(
+      cell.departmentIds.length && cell.setWorking !== null ? cell.setWorking : !cell.isWorking,
+    );
     setLabel(cell.label ?? "");
+    setSome(cell.departmentIds.length > 0);
+    setDepartmentIds(cell.departmentIds);
+    setTouched(false);
   }, [cell]);
 
   if (!cell) return null;
   const patternWorking = weekPattern.includes(cell.weekday);
+  const departmentsProblem =
+    some && departmentIds.length === 0 ? "Pick at least one department." : null;
 
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!cell) return;
-    onSave(cell.date, dayChange(cell.date, weekPattern, { isWorking: working, label }));
+    setTouched(true);
+    if (departmentsProblem) return;
+    onSave(
+      cell.date,
+      dayChange(cell.date, weekPattern, {
+        isWorking: working,
+        label,
+        departmentIds: some ? departmentIds : [],
+      }),
+    );
   }
 
   return (
@@ -175,7 +235,7 @@ export function DayDialog({
       title={formatDayWithWeekday(cell.date)}
       description={`The week pattern makes ${WEEKDAY_NAMES[cell.weekday - 1]} a ${
         patternWorking ? "working day" : "day off"
-      }.${cell.overridden ? " This day is set by hand." : ""}`}
+      }${saturdayNote ? ` (${saturdayNote})` : ""}.${cell.overridden ? " This day is set by hand." : ""}`}
       className="max-w-md"
     >
       <form onSubmit={submit} className="space-y-4 px-6 py-5">
@@ -214,8 +274,56 @@ export function DayDialog({
             placeholder={working ? "e.g. Make-up day" : "e.g. Diwali"}
             className={`${inputBase} mt-1.5`}
           />
-          <p className={hintBase}>Named days off appear as holidays to everyone, in the app too.</p>
+          <p className={hintBase}>
+            {some
+              ? "Named days off appear as holidays to the people of those departments, in the app too."
+              : "Named days off appear as holidays to everyone, in the app too."}
+          </p>
         </div>
+        <fieldset className="space-y-2">
+          <legend className={labelBase}>Who it is for</legend>
+          <div role="radiogroup" aria-label="Who it is for" className="grid grid-cols-2 gap-2">
+            {[
+              { value: false, label: "Everyone" },
+              { value: true, label: "Some departments" },
+            ].map((o) => (
+              <button
+                key={String(o.value)}
+                type="button"
+                role="radio"
+                aria-checked={some === o.value}
+                onClick={() => setSome(o.value)}
+                className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
+                  some === o.value
+                    ? "border-[rgb(34_34_204)] bg-[rgba(34,34,204,0.06)] text-[rgb(34_34_204)]"
+                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          {some && (
+            <>
+              <DepartmentPicker
+                departments={departments}
+                value={departmentIds}
+                onChange={setDepartmentIds}
+                multiple
+                label="Departments"
+                invalid={touched && Boolean(departmentsProblem)}
+              />
+              {touched && departmentsProblem ? (
+                <p className={errorText}>{departmentsProblem}</p>
+              ) : (
+                <p className={hintBase}>
+                  Only the people of these departments get this day; everyone else keeps the
+                  week&apos;s.
+                </p>
+              )}
+            </>
+          )}
+        </fieldset>
         <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
           {cell.overridden ? (
             <button
@@ -250,14 +358,29 @@ export function DayDialog({
  * working day or a day off (with a name, for holidays) and switch the working
  * week; managers read it. Monthly focus targets follow it (SPEC 2.6).
  */
+type Tab = "calendar" | "departments" | "people";
+const TABS: { value: Tab; label: string }[] = [
+  { value: "calendar", label: "Calendar" },
+  { value: "departments", label: "Departments" },
+  { value: "people", label: "People" },
+];
+
 export function CalendarView({ editable }: { editable: boolean }) {
   const org = useOrgScope();
   const queryClient = useQueryClient();
   const today = todayKey();
   const [year, setYear] = useState(Number(today.slice(0, 4)));
   const [picked, setPicked] = useState<CalendarDayCell | null>(null);
+  const [tab, setTab] = useState<Tab>("calendar");
   const key = calendarKeys.year(org, year);
   const calendar = useQuery({ queryKey: key, queryFn: () => getCalendar(year) });
+  // 3.5: days can be for some departments; names show which.
+  const departments = useDepartments();
+  const departmentList = useMemo(() => departments.data ?? [], [departments.data]);
+  const departmentNames = useMemo(
+    () => new Map(departmentList.map((d) => [d.id, d.name])),
+    [departmentList],
+  );
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: calendarKeys.all });
 
@@ -270,16 +393,20 @@ export function CalendarView({ editable }: { editable: boolean }) {
       change: ReturnType<typeof dayChange>;
     }) => {
       if (change.kind === "delete") await clearCalendarDay(date);
-      else await setCalendarDay(date, change.isWorking, change.label);
+      else await setCalendarDay(date, change.isWorking, change.label, change.departmentIds);
     },
     onSuccess: (_d, { date, change }) => {
+      const forSome =
+        change.kind === "put" && change.departmentIds.length
+          ? ` for ${departmentsText(change.departmentIds, departmentNames)}`
+          : "";
       toast.success("Calendar saved", {
         description: `${formatDayWithWeekday(date)}: ${
           change.kind === "delete"
             ? "back to the week pattern"
             : change.isWorking
-              ? "working day"
-              : `day off${change.label ? `, ${change.label}` : ""}`
+              ? `working day${forSome}`
+              : `day off${forSome}${change.label ? `, ${change.label}` : ""}`
         }.`,
       });
       setPicked(null);
@@ -325,10 +452,16 @@ export function CalendarView({ editable }: { editable: boolean }) {
   });
 
   const data = calendar.data;
-  const patternFor = useMemo(
-    () => (date: string) => (data ? patternOn(date, data.weekPattern, data.patternHistory) : []),
-    [data],
-  );
+  // The week in effect each day, with the organisation's Saturday rule (3.5).
+  const patternFor = useMemo(() => (data ? orgPatternSource(data) : () => []), [data]);
+  const saturdayNote =
+    picked &&
+    data &&
+    picked.weekday === 6 &&
+    data.saturdays !== "EVERY" &&
+    patternOn(picked.date, data.weekPattern, data.patternHistory).includes(6)
+      ? lowerFirst(data.saturdaysLabel)
+      : "";
   const months = useMemo(
     () => (data ? buildYear(year, patternFor, data.overrides, today) : []),
     [data, year, today, patternFor],
@@ -379,6 +512,14 @@ export function CalendarView({ editable }: { editable: boolean }) {
         }
       />
 
+      <SegmentedTabs
+        label="Calendar"
+        idPrefix="calendar"
+        value={tab}
+        onChange={setTab}
+        tabs={TABS}
+      />
+
       {calendar.isPending ? (
         <div className={cardBase}>
           <LoadingState label="Loading the calendar…" />
@@ -391,8 +532,21 @@ export function CalendarView({ editable }: { editable: boolean }) {
             retrying={calendar.isFetching}
           />
         </div>
+      ) : tab === "departments" ? (
+        <div id="calendar-panel" role="tabpanel" aria-labelledby="calendar-tab-departments">
+          <DepartmentWeeks view={data} editable={editable} />
+        </div>
+      ) : tab === "people" ? (
+        <div id="calendar-panel" role="tabpanel" aria-labelledby="calendar-tab-people">
+          <PeopleWeeks view={data} editable={editable} departmentNames={departmentNames} />
+        </div>
       ) : (
-        <>
+        <div
+          id="calendar-panel"
+          role="tabpanel"
+          aria-labelledby="calendar-tab-calendar"
+          className="space-y-5"
+        >
           <section
             className={`${cardBase} flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between`}
           >
@@ -452,6 +606,9 @@ export function CalendarView({ editable }: { editable: boolean }) {
                 <span className="h-3 w-3 rounded bg-emerald-50 ring-1 ring-emerald-300" /> Extra
                 working day
               </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded bg-white ring-1 ring-sky-400" /> Some departments
+              </span>
               {!editable && (
                 <span className="flex items-center gap-1 text-slate-400">
                   <Lock className="h-3 w-3" aria-hidden /> Read only
@@ -507,10 +664,18 @@ export function CalendarView({ editable }: { editable: boolean }) {
             </section>
           )}
 
+          <SaturdayRuleCard view={data} editable={editable} />
+
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
               {months.map((m) => (
-                <MonthCard key={m.month} grid={m} editable={editable} onPick={setPicked} />
+                <MonthCard
+                  key={m.month}
+                  grid={m}
+                  editable={editable}
+                  onPick={setPicked}
+                  departmentNames={departmentNames}
+                />
               ))}
             </div>
 
@@ -567,9 +732,16 @@ export function CalendarView({ editable }: { editable: boolean }) {
                 ) : (
                   <ul className="space-y-2">
                     {holidays.map((h) => (
-                      <li key={h.date} className="flex items-center justify-between gap-2 text-sm">
-                        <span className="min-w-0 truncate font-semibold text-slate-800">
-                          {h.label || "Day off"}
+                      <li key={h.date} className="flex items-start justify-between gap-2 text-sm">
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold text-slate-800">
+                            {h.label || "Day off"}
+                          </span>
+                          {h.departmentIds?.length ? (
+                            <span className="block text-xs text-sky-700">
+                              Only {departmentsText(h.departmentIds, departmentNames)}
+                            </span>
+                          ) : null}
                         </span>
                         <span className="shrink-0 text-xs text-slate-500">
                           {formatDayWithWeekday(h.date)}
@@ -581,7 +753,7 @@ export function CalendarView({ editable }: { editable: boolean }) {
               </section>
             </aside>
           </div>
-        </>
+        </div>
       )}
 
       {editable && data && (
@@ -591,6 +763,8 @@ export function CalendarView({ editable }: { editable: boolean }) {
           onClose={() => setPicked(null)}
           saving={saveDay.isPending}
           onSave={(date, change) => saveDay.mutate({ date, change })}
+          departments={departmentList}
+          saturdayNote={saturdayNote}
         />
       )}
     </div>

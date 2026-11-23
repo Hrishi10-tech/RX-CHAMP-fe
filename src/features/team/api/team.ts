@@ -52,6 +52,23 @@ export function readTeamPerson(raw: unknown): TeamPerson | null {
     online: r.online === true,
     agentVersion: strOrNull(r.agentVersion),
     lateStartMin: num(r.lateStartMin),
+    lateReason: strOrNull(r.lateReason),
+    leave: readLeave(r.leave),
+    attendance: r.attendance === "BIOMETRIC" ? "BIOMETRIC" : "AGENT",
+    wfhDays: Math.max(0, num(r.wfhDays)),
+    noCheckout: r.noCheckout === true,
+  };
+}
+
+/** 3.4: leave that day, or null. */
+function readLeave(raw: unknown): TeamPerson["leave"] {
+  if (!raw || typeof raw !== "object") return null;
+  const l = rec(raw);
+  return {
+    label: typeof l.label === "string" ? l.label : "",
+    categories: typeof l.categories === "string" ? l.categories : "",
+    full: l.full === true,
+    pendingDays: Math.max(0, num(l.pendingDays)),
   };
 }
 

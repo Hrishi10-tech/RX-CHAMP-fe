@@ -26,6 +26,7 @@ import {
   draftProblems,
   KIND_OPTIONS,
   PART_OPTIONS,
+  partTimesText,
   REASON_MAX,
 } from "@/features/leave/lib/format";
 import type { LeaveCategory, LeaveDraft, LeaveKind, LeavePart } from "@/features/leave/types";
@@ -82,6 +83,9 @@ export function ApplyLeaveDialog({ open, onClose }: { open: boolean; onClose: ()
       ? addDaysToKey(today, p?.elplNoticeDays ?? 5)
       : addDaysToKey(today, -(p?.clslBackdateDays ?? 7));
   const rule = p?.categories.find((c) => c.category === draft.category)?.rule;
+  // 3.5: comp off is a third type when the policy offers it (a 3.4 server does not).
+  const compOffOn =
+    !!p?.categories.some((c) => c.category === "COMPOFF") && p?.compOffEnabled !== false;
   const own = draftProblems(draft);
   const ownBlocking = Object.keys(own).length > 0;
   const canSend = !ownBlocking && !!pv?.ok && !stale && !apply.isPending;
@@ -155,11 +159,16 @@ export function ApplyLeaveDialog({ open, onClose }: { open: boolean; onClose: ()
               tabs={[
                 { value: "CLSL", label: "CL/SL" },
                 { value: "ELPL", label: "EL/PL" },
+                ...(compOffOn ? [{ value: "COMPOFF" as LeaveCategory, label: "Comp off" }] : []),
               ]}
             />
           </div>
           <p className={hintBase}>
-            {draft.category === "CLSL" ? "Casual or sick leave. " : "Earned or privilege leave. "}
+            {draft.category === "CLSL"
+              ? "Casual or sick leave. "
+              : draft.category === "ELPL"
+                ? "Earned or privilege leave. "
+                : "Compensatory off, charged against your comp off credits. "}
             {rule}
           </p>
         </div>
@@ -311,7 +320,7 @@ function PreviewBox({
       <p className="flex items-center gap-2 font-semibold text-slate-900">
         <CalendarCheck className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
         {pv.daysLabel} of {pv.balance?.label ?? "leave"}
-        {pv.partTimes ? `, ${pv.partTimes}` : ""}
+        {pv.partTimes ? `, ${partTimesText(pv.partTimes)}` : ""}
       </p>
       {pv.dates.length > 1 && (
         <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Days">

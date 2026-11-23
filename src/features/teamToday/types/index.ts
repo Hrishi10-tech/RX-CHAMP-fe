@@ -4,6 +4,7 @@ import type { BreakRecordView } from "@/features/breaks/types";
 import type { BreakKind } from "@/features/shifts/types";
 import type { FocusView } from "@/features/workday/types";
 import type { DayLeaveView } from "@/features/leave/types";
+import type { WorkdayWfhView } from "@/features/wfh/types";
 
 export type TeamTodayStatus =
   | "NOT_STARTED"
@@ -71,6 +72,15 @@ export interface TeamTodayRow {
   dayOff?: { kind: "HOLIDAY" | "WEEKLY_OFF"; name: string | null } | null;
   /** 3.4: leave that day (approved, and any still waiting). */
   leave?: DayLeaveView | null;
+  /** 3.5: how the day is recorded, work from home that day, and a biometric person's punches in short. */
+  attendance?: "AGENT" | "BIOMETRIC";
+  wfh?: WorkdayWfhView | null;
+  biometric?: {
+    punches: number;
+    firstPunchAt: string | null;
+    lastPunchAt: string | null;
+    checkoutMissing: boolean;
+  } | null;
   focus: FocusView;
   expectedSec: number;
   breaks: TeamTodayBreakCell[];
@@ -91,6 +101,9 @@ export interface TeamTodayTotals {
   /** 3.4: on a full day of leave, and with part of the day on leave. */
   onLeave?: number;
   partLeave?: number;
+  /** 3.5: working from home that day, and checking in by biometric. */
+  workingFromHome?: number;
+  biometric?: number;
   lateStarts: number;
   /** Pending items dated on each row's day, for these people (the sum of the rows' `pending`). */
   pendingApprovals: number;

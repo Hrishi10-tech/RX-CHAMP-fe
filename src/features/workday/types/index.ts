@@ -1,4 +1,5 @@
 import type { DayLeaveView } from "@/features/leave/types";
+import type { WorkdayWfhView } from "@/features/wfh/types";
 /**
  * Mirrors SPEC 3.1 section 3.1 (Work day). Every `date` is a business-zone day key
  * "YYYY-MM-DD"; every other timestamp is an ISO instant; durations are seconds.
@@ -13,6 +14,17 @@ export interface WorkSessionView {
   startedAt: string;
   endedAt: string | null;
   endReason: WorkSessionEndReason | null;
+  /** 3.5: AGENT, LEGACY, BACKFILL, BIOMETRIC (punches) or MOBILE_WFH (the phone); absent before 3.5. */
+  source?: string;
+}
+
+/** 3.5: one punch of a biometric person's day. */
+export interface WorkdayPunchView {
+  at: string;
+  direction: "IN" | "OUT" | null;
+  deviceId: string;
+  source: string;
+  voided: boolean;
 }
 
 /** Focus time at `serverNow`, with what pending approvals could still change. */
@@ -29,6 +41,10 @@ export interface FocusView {
   pendingMinusSec: number;
   /** 3.3: signed seconds added by hand by the Super Manager; absent from older servers. */
   adjustedSec?: number;
+  /** 3.5: time worked from home on the phone that counted, the part beyond the day's cap, and what is left of the cap while it runs. */
+  wfhSec?: number;
+  wfhOverSec?: number;
+  capRemainingSec?: number | null;
 }
 
 export interface SkipNeedingComment {
@@ -97,6 +113,11 @@ export interface WorkdayTodayView {
     paidBreakBufferMin?: number;
   };
   portalUrl: string | null;
+  /** 3.5: how the day is recorded, work from home, and a biometric person's punches. */
+  attendance?: { source: "AGENT" | "BIOMETRIC"; biometricCode: string | null };
+  wfh?: WorkdayWfhView | null;
+  punches?: WorkdayPunchView[];
+  checkoutMissing?: boolean;
 }
 
 /** GET /workday/guide (3.2): how RX Vision works, with the organisation's numbers. */

@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlarmClock,
+  Award,
   Bell,
   CalendarCheck,
   CalendarDays,
   CalendarX,
+  Fingerprint,
+  Home,
   Building2,
   ChevronRight,
   ClipboardCheck,
@@ -97,6 +100,18 @@ const TYPE_STYLE: Record<string, { icon: LucideIcon; tint: string }> = {
   LEAVE_REVOKED: { icon: CalendarX, tint: "bg-rose-50 text-rose-600 ring-rose-100" },
   LEAVE_ADJUSTED: { icon: SlidersHorizontal, tint: "bg-violet-50 text-violet-600 ring-violet-100" },
   LEAVE_UPDATED: { icon: CalendarDays, tint: "bg-amber-50 text-amber-600 ring-amber-100" },
+  // 3.5: work from home, comp off, biometric.
+  WFH_REQUESTED: { icon: Home, tint: "bg-sky-50 text-sky-600 ring-sky-100" },
+  WFH_DECIDED: { icon: Home, tint: "bg-emerald-50 text-emerald-600 ring-emerald-100" },
+  WFH_CANCELLED: { icon: Home, tint: "bg-slate-50 text-slate-600 ring-slate-100" },
+  WFH_REVOKED: { icon: Home, tint: "bg-rose-50 text-rose-600 ring-rose-100" },
+  WFH_SCHEDULED: { icon: Home, tint: "bg-indigo-50 text-indigo-600 ring-indigo-100" },
+  WFH_AUTO_ENDED: { icon: Moon, tint: "bg-slate-50 text-slate-600 ring-slate-100" },
+  COMPOFF_CLAIMED: { icon: Award, tint: "bg-sky-50 text-sky-600 ring-sky-100" },
+  COMPOFF_DECIDED: { icon: Award, tint: "bg-emerald-50 text-emerald-600 ring-emerald-100" },
+  COMPOFF_CREDITED: { icon: Award, tint: "bg-emerald-50 text-emerald-600 ring-emerald-100" },
+  COMPOFF_EXPIRING: { icon: Award, tint: "bg-amber-50 text-amber-600 ring-amber-100" },
+  BIOMETRIC_NO_CHECKOUT: { icon: Fingerprint, tint: "bg-amber-50 text-amber-600 ring-amber-100" },
 };
 const DEFAULT_STYLE = {
   icon: Bell,

@@ -12,4 +12,11 @@ export const leaveKeys = {
     [...leaveKeys.all, "person", userId, year ?? 0] as const,
   adjustments: (params: Record<string, unknown>) =>
     [...leaveKeys.all, "adjustments", params] as const,
+  /** 3.5 */
+  compOffMe: () => [...leaveKeys.all, "comp-off", "me"] as const,
+  compOffPerson: (userId: string) => [...leaveKeys.all, "comp-off", "person", userId] as const,
+  compOffList: (params: Record<string, unknown>) =>
+    [...leaveKeys.all, "comp-off", "claims", params] as const,
+  compOffSummary: (companyId?: string) =>
+    [...leaveKeys.all, "comp-off", "summary", companyId ?? ""] as const,
 };

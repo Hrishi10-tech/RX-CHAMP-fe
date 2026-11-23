@@ -20,6 +20,17 @@ import {
   type DecisionMode,
 } from "@/features/leave/api/leave";
 import { leaveKeys } from "@/features/leave/api/keys";
+import {
+  cancelCompOffClaim,
+  claimCompOff,
+  decideCompOff,
+  getCompOffClaims,
+  getCompOffSummary,
+  getMyCompOff,
+  getPersonCompOff,
+  grantCompOff,
+  type CompOffDecisionMode,
+} from "@/features/leave/api/compoff";
 import type {
   AdjustLeaveInput,
   LeaveDraft,
@@ -166,6 +177,86 @@ export function useSaveLeavePolicy() {
   const refresh = useRefreshLeave();
   return useMutation({
     mutationFn: (patch: LeavePolicyPatch) => patchLeavePolicy(patch),
+    onSuccess: refresh,
+  });
+}
+
+// ---- Comp off (3.5) --------------------------------------------------------------------
+
+export function useMyCompOff(enabled = true) {
+  return useQuery({
+    queryKey: leaveKeys.compOffMe(),
+    queryFn: getMyCompOff,
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function usePersonCompOff(userId: string | null) {
+  return useQuery({
+    queryKey: leaveKeys.compOffPerson(userId ?? ""),
+    queryFn: () => getPersonCompOff(userId!),
+    enabled: !!userId,
+    staleTime: 15_000,
+  });
+}
+
+export function useCompOffClaims(
+  params: {
+    status?: string;
+    userId?: string;
+    companyId?: string;
+    needsMe?: boolean;
+    limit?: number;
+  },
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: leaveKeys.compOffList(params),
+    queryFn: () => getCompOffClaims(params),
+    enabled,
+    staleTime: 15_000,
+  });
+}
+
+/** The badge: claims waiting on the caller. */
+export function useCompOffSummary(companyId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: leaveKeys.compOffSummary(companyId),
+    queryFn: () => getCompOffSummary(companyId),
+    enabled,
+    staleTime: 30_000,
+    refetchInterval: enabled ? 60_000 : false,
+  });
+}
+
+export function useClaimCompOff() {
+  const refresh = useRefreshLeave();
+  return useMutation({
+    mutationFn: (input: { date: string; days?: number; reason: string }) => claimCompOff(input),
+    onSuccess: refresh,
+  });
+}
+
+export function useCancelCompOffClaim() {
+  const refresh = useRefreshLeave();
+  return useMutation({ mutationFn: (id: string) => cancelCompOffClaim(id), onSuccess: refresh });
+}
+
+export function useDecideCompOff() {
+  const refresh = useRefreshLeave();
+  return useMutation({
+    mutationFn: (v: { id: string; mode: CompOffDecisionMode; days?: number; note?: string }) =>
+      decideCompOff(v.id, v.mode, { days: v.days, note: v.note }),
+    onSuccess: refresh,
+  });
+}
+
+export function useGrantCompOff() {
+  const refresh = useRefreshLeave();
+  return useMutation({
+    mutationFn: (input: { userId: string; date: string; days: number; reason: string }) =>
+      grantCompOff(input),
     onSuccess: refresh,
   });
 }

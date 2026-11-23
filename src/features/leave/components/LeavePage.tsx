@@ -6,14 +6,15 @@ import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { isApprover, isOrgAdmin } from "@/constants/roles";
 import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
-import { useLeaveSummary } from "@/features/leave/hooks/useLeave";
+import { useCompOffSummary, useLeaveSummary } from "@/features/leave/hooks/useLeave";
 
 import { BalancesPanel } from "./BalancesPanel";
+import { CompOffPanel } from "./CompOffPanel";
 import { MyLeavePanel } from "./MyLeavePanel";
 import { PolicyPanel } from "./PolicyPanel";
 import { RequestsPanel } from "./RequestsPanel";
 
-type Tab = "mine" | "requests" | "balances" | "policy";
+type Tab = "mine" | "compoff" | "requests" | "balances" | "policy";
 
 /**
  * Leave (3.4). Everyone: their own balances and requests. Approvers: the requests
@@ -31,9 +32,16 @@ export function LeavePage() {
   // 4.0: the organisation's admins change the policy; the Super Manager reads it.
   const policyEditor = isOrgAdmin(role) || role === "SUPER_MANAGER";
   const summary = useLeaveSummary(org.companyId, approver);
+  const compOff = useCompOffSummary(org.companyId, approver);
 
   const tabs: { value: Tab; label: string; badge?: number }[] = [
     { value: "mine", label: "My leave" },
+    // 3.5
+    {
+      value: "compoff",
+      label: "Comp off",
+      badge: compOff.data?.needsMe ? compOff.data.needsMe : undefined,
+    },
     ...(approver
       ? [
           {
@@ -60,7 +68,8 @@ export function LeavePage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Leave</h1>
         <p className="text-sm text-slate-500">
-          CL/SL (casual or sick) and EL/PL (earned or privilege), in full, half and quarter days.
+          CL/SL (casual or sick), EL/PL (earned or privilege) and comp off for extra days worked, in
+          full, half and quarter days.
         </p>
       </header>
       {tabs.length > 1 && (
@@ -74,6 +83,7 @@ export function LeavePage() {
       )}
       <div id="leave-panel" role="tabpanel" aria-labelledby={`leave-tab-${tab}`}>
         {tab === "mine" && <MyLeavePanel />}
+        {tab === "compoff" && <CompOffPanel />}
         {tab === "requests" && <RequestsPanel />}
         {tab === "balances" && <BalancesPanel />}
         {tab === "policy" && <PolicyPanel />}

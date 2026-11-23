@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarOff,
+  Fingerprint,
+  Home,
   CheckCircle2,
   ClipboardCheck,
   Info,
@@ -21,7 +23,7 @@ import {
 } from "@/components/ui/StatePanel";
 import { btnSmall, cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage, errorStatus } from "@/lib/api";
-import { formatDuration, formatSignedAmount } from "@/lib/format/duration";
+import { formatDuration, formatMinutesShort, formatSignedAmount } from "@/lib/format/duration";
 import { formatMinutes, todayKey } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
 import { formatMonth, monthOfDate } from "@/lib/time/months";
@@ -30,7 +32,14 @@ import { useSession } from "@/features/auth/hooks/useSession";
 import { AdjustFocusDialog } from "@/features/adjustments/components/AdjustFocusDialog";
 import { AdjustmentsList } from "@/features/adjustments/components/AdjustmentsList";
 import { blockingApprovalsHref } from "@/features/approvals/lib/query";
-import { dayOffText, lateMinutes, lateReason, leaveText } from "@/features/reports/lib/dayNotes";
+import {
+  compOffEarnedText,
+  dayOffText,
+  lateMinutes,
+  lateReason,
+  leaveText,
+  wfhText,
+} from "@/features/reports/lib/dayNotes";
 import { InputBreakdown } from "@/features/reports/components/InputBreakdown";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
 import { usePersonDayReport } from "@/features/reports/hooks/useReports";
@@ -396,6 +405,7 @@ export function PersonDayView({
     settings.data?.focusAdjustmentsEnabled !== false &&
     report?.person.id !== me?.id;
   const adjustments = report?.adjustments ?? [];
+  const punches = report?.punches ?? [];
   const liveAdjustments = adjustments.filter((a) => !a.voidedAt);
   const adjustmentsHref = "/dashboard/focus-adjustments";
 
@@ -524,6 +534,62 @@ export function PersonDayView({
           </span>
         </div>
       )}
+      {wfhText(s) && (
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-2xl border border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.05)] px-4 py-3 text-sm text-slate-800"
+        >
+          <Home className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(34_34_204)]" aria-hidden />
+          <span>
+            <span className="font-semibold">{wfhText(s)}.</span>{" "}
+            {typeof s.wfhSec === "number" && s.wfhSec > 0
+              ? `${formatDuration(s.wfhSec)} from home counted${(s.wfhOverSec ?? 0) > 0 ? `; ${formatDuration(s.wfhOverSec ?? 0)} over the day's cap was not` : ""}.`
+              : "Tracked by the desktop app as usual."}
+          </span>
+        </div>
+      )}
+      {(compOffEarnedText(s) || s.noCheckout) && (
+        <div
+          role="note"
+          className={`flex items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${s.noCheckout ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}
+        >
+          <Fingerprint
+            className={`mt-0.5 h-4 w-4 shrink-0 ${s.noCheckout ? "text-amber-600" : "text-emerald-600"}`}
+            aria-hidden
+          />
+          <span>
+            {compOffEarnedText(s) && (
+              <span className="font-semibold">{compOffEarnedText(s)}. </span>
+            )}
+            {s.noCheckout
+              ? "No check-out was recorded: the day was closed at the last punch. The organisation admin can add the missing punch in Attendance."
+              : ""}
+          </span>
+        </div>
+      )}
+      {punches.length > 0 && (
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+        >
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <span className="min-w-0">
+            <span className="font-semibold">Punches: </span>
+            <span className="inline-flex flex-wrap gap-1.5 align-middle">
+              {punches.map((p, i) => (
+                <span
+                  key={`${p.at}-${i}`}
+                  className={`rounded-md border px-1.5 py-0.5 font-mono text-xs ${p.voided ? "border-slate-200 text-slate-400 line-through" : "border-slate-200 bg-white text-slate-800"}`}
+                  title={`${p.deviceId} · ${p.source.toLowerCase()}${p.voided ? " · voided" : ""}`}
+                >
+                  {formatTime12(p.at)}
+                  {p.direction === "IN" ? " in" : p.direction === "OUT" ? " out" : ""}
+                </span>
+              ))}
+            </span>
+          </span>
+        </div>
+      )}
       {offText && (
         <div
           role="note"
@@ -620,7 +686,7 @@ export function PersonDayView({
           sub={
             [
               late
-                ? `${late} min late start${reason ? `. Reason: ${reason}` : ", no reason given"}`
+                ? `${formatMinutesShort(late)} late start${reason ? `. Reason: ${reason}` : ", no reason given"}`
                 : s.startedAt
                   ? "Started on time"
                   : null,

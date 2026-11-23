@@ -12,7 +12,10 @@ export type PresetKind =
   | "MEETING_AGENDA"
   | "DECISION_NOTE"
   /** 3.4: the reason for a leave request. */
-  | "LEAVE_REASON";
+  | "LEAVE_REASON"
+  /** 3.5: the reason for work from home, and what was worked on when claiming comp off. */
+  | "WFH_REASON"
+  | "COMPOFF_REASON";
 
 export interface ReasonPresetsView {
   presets: Record<PresetKind, string[]>;

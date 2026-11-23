@@ -21,8 +21,9 @@ import { errorDetails, errorMessage } from "@/lib/api";
 import { todayKey } from "@/lib/time/businessTime";
 import { useAdjustLeave, usePersonLeave, useSetLeaveQuota } from "@/features/leave/hooks/useLeave";
 import { ADJUST_REASON_MIN, CATEGORY_TEXT, daysText } from "@/features/leave/lib/format";
-import type { LeaveCategory, PersonBalanceRow } from "@/features/leave/types";
+import type { PersonBalanceRow, PoolCategory } from "@/features/leave/types";
 
+import { CompOffBalanceCard } from "./CompOffPanel";
 import { BalanceCard, LedgerList } from "./LeaveBits";
 import { RequestRow } from "./RequestRow";
 
@@ -50,7 +51,7 @@ export function AdjustLeaveDialog({
   onClose: () => void;
 }) {
   const adjust = useAdjustLeave();
-  const [category, setCategory] = useState<LeaveCategory>("CLSL");
+  const [category, setCategory] = useState<PoolCategory>("CLSL");
   const [mode, setMode] = useState<Mode>("ADD");
   const [days, setDays] = useState("");
   const [reason, setReason] = useState("");
@@ -387,6 +388,8 @@ export function PersonLeaveDialog({
             {q.data.balances.map((b) => (
               <BalanceCard key={b.category} b={b} />
             ))}
+            {/* 3.5: comp off, when their organisation has it on. */}
+            {q.data.compOff?.enabled && <CompOffBalanceCard b={q.data.compOff} />}
           </div>
           <div className="rounded-2xl border border-slate-200">
             <h3 className="border-b border-slate-100 px-4 py-2.5 text-sm font-bold text-slate-900">

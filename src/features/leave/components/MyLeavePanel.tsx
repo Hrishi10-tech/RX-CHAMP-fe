@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CalendarPlus, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,6 +13,7 @@ import { useCancelLeave, useMyLeave } from "@/features/leave/hooks/useLeave";
 import type { LeaveRequestView } from "@/features/leave/types";
 
 import { ApplyLeaveDialog } from "./ApplyLeaveDialog";
+import { CompOffBalanceCard } from "./CompOffPanel";
 import { BalanceCard, LedgerList } from "./LeaveBits";
 import { RequestRow } from "./RequestRow";
 
@@ -78,10 +80,21 @@ export function MyLeavePanel({ compact = false }: { compact?: boolean }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+      <div
+        className={`grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 ${d.compOff?.enabled ? "lg:grid-cols-3" : ""}`}
+      >
         {d.balances.map((b) => (
           <BalanceCard key={b.category} b={b} compact={compact} />
         ))}
+        {d.compOff?.enabled && (
+          <Link
+            href="/dashboard/leave?tab=compoff"
+            className="rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+            aria-label="Comp off: open the Comp off tab"
+          >
+            <CompOffBalanceCard b={d.compOff} compact />
+          </Link>
+        )}
       </div>
       {d.nextYear && (
         <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">

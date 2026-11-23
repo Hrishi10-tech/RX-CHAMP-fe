@@ -103,6 +103,12 @@ export interface PersonDaySummary {
   leave?: DayLeaveView | null;
   /** 3.4: the expected time the approved leave covers (paid leave time). */
   leaveSec?: number;
+  /** 3.5: work from home that day (days), time from home that counted and beyond the cap, comp off earned, a day closed with no check-out. */
+  wfhDays?: number;
+  wfhSec?: number;
+  wfhOverSec?: number;
+  compOffEarnedDays?: number;
+  noCheckout?: boolean;
 }
 
 export type TimelineKind = "WORK" | "BREAK" | "LUNCH" | "MEETING" | "OFF";
@@ -119,6 +125,15 @@ export interface ReportSkip {
   kind: BreakKind;
   label: string;
   outcome: "SKIPPED" | "AUTO_SKIPPED";
+}
+
+/** One punch on a day page (3.5). */
+export interface DayPunchView {
+  at: string;
+  direction: "IN" | "OUT" | null;
+  deviceId: string;
+  source: "PUSH" | "PULL" | "CSV" | "MANUAL" | string;
+  voided: boolean;
 }
 
 export interface PersonDayReport {
@@ -139,6 +154,8 @@ export interface PersonDayReport {
    * and no data (the agent was not reporting). Null when it could not be read.
    */
   input?: { activeSec: number; idleSec: number; noDataSec: number; availableSec: number } | null;
+  /** 3.5: a biometric person's punches of the day, oldest first; [] for an agent day. */
+  punches?: DayPunchView[];
 }
 
 export interface MonthTotals {
@@ -167,6 +184,12 @@ export interface MonthTotals {
   /** 3.2 (fix 10): keyboard and mouse input inside working days. */
   activeSec?: number;
   availableSec?: number;
+  /** 3.5: comp off taken and earned, days from home, time from home beyond the cap, days with no check-out. */
+  compOffDays?: number;
+  compOffEarnedDays?: number;
+  wfhDays?: number;
+  wfhOverSec?: number;
+  noCheckoutDays?: number;
   /** 3.4: full days of leave, days of leave by pool (part days included), paid leave time. */
   leave?: number;
   leaveDays?: number;
@@ -274,7 +297,17 @@ export interface PendingLeaveBlocker {
   id: string;
   userId: string;
   userName: string;
-  category: "CLSL" | "ELPL";
+  category: "CLSL" | "ELPL" | "COMPOFF";
+  startDate: string;
+  endDate: string;
+  days: number;
+}
+
+/** 3.5: a work-from-home request with a day in the month that waits for a decision. */
+export interface PendingWfhBlocker {
+  id: string;
+  userId: string;
+  userName: string;
   startDate: string;
   endDate: string;
   days: number;
@@ -288,6 +321,9 @@ export interface MonthLockBlockers {
   /** 3.4: leave waiting for a decision, and how many there are. */
   leave?: PendingLeaveBlocker[];
   pendingLeave?: number;
+  /** 3.5: work from home waiting for a decision. */
+  wfh?: PendingWfhBlocker[];
+  pendingWfh?: number;
 }
 
 export interface MonthLockView {

@@ -28,6 +28,9 @@ jest.mock("@/features/calendar/api/calendar", () => ({
   setCalendarDay: jest.fn(),
   clearCalendarDay: jest.fn(),
 }));
+jest.mock("@/features/departments/api/departments", () => ({
+  getDepartments: jest.fn().mockResolvedValue([]),
+}));
 jest.mock("@/lib/time/businessTime", () => ({
   ...jest.requireActual("@/lib/time/businessTime"),
   todayKey: () => "2026-10-19",
@@ -69,12 +72,14 @@ describe("calendar arithmetic (SPEC 2.6)", () => {
       kind: "put",
       isWorking: false,
       label: "Diwali",
+      departmentIds: [],
     });
     // A Sunday made a working day.
     expect(dayChange("2026-10-18", MON_SAT, { isWorking: true, label: "" })).toEqual({
       kind: "put",
       isWorking: true,
       label: null,
+      departmentIds: [],
     });
   });
 
@@ -187,6 +192,11 @@ beforeEach(() => {
     patternHistory: [],
     overrides: [{ date: "2026-11-09", isWorking: false, label: "Diwali" }],
     months: [],
+    saturdays: "EVERY",
+    saturdayAnchor: null,
+    saturdaysLabel: "Every Saturday is a working day",
+    departments: [],
+    people: [],
   });
   mocked.setCalendarDay.mockResolvedValue();
   mocked.clearCalendarDay.mockResolvedValue();
@@ -215,7 +225,7 @@ describe("CalendarView", () => {
     await userEvent.type(within(dialog).getByRole("textbox"), "Founders' day");
     await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
     await waitFor(() =>
-      expect(mocked.setCalendarDay).toHaveBeenCalledWith("2026-10-30", false, "Founders' day"),
+      expect(mocked.setCalendarDay).toHaveBeenCalledWith("2026-10-30", false, "Founders' day", []),
     );
     expect(mocked.getCalendar).toHaveBeenCalledTimes(2);
   });

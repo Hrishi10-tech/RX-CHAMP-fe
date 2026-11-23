@@ -57,6 +57,8 @@ export interface AgentHealthRow {
     lastRefusal: UploadRefusalView | null;
   };
   flags: AgentHealthFlag[];
+  /** 3.5: BIOMETRIC people have no agent to watch; their day comes from the device. */
+  attendance?: "AGENT" | "BIOMETRIC";
 }
 
 export interface AgentHealthSummary {

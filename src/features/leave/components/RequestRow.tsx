@@ -4,7 +4,7 @@ import { Check, Undo2, X } from "lucide-react";
 
 import { btnSmall } from "@/components/ui/classes";
 import { OrgChip } from "@/features/organisations/components/OrgChip";
-import { amountText } from "@/features/leave/lib/format";
+import { amountText, partTimesText } from "@/features/leave/lib/format";
 import type { LeaveRequestView } from "@/features/leave/types";
 import type { DecisionMode } from "@/features/leave/api/leave";
 
@@ -55,7 +55,7 @@ export function RequestRow({
           <p className="mt-1.5 text-[15px] font-semibold text-slate-900">{r.span}</p>
           <p className="text-sm text-slate-600">
             {amountText(r)}
-            {r.partTimes ? ` (${r.partTimes})` : ""}
+            {r.partTimes ? ` (${partTimesText(r.partTimes)})` : ""}
             {r.kind === "FULL_DAY" &&
             r.dates.length > 0 &&
             r.dates.length < daysBetween(r.startDate, r.endDate)

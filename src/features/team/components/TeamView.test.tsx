@@ -106,6 +106,67 @@ describe("TeamView", () => {
     expect(link).toHaveAttribute("href", "/dashboard/team/u1?name=Asha%20K");
   });
 
+  it("reads leave, the late reason, work from home and biometric from GET /team (3.2 to 3.5)", () => {
+    const p = readTeamPerson({
+      id: "u9",
+      name: "Devi M",
+      status: "ENDED",
+      lateStartMin: 12,
+      lateReason: "Traffic",
+      leave: { label: "Half day (first half)", categories: "CL/SL", full: false, pendingDays: 0 },
+      attendance: "BIOMETRIC",
+      wfhDays: 0.5,
+      noCheckout: true,
+    })!;
+    expect(p.lateReason).toBe("Traffic");
+    expect(p.leave).toEqual({
+      label: "Half day (first half)",
+      categories: "CL/SL",
+      full: false,
+      pendingDays: 0,
+    });
+    expect(p).toMatchObject({ attendance: "BIOMETRIC", wfhDays: 0.5, noCheckout: true });
+    expect(readTeamPerson({ id: "u8" })).toMatchObject({
+      leave: null,
+      lateReason: null,
+      attendance: "AGENT",
+      wfhDays: 0,
+      noCheckout: false,
+    });
+  });
+
+  it("shows work from home, biometric and a missing check-out beside the status", async () => {
+    mocked.getTeam.mockResolvedValueOnce({
+      date: "2026-10-19",
+      counts: {
+        all: 1,
+        active: 1,
+        working: 1,
+        onBreak: 0,
+        inMeeting: 0,
+        away: 0,
+        notStarted: 0,
+        ended: 0,
+      },
+      people: [
+        { ...base, id: "u5", name: "Esha P", status: "WORKING", wfhDays: 0.5 },
+        {
+          ...base,
+          id: "u6",
+          name: "Faiz Q",
+          status: "WORKING",
+          attendance: "BIOMETRIC",
+          noCheckout: true,
+        },
+      ],
+      meta: null,
+    });
+    renderTeam();
+    expect(await screen.findByText("from home, half day")).toBeInTheDocument();
+    expect(screen.getByText("biometric")).toBeInTheDocument();
+    expect(screen.getByText("no check-out")).toBeInTheDocument();
+  });
+
   it("shows paid time on every row and offline time only where there is some", async () => {
     renderTeam();
     const list = await screen.findByRole("list");
