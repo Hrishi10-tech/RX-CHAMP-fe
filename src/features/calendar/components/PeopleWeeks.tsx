@@ -9,7 +9,9 @@ import { Chip, type ChipTone } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnGhost, btnSmall, cardBase, checkboxBase, inputBase } from "@/components/ui/classes";
+import { cardBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { Checkbox, Input } from "@/components/ui/Field";
 import { errorMessage } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import {
@@ -165,15 +167,15 @@ export function PeopleWeeks({
   }
 
   const yearButton = (r: Row) => (
-    <button
+    <Button
+      variant="small"
       type="button"
-      className={btnSmall}
       onClick={() => setPreviewing({ id: r.id, name: r.name })}
       aria-label={`Preview ${r.name}'s year`}
     >
       <Eye className="h-3.5 w-3.5" aria-hidden />
       Year
-    </button>
+    </Button>
   );
 
   const sourceChip = (r: Row) => (
@@ -186,10 +188,10 @@ export function PeopleWeeks({
     <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="people-weeks-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 md:max-w-xl">
-          <h2 id="people-weeks-title" className="text-base font-bold text-slate-900">
+          <h2 id="people-weeks-title" className="text-base font-bold text-primary">
             People
           </h2>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <p className="mt-0.5 text-sm text-quiet">
             What decides each person&apos;s working days: a day set on the calendar, then their own
             week, their department&apos;s, and last the organisation&apos;s.
             {editable ? " Pick people to set one week of their own for all of them at once." : ""}
@@ -197,43 +199,44 @@ export function PeopleWeeks({
         </div>
         <label className="relative block w-full sm:w-72">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral"
             aria-hidden
           />
-          <input
+          <Input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search people…"
             aria-label="Search people"
-            className={`${inputBase} pl-9`}
+            className="pl-9"
           />
         </label>
       </div>
 
       {editable && picked.length > 0 && (
         <div
-          className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[rgba(34,34,204,0.2)] bg-[rgba(34,34,204,0.04)] px-3.5 py-2.5 text-sm"
+          className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-brand/20 bg-brand/4 px-3.5 py-2.5 text-sm"
           aria-label="Picked people"
         >
-          <span className="font-semibold text-slate-900">{plural(picked.length)} picked</span>
-          <button type="button" className={btnSmall} onClick={() => setSetting(true)}>
+          <span className="font-semibold text-primary">{plural(picked.length)} picked</span>
+          <Button variant="small" type="button" onClick={() => setSetting(true)}>
             <CalendarDays className="h-3.5 w-3.5" aria-hidden />
             Set their working week
-          </button>
+          </Button>
           {pickedOwn.length > 0 && (
-            <button
+            <Button
+              variant="small"
               type="button"
-              className={`${btnSmall} border-rose-200 text-rose-600 hover:bg-rose-50`}
+              className="border-attention-edge text-attention hover:bg-attention-wash"
               onClick={() => setClearing(true)}
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Remove their own week
-            </button>
+            </Button>
           )}
-          <button type="button" className={btnGhost} onClick={() => setChosen(new Map())}>
+          <Button variant="ghost" type="button" onClick={() => setChosen(new Map())}>
             Clear
-          </button>
+          </Button>
         </div>
       )}
 
@@ -248,32 +251,26 @@ export function PeopleWeeks({
             retrying={query.isFetching}
           />
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-500">Nobody matches.</p>
+          <p className="py-6 text-center text-sm text-quiet">Nobody matches.</p>
         ) : (
           <>
             {/* Phones: one card a person. */}
             <div className="md:hidden">
               {editable && (
-                <label className="flex items-center gap-2.5 border-b border-slate-100 py-2.5 text-sm font-semibold text-slate-700">
-                  <input
-                    type="checkbox"
-                    className={checkboxBase}
-                    checked={allPicked}
-                    onChange={toggleAll}
-                  />
+                <label className="flex items-center gap-2.5 border-b border-divider py-2.5 text-sm font-semibold text-body">
+                  <Checkbox checked={allPicked} onChange={toggleAll} />
                   Pick everyone listed
                 </label>
               )}
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-divider">
                 {rows.map((r) => (
                   <li
                     key={r.id}
-                    className={`flex gap-3 py-3 ${chosen.has(r.id) ? "bg-[rgba(34,34,204,0.03)]" : ""}`}
+                    className={`flex gap-3 py-3 ${chosen.has(r.id) ? "bg-brand/3" : ""}`}
                   >
                     {editable && (
-                      <input
-                        type="checkbox"
-                        className={`${checkboxBase} mt-1`}
+                      <Checkbox
+                        className="mt-1"
                         checked={chosen.has(r.id)}
                         onChange={(e) => toggle(r, e.target.checked)}
                         aria-label={`Pick ${r.name}`}
@@ -283,14 +280,12 @@ export function PeopleWeeks({
                       <div className="flex items-start justify-between gap-2">
                         <PersonAvatar name={r.name} avatarId={r.avatarId} userId={r.id} size={32} />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-slate-900">{r.name}</p>
-                          <p className="text-xs text-slate-500">
-                            {r.department ?? "No department"}
-                          </p>
+                          <p className="truncate font-semibold text-primary">{r.name}</p>
+                          <p className="text-xs text-quiet">{r.department ?? "No department"}</p>
                         </div>
                         {yearButton(r)}
                       </div>
-                      <p className="mt-1.5 text-sm text-slate-700">{r.summary}</p>
+                      <p className="mt-1.5 text-sm text-body">{r.summary}</p>
                       <div className="mt-1.5">{sourceChip(r)}</div>
                     </div>
                   </li>
@@ -300,12 +295,10 @@ export function PeopleWeeks({
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="whitespace-nowrap border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  <tr className="whitespace-nowrap border-b border-divider text-left text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
                     {editable && (
                       <th className="w-8 px-2 py-2.5">
-                        <input
-                          type="checkbox"
-                          className={checkboxBase}
+                        <Checkbox
                           checked={allPicked}
                           onChange={toggleAll}
                           aria-label="Pick everyone listed"
@@ -320,17 +313,12 @@ export function PeopleWeeks({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-divider">
                   {rows.map((r) => (
-                    <tr
-                      key={r.id}
-                      className={`align-top ${chosen.has(r.id) ? "bg-[rgba(34,34,204,0.03)]" : ""}`}
-                    >
+                    <tr key={r.id} className={`align-top ${chosen.has(r.id) ? "bg-brand/3" : ""}`}>
                       {editable && (
                         <td className="px-2 py-3">
-                          <input
-                            type="checkbox"
-                            className={checkboxBase}
+                          <Checkbox
                             checked={chosen.has(r.id)}
                             onChange={(e) => toggle(r, e.target.checked)}
                             aria-label={`Pick ${r.name}`}
@@ -338,7 +326,7 @@ export function PeopleWeeks({
                         </td>
                       )}
                       <td className="px-3 py-3">
-                        <p className="flex items-center gap-2 font-semibold text-slate-900">
+                        <p className="flex items-center gap-2 font-semibold text-primary">
                           <PersonAvatar
                             name={r.name}
                             avatarId={r.avatarId}
@@ -347,9 +335,9 @@ export function PeopleWeeks({
                           />
                           {r.name}
                         </p>
-                        <p className="text-xs text-slate-500">{r.department ?? "No department"}</p>
+                        <p className="text-xs text-quiet">{r.department ?? "No department"}</p>
                       </td>
-                      <td className="px-3 py-3 text-slate-700">{r.summary}</td>
+                      <td className="px-3 py-3 text-body">{r.summary}</td>
                       <td className="px-3 py-3">{sourceChip(r)}</td>
                       <td className="px-3 py-3 text-right">{yearButton(r)}</td>
                     </tr>
@@ -358,7 +346,7 @@ export function PeopleWeeks({
               </table>
             </div>
             {total > rows.length && (
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-quiet">
                 Showing the first {Math.min(rows.length, PEOPLE_PAGE)} of {total}. Search to find
                 someone else.
               </p>
@@ -384,7 +372,7 @@ export function PeopleWeeks({
             onCancel={() => setSetting(false)}
             submitLabel={`Set for ${plural(picked.length)}`}
             lead={
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-soft">
                 {namesText(picked.map((p) => p.name))}. Their own week comes before their
                 department&apos;s and the organisation&apos;s.
               </p>

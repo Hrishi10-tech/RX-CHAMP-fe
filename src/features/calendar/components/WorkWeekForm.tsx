@@ -4,14 +4,10 @@ import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Select } from "@/components/ui/Select";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  labelBase,
-} from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
+import { FieldError, Hint, Input, Label } from "@/components/ui/Field";
+import { labelBase } from "@/components/ui/classes";
 import { WEEKDAY_SHORT } from "@/lib/time/months";
 import {
   SATURDAY_OPTIONS,
@@ -77,32 +73,25 @@ export function WorkWeekForm({
           {TOGGLED_DAYS.map((d) => {
             const on = days.includes(d);
             return (
-              <button
+              <ChoiceChip
                 key={d}
-                type="button"
-                aria-pressed={on}
+                on={on}
                 onClick={() =>
                   setDays((prev) =>
                     on ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b),
                   )
                 }
-                className={`h-10 min-w-[3.25rem] rounded-xl border px-3 text-sm font-semibold transition ${
-                  on
-                    ? "border-[rgb(34_34_204)] bg-[rgb(34_34_204)] text-white"
-                    : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-                }`}
+                className="h-10 min-w-[3.25rem] rounded-xl"
               >
                 {WEEKDAY_SHORT[d - 1]}
-              </button>
+              </ChoiceChip>
             );
           })}
         </div>
-        {touched && daysProblem && <p className={errorText}>{daysProblem}</p>}
+        {touched && daysProblem && <FieldError>{daysProblem}</FieldError>}
       </fieldset>
       <div>
-        <label className={labelBase} htmlFor={`${id}-saturdays`}>
-          Saturdays
-        </label>
+        <Label htmlFor={`${id}-saturdays`}>Saturdays</Label>
         <Select
           id={`${id}-saturdays`}
           value={saturdays}
@@ -112,34 +101,32 @@ export function WorkWeekForm({
       </div>
       {saturdays === "ALTERNATE" && (
         <div>
-          <label className={labelBase} htmlFor={`${id}-anchor`}>
-            One Saturday that is worked
-          </label>
-          <input
+          <Label htmlFor={`${id}-anchor`}>One Saturday that is worked</Label>
+          <Input
             id={`${id}-anchor`}
             type="date"
             value={anchor}
             onChange={(e) => setAnchor(e.target.value)}
-            className={`${inputBase} mt-1.5`}
+            className="mt-1.5"
           />
-          <p className={touched && anchorProblem ? errorText : hintBase}>
+          <Hint error={touched && anchorProblem}>
             {touched && anchorProblem
               ? anchorProblem
               : "Every second Saturday from it is worked; the others are off."}
-          </p>
+          </Hint>
         </div>
       )}
-      <p className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
+      <p className="rounded-xl bg-fill px-3 py-2 text-sm text-body">
         {weekdaysText(days)}; {lowerFirst(SATURDAY_RULE_LABEL[saturdays])}.
       </p>
-      <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-        <button type="button" onClick={onCancel} className={btnSecondary} disabled={busy}>
+      <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+        <Button type="button" onClick={onCancel} disabled={busy}>
           Cancel
-        </button>
-        <button type="submit" disabled={busy} className={btnPrimary}>
+        </Button>
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

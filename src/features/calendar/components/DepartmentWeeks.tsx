@@ -8,7 +8,8 @@ import { Chip } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnGhost, btnSmall, cardBase } from "@/components/ui/classes";
+import { cardBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
 import { errorMessage } from "@/lib/api";
 import { DepartmentIcon } from "@/features/departments/components/DepartmentIcon";
 import { useDepartments } from "@/features/departments/hooks/useDepartments";
@@ -66,10 +67,10 @@ export function DepartmentWeeks({ view, editable }: { view: CalendarView; editab
 
   return (
     <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="dept-weeks-title">
-      <h2 id="dept-weeks-title" className="text-base font-bold text-slate-900">
+      <h2 id="dept-weeks-title" className="text-base font-bold text-primary">
         Department calendars
       </h2>
-      <p className="mt-0.5 text-sm text-slate-500">
+      <p className="mt-0.5 text-sm text-quiet">
         Which days each department works: every Saturday, alternate Saturdays, 2nd and 4th off, and
         so on. A department without one follows the organisation&apos;s week ({orgWeekText(view)}
         ).
@@ -85,11 +86,11 @@ export function DepartmentWeeks({ view, editable }: { view: CalendarView; editab
             retrying={departments.isFetching}
           />
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-500">
+          <p className="py-6 text-center text-sm text-quiet">
             No departments yet. Add one under Departments first.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+          <ul className="divide-y divide-divider overflow-hidden rounded-xl border border-card">
             {rows.map((d) => {
               const week = weeks.get(d.id);
               return (
@@ -100,13 +101,13 @@ export function DepartmentWeeks({ view, editable }: { view: CalendarView; editab
                   <span className="flex min-w-0 flex-1 items-center gap-3">
                     <DepartmentIcon icon={d.icon} size="sm" />
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold text-slate-900">{d.name}</span>
-                      <span className="block text-xs text-slate-500">
+                      <span className="block truncate font-semibold text-primary">{d.name}</span>
+                      <span className="block text-xs text-quiet">
                         {d.staffCount} {d.staffCount === 1 ? "staff member" : "staff"}
                       </span>
                     </span>
                   </span>
-                  <span className="min-w-0 text-sm text-slate-700 md:w-80">
+                  <span className="min-w-0 text-sm text-body md:w-80">
                     {week ? (
                       workWeekText(week)
                     ) : (
@@ -117,19 +118,19 @@ export function DepartmentWeeks({ view, editable }: { view: CalendarView; editab
                   </span>
                   {editable && (
                     <span className="flex gap-2 md:w-40 md:justify-end">
-                      <button type="button" onClick={() => setEditing(d)} className={btnSmall}>
+                      <Button variant="small" type="button" onClick={() => setEditing(d)}>
                         <Pencil className="h-3.5 w-3.5" aria-hidden />
                         {week ? "Change" : "Set week"}
-                      </button>
+                      </Button>
                       {week && (
-                        <button
+                        <Button
+                          variant="ghost"
                           type="button"
                           onClick={() => setClearing(d)}
-                          className={btnGhost}
                           aria-label={`Remove the working week of ${d.name}`}
                         >
-                          <Trash2 className="h-4 w-4 text-rose-600" aria-hidden />
-                        </button>
+                          <Trash2 className="h-4 w-4 text-attention" aria-hidden />
+                        </Button>
                       )}
                     </span>
                   )}

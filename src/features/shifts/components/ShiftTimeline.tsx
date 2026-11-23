@@ -9,9 +9,9 @@ import { formatTime12, formatTimeCompact12 } from "@/lib/time/format";
 import type { BreakKind } from "@/features/shifts/types";
 
 const PALETTE: Record<BreakKind, { window: string; slot: string; text: string }> = {
-  MORNING: { window: "bg-amber-200/80", slot: "bg-amber-700", text: "text-amber-800" },
-  LUNCH: { window: "bg-teal-100", slot: "bg-teal-700", text: "text-teal-800" },
-  EVENING: { window: "bg-amber-200/80", slot: "bg-amber-700", text: "text-amber-800" },
+  MORNING: { window: "bg-attention-edge/80", slot: "bg-attention", text: "text-attention-ink" },
+  LUNCH: { window: "bg-brand-wash-strong", slot: "bg-brand", text: "text-brand-ink" },
+  EVENING: { window: "bg-attention-edge/80", slot: "bg-attention", text: "text-attention-ink" },
 };
 
 /**
@@ -24,7 +24,7 @@ export function ShiftTimeline({ input }: { input: TimelineInput }) {
 
   if (!timeline) {
     return (
-      <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+      <p className="rounded-xl border border-dashed border-card bg-fill px-4 py-6 text-center text-sm text-quiet">
         Set the shift&apos;s start and end to see the timeline.
       </p>
     );
@@ -46,7 +46,7 @@ export function ShiftTimeline({ input }: { input: TimelineInput }) {
           </div>
         ))}
 
-        <div className="absolute left-0 right-0 top-6 h-9 overflow-hidden rounded-lg bg-slate-100">
+        <div className="absolute left-0 right-0 top-6 h-9 overflow-hidden rounded-lg bg-panel">
           {timeline.breaks.map((b) => (
             <div key={`win-${b.kind}`}>
               <div
@@ -63,21 +63,21 @@ export function ShiftTimeline({ input }: { input: TimelineInput }) {
         {timeline.breaks.map((b) => (
           <div
             key={`ring-${b.kind}`}
-            className="absolute top-[18px] h-12 rounded border-2 border-emerald-700"
+            className="absolute top-[18px] h-12 rounded border-2 border-working"
             style={{ left: `${b.ring.left}%`, width: `max(4px, ${b.ring.width}%)` }}
           />
         ))}
 
-        <div className="absolute left-0 top-[72px] text-[11px] font-semibold tabular-nums text-slate-600">
+        <div className="absolute left-0 top-[72px] text-[0.6875rem] font-semibold tabular-nums text-soft">
           {formatTime12(input.start)}
         </div>
-        <div className="absolute right-0 top-[72px] text-[11px] font-semibold tabular-nums text-slate-600">
+        <div className="absolute right-0 top-[72px] text-[0.6875rem] font-semibold tabular-nums text-soft">
           {formatTime12(input.end)}
         </div>
         {timeline.ticks.map((t) => (
           <div
             key={t.label}
-            className="absolute top-[72px] w-12 -translate-x-1/2 whitespace-nowrap text-center text-[11px] tabular-nums text-slate-400"
+            className="absolute top-[72px] w-12 -translate-x-1/2 whitespace-nowrap text-center text-[0.6875rem] tabular-nums text-quiet"
             style={{ left: `${t.left}%` }}
           >
             {formatTimeCompact12(t.label)}
@@ -85,17 +85,17 @@ export function ShiftTimeline({ input }: { input: TimelineInput }) {
         ))}
       </div>
 
-      <figcaption className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-600">
+      <figcaption className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-soft">
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-3.5 rounded-sm bg-amber-200" />
+          <span aria-hidden className="h-2.5 w-3.5 rounded-sm bg-attention-edge" />
           Window (can start)
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-3.5 rounded-sm bg-amber-700" />
+          <span aria-hidden className="h-2.5 w-3.5 rounded-sm bg-attention" />
           Scheduled break
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-3.5 rounded-sm border-2 border-emerald-700" />
+          <span aria-hidden className="h-2.5 w-3.5 rounded-sm border-2 border-working" />
           Ringing: on time
         </span>
         <ul className="sr-only">

@@ -10,26 +10,27 @@ import { MONTH_NAMES, WEEKDAY_SHORT, calendarCells } from "@/lib/time/months";
 import { usePersonYear } from "@/features/calendar/hooks/useCalendar";
 import { CALENDAR_SOURCE_LABEL, countBySource } from "@/features/calendar/lib/calendar";
 import type { CalendarSource, PersonYearView } from "@/features/calendar/types";
+import { IconButton } from "@/components/ui/IconButton";
 
 type Day = PersonYearView["days"][number];
 
 /** A mark under the day for what decided it; the organisation's week has none. */
 const SOURCE_MARK: Record<CalendarSource, string> = {
-  OVERRIDE: "bg-violet-500",
-  PERSON: "bg-[rgb(34_34_204)]",
-  DEPARTMENT: "bg-sky-500",
+  OVERRIDE: "bg-meeting",
+  PERSON: "bg-brand",
+  DEPARTMENT: "bg-brand",
   ORGANISATION: "",
 };
 
 const SOURCES: CalendarSource[] = ["OVERRIDE", "PERSON", "DEPARTMENT", "ORGANISATION"];
 
 function cellClass(day: Day | undefined): string {
-  if (!day) return "bg-white text-slate-300";
-  if (!day.working && day.label) return "bg-violet-100 font-semibold text-violet-800";
-  if (!day.working) return "bg-slate-100 text-slate-400";
+  if (!day) return "bg-card text-faint";
+  if (!day.working && day.label) return "bg-meeting-wash-strong font-semibold text-meeting-ink";
+  if (!day.working) return "bg-panel text-quiet";
   if (day.source === "OVERRIDE")
-    return "bg-emerald-50 font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-300";
-  return "bg-white text-slate-700";
+    return "bg-working-wash font-semibold text-working-ink ring-1 ring-inset ring-working-edge";
+  return "bg-card text-body";
 }
 
 /** "Mon 9 Nov: day off, Diwali. A day set on the organisation calendar." */
@@ -52,10 +53,10 @@ function Month({
   const name = MONTH_NAMES[Number(month.slice(5, 7)) - 1];
   return (
     <section aria-label={name} className="min-w-0">
-      <h3 className="mb-1.5 text-sm font-bold text-slate-800">{name}</h3>
-      <div className="grid grid-cols-7 gap-0.5 text-center text-[11px]">
+      <h3 className="mb-1.5 text-sm font-bold text-strong">{name}</h3>
+      <div className="grid grid-cols-7 gap-0.5 text-center text-[0.6875rem]">
         {WEEKDAY_SHORT.map((d) => (
-          <span key={d} aria-hidden className="py-0.5 font-semibold text-slate-400">
+          <span key={d} aria-hidden className="py-0.5 font-semibold text-quiet">
             {d.slice(0, 2)}
           </span>
         ))}
@@ -69,7 +70,7 @@ function Month({
               title={label}
               aria-label={label}
               className={`relative flex h-8 items-center justify-center rounded-md tabular-nums ${cellClass(day)} ${
-                date === today ? "outline outline-2 outline-[rgb(34_34_204)]" : ""
+                date === today ? "outline outline-2 outline-brand" : ""
               }`}
             >
               {Number(date.slice(8))}
@@ -107,34 +108,24 @@ export function PersonYear({ userId, personName }: { userId: string; personName:
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="min-w-0 text-sm text-slate-600">
+        <p className="min-w-0 text-sm text-soft">
           {view
             ? `${view.sourceLabel} decides most of ${personName}'s working days.`
             : `What decides each of ${personName}'s days.`}
         </p>
-        <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
-            onClick={() => setYear((y) => y - 1)}
-            aria-label="Previous year"
-          >
+        <div className="flex items-center gap-1 rounded-xl border border-card bg-card p-1 shadow-sm">
+          <IconButton label="Previous year" onClick={() => setYear((y) => y - 1)}>
             <ChevronLeft className="h-4 w-4" />
-          </button>
+          </IconButton>
           <span
-            className="min-w-[4rem] text-center text-sm font-bold tabular-nums text-slate-900"
+            className="min-w-[4rem] text-center text-sm font-bold tabular-nums text-primary"
             aria-live="polite"
           >
             {year}
           </span>
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
-            onClick={() => setYear((y) => y + 1)}
-            aria-label="Next year"
-          >
+          <IconButton label="Next year" onClick={() => setYear((y) => y + 1)}>
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -149,48 +140,46 @@ export function PersonYear({ userId, personName }: { userId: string; personName:
         />
       ) : (
         <>
-          <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 text-center">
+          <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-card bg-edge text-center">
             {[
               { label: "Working days", value: view.workingDays },
               { label: "Days off", value: daysOff },
               { label: "Set on the calendar", value: counts.OVERRIDE },
             ].map((t) => (
-              <div key={t.label} className="bg-white px-2 py-2.5">
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <div key={t.label} className="bg-card px-2 py-2.5">
+                <dt className="text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
                   {t.label}
                 </dt>
-                <dd className="text-lg font-bold tabular-nums text-slate-900">{t.value}</dd>
+                <dd className="text-lg font-bold tabular-nums text-primary">{t.value}</dd>
               </div>
             ))}
           </dl>
           <section aria-label="Decided by" className="space-y-1.5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Decided by
-            </h3>
-            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-600">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-quiet">Decided by</h3>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-soft">
               {SOURCES.filter((s) => counts[s] > 0).map((s) => (
                 <li key={s} className="flex items-center gap-1.5">
                   <span
                     aria-hidden
-                    className={`h-1 w-3 rounded-full ${SOURCE_MARK[s] || "bg-slate-300"}`}
+                    className={`h-1 w-3 rounded-full ${SOURCE_MARK[s] || "bg-edge-strong"}`}
                   />
                   {CALENDAR_SOURCE_LABEL[s]}:{" "}
-                  <span className="font-semibold tabular-nums text-slate-900">{counts[s]}</span>
+                  <span className="font-semibold tabular-nums text-primary">{counts[s]}</span>
                 </li>
               ))}
             </ul>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-soft">
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded border border-slate-200 bg-white" /> Working
+                <span className="h-3 w-3 rounded border border-card bg-card" /> Working
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-slate-100" /> Off
+                <span className="h-3 w-3 rounded bg-panel" /> Off
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-violet-100" /> Holiday
+                <span className="h-3 w-3 rounded bg-meeting-wash-strong" /> Holiday
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-emerald-50 ring-1 ring-emerald-300" /> Extra
+                <span className="h-3 w-3 rounded bg-working-wash ring-1 ring-working-edge" /> Extra
                 working day
               </span>
             </div>

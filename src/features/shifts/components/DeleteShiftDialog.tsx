@@ -6,11 +6,11 @@ import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
-import { btnDanger, btnSecondary } from "@/components/ui/classes";
 import { errorCode, errorMessage } from "@/lib/api";
 import { useDeleteShift } from "@/features/shifts/hooks/useShifts";
 import { assignedToday } from "@/features/shifts/lib/usage";
 import type { ShiftView } from "@/features/shifts/types";
+import { Button } from "@/components/ui/Button";
 
 interface Blocked {
   title: string;
@@ -83,9 +83,9 @@ export function DeleteShiftDialog({
         {blocked ? (
           <div
             role="alert"
-            className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+            className="flex gap-3 rounded-xl border border-attention-edge bg-attention-wash p-4 text-sm text-attention-ink"
           >
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-attention" aria-hidden />
             <div className="space-y-1.5">
               <p className="font-semibold">{blocked.title}</p>
               <p>{blocked.message}</p>
@@ -98,7 +98,7 @@ export function DeleteShiftDialog({
               {blocked.code === "SHIFT_IN_USE" && (
                 <Link
                   href="/dashboard/shifts/assign"
-                  className="inline-block font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                  className="inline-block font-semibold text-brand underline-offset-2 hover:underline"
                 >
                   Go to Assign shifts
                 </Link>
@@ -106,13 +106,13 @@ export function DeleteShiftDialog({
             </div>
           </div>
         ) : (
-          <div className="space-y-2 text-sm leading-relaxed text-slate-600">
+          <div className="space-y-2 text-sm leading-relaxed text-soft">
             <p>
-              Delete <span className="font-semibold text-slate-900">{shift?.name}</span>? Breaks
+              Delete <span className="font-semibold text-primary">{shift?.name}</span>? Breaks
               already taken keep their record. This can&apos;t be undone.
             </p>
             {inUse && (
-              <p className="text-amber-800">
+              <p className="text-attention-ink">
                 Today it&apos;s assigned to {inUse}. Move them to another shift first, or the delete
                 will be refused.
               </p>
@@ -120,19 +120,19 @@ export function DeleteShiftDialog({
           </div>
         )}
 
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button type="button" onClick={close} disabled={pending} className={btnSecondary}>
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button variant="secondary" type="button" onClick={close} disabled={pending}>
             {blocked ? "OK" : "Cancel"}
-          </button>
+          </Button>
           {!blocked && (
-            <button type="button" onClick={confirm} disabled={pending} className={btnDanger}>
+            <Button variant="attention" type="button" onClick={confirm} disabled={pending}>
               {pending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
                 <Trash2 className="h-4 w-4" aria-hidden />
               )}
               {pending ? "Deleting…" : "Delete shift"}
-            </button>
+            </Button>
           )}
         </div>
       </div>

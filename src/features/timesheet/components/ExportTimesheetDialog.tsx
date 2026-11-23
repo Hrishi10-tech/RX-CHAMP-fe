@@ -7,7 +7,9 @@ import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
-import { btnPrimary, btnSecondary, inputBase, labelBase } from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { Input, Label } from "@/components/ui/Field";
 import { errorMessage } from "@/lib/api";
 import { todayKey } from "@/lib/time/businessTime";
 import {
@@ -113,9 +115,7 @@ export function ExportTimesheetDialog({
     >
       <div className="space-y-4 px-6 py-5">
         <div>
-          <label className={labelBase} htmlFor={`${uid}-period`}>
-            Period
-          </label>
+          <Label htmlFor={`${uid}-period`}>Period</Label>
           <Select
             id={`${uid}-period`}
             value={period}
@@ -129,39 +129,39 @@ export function ExportTimesheetDialog({
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className={labelBase}>From</span>
-              <input
+              <Input
                 type="date"
                 value={customFrom}
                 max={today}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className={`${inputBase} mt-1.5`}
+                className="mt-1.5"
               />
             </label>
             <label className="block">
               <span className={labelBase}>To</span>
-              <input
+              <Input
                 type="date"
                 value={customTo}
                 min={customFrom || undefined}
                 max={today}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className={`${inputBase} mt-1.5`}
+                className="mt-1.5"
               />
             </label>
           </div>
         )}
 
         {invalid ? (
-          <p className="text-xs font-medium text-rose-600">
+          <p className="text-xs font-medium text-attention">
             The start must be on or before the end.
           </p>
         ) : tooMany ? (
-          <p className="text-xs font-medium text-rose-600">
+          <p className="text-xs font-medium text-attention">
             That is {days} days. Export at most {MAX_TIMESHEET_DAYS} at a time.
           </p>
         ) : (
-          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            <span className="font-semibold text-slate-800">{rangeText(from, to)}</span>, {days}{" "}
+          <p className="rounded-lg bg-fill px-3 py-2 text-xs text-soft">
+            <span className="font-semibold text-strong">{rangeText(from, to)}</span>, {days}{" "}
             {days === 1 ? "day" : "days"}. Focus and paid time against the target, paid and unpaid
             breaks, meetings and away time for each day, with 12-hour in and out times.
           </p>
@@ -170,7 +170,7 @@ export function ExportTimesheetDialog({
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+            className="flex items-start gap-2 rounded-lg border border-attention-edge bg-attention-wash px-3 py-2 text-sm text-attention"
           >
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>{error}</span>
@@ -178,26 +178,25 @@ export function ExportTimesheetDialog({
         )}
       </div>
 
-      <div className="flex flex-col-reverse gap-2 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end [&>button]:whitespace-nowrap">
-        <button type="button" className={btnSecondary} onClick={onClose}>
+      <div className="flex flex-col-reverse gap-2 border-t border-divider px-6 py-4 sm:flex-row sm:justify-end [&>button]:whitespace-nowrap">
+        <Button type="button" onClick={onClose}>
           {busy ? "Cancel" : "Close"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className={btnSecondary}
           onClick={() => void run("xlsx")}
           disabled={busy !== null || invalid || tooMany}
         >
           {busy === "xlsx" ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           ) : (
-            <FileSpreadsheet className="h-4 w-4 text-emerald-600" aria-hidden />
+            <FileSpreadsheet className="h-4 w-4 text-working" aria-hidden />
           )}
           Download Excel
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="primary"
           type="button"
-          className={btnPrimary}
           onClick={() => void run("pdf")}
           disabled={busy !== null || invalid || tooMany}
         >
@@ -207,7 +206,7 @@ export function ExportTimesheetDialog({
             <FileText className="h-4 w-4" aria-hidden />
           )}
           {busy === "pdf" ? "Building…" : "Download PDF"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

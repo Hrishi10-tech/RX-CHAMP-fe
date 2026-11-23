@@ -21,19 +21,6 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnPrimary,
-  btnSecondary,
-  btnSmall,
-  cardBase,
-  checkboxBase,
-  errorText,
-  hintBase,
-  inputBase,
-  labelBase,
-  textareaBase,
-  thBase,
-} from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import { formatDayWithWeekday } from "@/lib/time/businessTime";
 import { PAYROLL_PAUSED_LABEL } from "@/features/reports/lib/timeFigures";
@@ -61,6 +48,12 @@ import type {
   PullRunResult,
   TimeFormat,
 } from "@/features/attendance/types";
+import { Card } from "@/components/ui/Card";
+import { Th } from "@/components/ui/Table";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { Checkbox, FieldError, Hint, Input, Label, Textarea } from "@/components/ui/Field";
+import { cardBase } from "@/components/ui/classes";
 
 // ---- Status --------------------------------------------------------------------------------
 
@@ -75,7 +68,7 @@ export function StatusStrip() {
       label: "Biometric people",
       value: String(s.people.biometric),
       sub: `${s.people.agent} on the agent${s.people.withoutCode ? ` · ${s.people.withoutCode} without an ID` : ""}`,
-      tone: s.people.withoutCode ? "text-amber-700" : undefined,
+      tone: s.people.withoutCode ? "text-attention" : undefined,
     },
     {
       label: "Punches today",
@@ -92,7 +85,7 @@ export function StatusStrip() {
     {
       label: "Codes nobody has",
       value: String(s.unmatchedCodes),
-      tone: s.unmatchedCodes ? "text-amber-700" : undefined,
+      tone: s.unmatchedCodes ? "text-attention" : undefined,
       sub: s.unmatchedCodes ? "See the Unmatched tab" : "Every punch has its person",
     },
     {
@@ -104,7 +97,7 @@ export function StatusStrip() {
             ? "Running"
             : "Not run yet"
         : "Off",
-      tone: s.pull.lastError ? "text-rose-700" : undefined,
+      tone: s.pull.lastError ? "text-attention" : undefined,
       sub:
         s.pull.lastError ??
         (s.pull.lastOkAt
@@ -115,16 +108,16 @@ export function StatusStrip() {
     },
   ];
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 sm:grid-cols-3 lg:grid-cols-5">
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-card bg-edge sm:grid-cols-3 lg:grid-cols-5">
       {tiles.map((t) => (
-        <div key={t.label} className="bg-white px-3 py-3">
-          <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        <div key={t.label} className="bg-card px-3 py-3">
+          <dt className="text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
             {t.label}
           </dt>
-          <dd className={`mt-0.5 text-lg font-bold tabular-nums ${t.tone ?? "text-slate-900"}`}>
+          <dd className={`mt-0.5 text-lg font-bold tabular-nums ${t.tone ?? "text-primary"}`}>
             {t.value}
           </dd>
-          {t.sub && <dd className="text-xs text-slate-500">{t.sub}</dd>}
+          {t.sub && <dd className="text-xs text-quiet">{t.sub}</dd>}
         </div>
       ))}
     </dl>
@@ -174,12 +167,12 @@ export function IntegrationSwitchSection({
       <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="integration-title">
         <h2
           id="integration-title"
-          className="flex items-center gap-2 text-base font-bold text-slate-900"
+          className="flex items-center gap-2 text-base font-bold text-primary"
         >
-          <Power className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+          <Power className="h-4 w-4 text-brand" aria-hidden />
           Biometric integration
         </h2>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <p className="mt-0.5 text-sm text-quiet">
           Each organisation runs its own integration. Pick an organisation to see whether its
           integration is on.
         </p>
@@ -188,56 +181,56 @@ export function IntegrationSwitchSection({
   }
 
   return (
-    <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="integration-title">
+    <Card as="section" className="px-4 py-4 sm:px-6" aria-labelledby="integration-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2
             id="integration-title"
-            className="flex flex-wrap items-center gap-2 text-base font-bold text-slate-900"
+            className="flex flex-wrap items-center gap-2 text-base font-bold text-primary"
           >
-            <Power className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+            <Power className="h-4 w-4 text-brand" aria-hidden />
             Biometric integration
             <Chip tone={on ? "success" : "neutral"} dot={on}>
               {on ? "On" : "Off"}
             </Chip>
           </h2>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <p className="mt-0.5 text-sm text-quiet">
             {on && current
               ? `On since ${formatDayWithWeekday(current.fromDate)}${org?.name ? ` for ${org.name}` : ""}. Payroll is calculated for biometric staff on the days it is on.`
               : `Off${org?.name ? ` for ${org.name}` : ""}. Biometric staff's payroll shows "${PAYROLL_PAUSED_LABEL}" and is left out of payroll runs and exports. Their days, punches and focus time are tracked as usual.`}
           </p>
           {!canEdit && (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-quiet">
               The organisation admin switches it on once the device is connected.
             </p>
           )}
         </div>
         {canEdit && (
-          <button
+          <Button
+            variant={on ? "secondary" : "primary"}
             type="button"
-            className={on ? btnSecondary : btnPrimary}
             onClick={() => setAsking(true)}
           >
             {on ? "Switch off" : "Switch on"}
-          </button>
+          </Button>
         )}
       </div>
       <div className="mt-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <p className="text-xs font-semibold uppercase tracking-wide text-quiet">
           When it has been on
         </p>
         {periods.length === 0 ? (
-          <p className="mt-1 text-sm text-slate-500">It has not been on yet.</p>
+          <p className="mt-1 text-sm text-quiet">It has not been on yet.</p>
         ) : (
           <>
-            <ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200 md:hidden">
+            <ul className="mt-2 divide-y divide-divider rounded-xl border border-card md:hidden">
               {periods.map((p) => (
                 <li key={p.startedAt} className="px-3 py-2 text-sm">
-                  <p className="font-semibold text-slate-900">
+                  <p className="font-semibold text-primary">
                     {formatDayWithWeekday(p.fromDate)} to{" "}
                     {p.toDate ? formatDayWithWeekday(p.toDate) : "now"}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-quiet">
                     {[
                       p.startedByName ? `On by ${p.startedByName}` : null,
                       p.endedByName ? `off by ${p.endedByName}` : null,
@@ -248,35 +241,27 @@ export function IntegrationSwitchSection({
                 </li>
               ))}
             </ul>
-            <div className="mt-2 hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
+            <div className="mt-2 hidden overflow-x-auto rounded-xl border border-card md:block">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/70">
-                    <th scope="col" className={thBase}>
-                      From
-                    </th>
-                    <th scope="col" className={thBase}>
-                      To
-                    </th>
-                    <th scope="col" className={thBase}>
-                      Switched on by
-                    </th>
-                    <th scope="col" className={thBase}>
-                      Switched off by
-                    </th>
+                  <tr className="border-b border-card bg-fill/70">
+                    <Th scope="col">From</Th>
+                    <Th scope="col">To</Th>
+                    <Th scope="col">Switched on by</Th>
+                    <Th scope="col">Switched off by</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {periods.map((p) => (
-                    <tr key={p.startedAt} className="border-b border-slate-100 last:border-b-0">
-                      <td className="px-4 py-2 tabular-nums text-slate-900">
+                    <tr key={p.startedAt} className="border-b border-divider last:border-b-0">
+                      <td className="px-4 py-2 tabular-nums text-primary">
                         {formatDayWithWeekday(p.fromDate)}
                       </td>
-                      <td className="px-4 py-2 tabular-nums text-slate-700">
+                      <td className="px-4 py-2 tabular-nums text-body">
                         {p.toDate ? formatDayWithWeekday(p.toDate) : "Still on"}
                       </td>
-                      <td className="px-4 py-2 text-slate-700">{p.startedByName ?? ""}</td>
-                      <td className="px-4 py-2 text-slate-700">{p.endedByName ?? ""}</td>
+                      <td className="px-4 py-2 text-body">{p.startedByName ?? ""}</td>
+                      <td className="px-4 py-2 text-body">{p.endedByName ?? ""}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -299,7 +284,7 @@ export function IntegrationSwitchSection({
         }
         confirmLabel={on ? "Switch off" : "Switch on"}
       />
-    </section>
+    </Card>
   );
 }
 
@@ -351,66 +336,59 @@ function NewKeyDialog({ open, onClose }: { open: boolean; onClose: () => void })
     >
       {made ? (
         <div className="space-y-4 px-5 py-5 sm:px-6">
-          <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">Copy it now.</span> It is shown this
-            once; RX Vision keeps only a hash of it. Give it to whoever runs the connector. Punches
-            sent with it count for this organisation&apos;s people only.
+          <p className="text-sm text-soft">
+            <span className="font-semibold text-primary">Copy it now.</span> It is shown this once;
+            RX Vision keeps only a hash of it. Give it to whoever runs the connector. Punches sent
+            with it count for this organisation&apos;s people only.
           </p>
           <div className="flex items-stretch gap-2">
             <code
-              className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm text-slate-900"
+              className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-card bg-fill px-3 py-2.5 font-mono text-sm text-primary"
               aria-label="The key"
             >
               {made.key}
             </code>
-            <button
+            <IconButton
+              variant="boxed"
               type="button"
-              className={btnSecondary}
               onClick={() => void copy()}
-              aria-label="Copy the key"
+              label="Copy the key"
             >
               <Copy className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
           <div className="flex justify-end">
-            <button type="button" className={btnPrimary} onClick={onClose}>
+            <Button variant="primary" type="button" onClick={onClose}>
               Done
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <form onSubmit={submit} noValidate className="space-y-4 px-5 py-5 sm:px-6">
           <div>
-            <label htmlFor="key-name" className={labelBase}>
-              Where it is used
-            </label>
-            <input
+            <Label htmlFor="key-name">Where it is used</Label>
+            <Input
               id="key-name"
               value={name}
               maxLength={80}
               onChange={(e) => setName(e.target.value)}
               placeholder="eSSL connector, Chennai office"
-              className={`mt-1.5 ${inputBase}`}
+              className="mt-1.5"
               data-autofocus
             />
-            <p className={problem ? errorText : hintBase}>
+            <Hint error={problem}>
               {problem ??
                 "One key per connector or device, so one can be revoked without the others."}
-            </p>
+            </Hint>
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              className={btnSecondary}
-              onClick={onClose}
-              disabled={create.isPending}
-            >
+            <Button variant="secondary" type="button" onClick={onClose} disabled={create.isPending}>
               Cancel
-            </button>
-            <button type="submit" className={btnPrimary} disabled={create.isPending}>
+            </Button>
+            <Button variant="primary" type="submit" disabled={create.isPending}>
               {create.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               Make key
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -445,17 +423,14 @@ function PushSection({ canEdit, pushPath }: { canEdit: boolean; pushPath: string
   }
 
   return (
-    <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="push-title">
+    <Card as="section" className="px-4 py-4 sm:px-6" aria-labelledby="push-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2
-            id="push-title"
-            className="flex items-center gap-2 text-base font-bold text-slate-900"
-          >
-            <Plug className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+          <h2 id="push-title" className="flex items-center gap-2 text-base font-bold text-primary">
+            <Plug className="h-4 w-4 text-brand" aria-hidden />
             Push: the device sends punches
           </h2>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <p className="mt-0.5 text-sm text-quiet">
             The biometric system, or a small connector beside it, posts punches with one of this
             organisation&apos;s integration keys; the key decides the organisation, and its codes
             match this organisation&apos;s people only. Safe to resend: a punch already stored is
@@ -463,15 +438,15 @@ function PushSection({ canEdit, pushPath }: { canEdit: boolean; pushPath: string
           </p>
         </div>
         {canEdit && (
-          <button type="button" className={btnPrimary} onClick={() => setMaking(true)}>
+          <Button variant="primary" type="button" onClick={() => setMaking(true)}>
             <KeyRound className="h-4 w-4" aria-hidden />
             Make a key
-          </button>
+          </Button>
         )}
       </div>
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-          <p className="font-semibold text-slate-900">POST {url}</p>
+        <div className="min-w-0 rounded-xl border border-card bg-fill p-3 text-xs text-body">
+          <p className="break-all font-semibold text-primary">POST {url}</p>
           <p className="mt-1">
             Header <code className="font-mono">X-Biometric-Key: rxb_…</code>, JSON body, up to 500
             punches a call. <code className="font-mono">time</code> is ISO 8601 with an offset, a
@@ -479,7 +454,11 @@ function PushSection({ canEdit, pushPath }: { canEdit: boolean; pushPath: string
             or epoch seconds. <code className="font-mono">direction</code> is IN, OUT, the words set
             in Settings, or left out.
           </p>
-          <pre className="mt-2 overflow-x-auto rounded-lg bg-white p-2 font-mono text-[11px] text-slate-800 ring-1 ring-slate-200">
+          <pre
+            tabIndex={0}
+            aria-label="Sample request body"
+            className="mt-2 overflow-x-auto rounded-lg bg-card p-2 font-mono text-[0.6875rem] text-strong ring-1 ring-edge focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
+          >
             {SAMPLE}
           </pre>
           <p className="mt-2">
@@ -488,31 +467,29 @@ function PushSection({ canEdit, pushPath }: { canEdit: boolean; pushPath: string
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-wide text-quiet">
             Integration keys
           </p>
           {!canEdit ? (
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-quiet">
               The organisation admin makes and revokes keys.
             </p>
           ) : keys.isLoading ? (
             <LoadingState label="Loading keys…" />
           ) : (keys.data ?? []).length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-quiet">
               No key yet. Make one and give it to the connector.
             </p>
           ) : (
-            <ul className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+            <ul className="mt-2 divide-y divide-divider overflow-hidden rounded-xl border border-card">
               {(keys.data ?? []).map((k) => (
                 <li key={k.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
                   <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-slate-900">
+                    <span className="block font-semibold text-primary">
                       {k.name}{" "}
-                      <span className="font-mono text-xs font-normal text-slate-500">
-                        {k.prefix}…
-                      </span>
+                      <span className="font-mono text-xs font-normal text-quiet">{k.prefix}…</span>
                     </span>
-                    <span className="block text-xs text-slate-500">
+                    <span className="block text-xs text-quiet">
                       {k.active
                         ? k.lastUsedAt
                           ? `Last used ${sinceText(k.lastUsedAt)}${k.lastUsedIp ? ` from ${k.lastUsedIp}` : ""}`
@@ -521,13 +498,14 @@ function PushSection({ canEdit, pushPath }: { canEdit: boolean; pushPath: string
                     </span>
                   </span>
                   {k.active ? (
-                    <button
+                    <Button
+                      variant="small"
                       type="button"
-                      className={`${btnSmall} border-rose-200 text-rose-600 hover:bg-rose-50`}
+                      className="border-attention-edge text-attention hover:bg-attention-wash"
                       onClick={() => setRevoking(k)}
                     >
                       Revoke
-                    </button>
+                    </Button>
                   ) : (
                     <Chip tone="neutral">Revoked</Chip>
                   )}
@@ -553,7 +531,7 @@ function PushSection({ canEdit, pushPath }: { canEdit: boolean; pushPath: string
         }
         confirmLabel="Revoke"
       />
-    </section>
+    </Card>
   );
 }
 
@@ -595,7 +573,7 @@ function formOf(p: PullConfig): PullForm {
 function PullResult({ r }: { r: PullRunResult }) {
   return (
     <div
-      className={`rounded-xl border px-3.5 py-3 text-sm ${r.ok ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-rose-200 bg-rose-50 text-rose-900"}`}
+      className={`rounded-xl border px-3.5 py-3 text-sm ${r.ok ? "border-working-edge bg-working-wash text-working-ink" : "border-attention-edge bg-attention-wash text-attention-ink"}`}
       aria-live="polite"
     >
       <p className="flex items-center gap-1.5 font-semibold">
@@ -762,33 +740,27 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
     placeholder?: string,
   ) => (
     <div>
-      <label htmlFor={`pull-${key}`} className={labelBase}>
-        {label}
-      </label>
-      <input
+      <Label htmlFor={`pull-${key}`}>{label}</Label>
+      <Input
         id={`pull-${key}`}
         value={form[key] as string}
         disabled={!canEdit}
         placeholder={placeholder}
         onChange={(e) => set(key, e.target.value as never)}
-        className={`mt-1.5 ${inputBase} h-10 font-mono text-xs`}
+        className="mt-1.5 h-10 font-mono text-xs"
       />
-      <p className={problem?.field === key ? errorText : hintBase}>
-        {problem?.field === key ? problem.message : hint}
-      </p>
+      <Hint error={problem?.field === key}>{problem?.field === key ? problem.message : hint}</Hint>
     </div>
   );
   const field = (key: keyof PullConfig["fields"], label: string) => (
     <div>
-      <label htmlFor={`pull-field-${key}`} className={labelBase}>
-        {label}
-      </label>
-      <input
+      <Label htmlFor={`pull-field-${key}`}>{label}</Label>
+      <Input
         id={`pull-field-${key}`}
         value={form.fields[key]}
         disabled={!canEdit}
         onChange={(e) => set("fields", { ...form.fields, [key]: e.target.value })}
-        className={`mt-1.5 ${inputBase} h-10 font-mono text-xs`}
+        className="mt-1.5 h-10 font-mono text-xs"
       />
     </div>
   );
@@ -796,17 +768,14 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
   const needsPassword = form.authType === "BASIC" || form.authType === "LOGIN";
 
   return (
-    <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="pull-title">
+    <Card as="section" className="px-4 py-4 sm:px-6" aria-labelledby="pull-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2
-            id="pull-title"
-            className="flex items-center gap-2 text-base font-bold text-slate-900"
-          >
-            <RefreshCw className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+          <h2 id="pull-title" className="flex items-center gap-2 text-base font-bold text-primary">
+            <RefreshCw className="h-4 w-4 text-brand" aria-hidden />
             Pull: RX Vision reads the device&apos;s API
           </h2>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <p className="mt-0.5 text-sm text-quiet">
             This organisation&apos;s own pull: its address and sign-in are never shared with another
             organisation. Every few minutes, re-reading the last minutes each time so a late sync is
             never missed. The server needs a route to the device&apos;s address; it never reads
@@ -816,9 +785,9 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
         </div>
         {canEdit && (
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
+              variant="secondary"
               type="button"
-              className={btnSecondary}
               onClick={() => void onTest()}
               disabled={test.isPending || dirty}
             >
@@ -828,10 +797,10 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
                 <Plug className="h-4 w-4" aria-hidden />
               )}
               Test connection
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
               type="button"
-              className={btnSecondary}
               onClick={() => void onRun()}
               disabled={run.isPending || dirty}
             >
@@ -841,12 +810,12 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
                 <Play className="h-4 w-4" aria-hidden />
               )}
               Pull now
-            </button>
+            </Button>
           </div>
         )}
       </div>
       {dirty && canEdit && (
-        <p className="mt-2 text-xs text-amber-700">Save the settings before testing them.</p>
+        <p className="mt-2 text-xs text-attention">Save the settings before testing them.</p>
       )}
       {result && (
         <div className="mt-3">
@@ -856,9 +825,7 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
       <form onSubmit={submit} noValidate className="mt-4 space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="pull-preset" className={labelBase}>
-              Biometric system
-            </label>
+            <Label htmlFor="pull-preset">Biometric system</Label>
             <Select
               id="pull-preset"
               value={form.preset}
@@ -870,15 +837,13 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
               disabled={!canEdit}
               aria-label="Biometric system"
             />
-            <p className={hintBase}>
+            <Hint>
               Choosing BioTime fills the sign-in, paths and field names; the address, user and
               password are yours.
-            </p>
+            </Hint>
           </div>
-          <label className="flex items-center gap-2 self-end pb-6 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              className={checkboxBase}
+          <label className="flex items-center gap-2 self-end pb-6 text-sm font-semibold text-body">
+            <Checkbox
               checked={form.enabled}
               disabled={!canEdit}
               onChange={(e) => set("enabled", e.target.checked)}
@@ -892,9 +857,7 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
             "http://10.0.0.5/iclock/api/transactions/",
           )}
           <div>
-            <label htmlFor="pull-authType" className={labelBase}>
-              Sign-in
-            </label>
+            <Label htmlFor="pull-authType">Sign-in</Label>
             <Select
               id="pull-authType"
               value={form.authType}
@@ -925,59 +888,55 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
             )}
           {needsSecret && (
             <div>
-              <label htmlFor="pull-secret" className={labelBase}>
+              <Label htmlFor="pull-secret">
                 Token or API key{" "}
-                {settings.secretSet && <span className="font-normal text-emerald-700">(set)</span>}
-              </label>
-              <input
+                {settings.secretSet && <span className="font-normal text-working">(set)</span>}
+              </Label>
+              <Input
                 id="pull-secret"
                 type="password"
                 value={secret}
                 disabled={!canEdit}
                 onChange={(e) => setSecret(e.target.value)}
                 placeholder={settings.secretSet ? "Leave empty to keep it" : ""}
-                className={`mt-1.5 ${inputBase} h-10`}
+                className="mt-1.5 h-10"
                 autoComplete="off"
               />
-              <p className={hintBase}>Stored on the server, never shown again.</p>
+              <Hint>Stored on the server, never shown again.</Hint>
             </div>
           )}
           {needsPassword && (
             <div>
-              <label htmlFor="pull-password" className={labelBase}>
+              <Label htmlFor="pull-password">
                 Password{" "}
-                {settings.passwordSet && (
-                  <span className="font-normal text-emerald-700">(set)</span>
-                )}
-              </label>
-              <input
+                {settings.passwordSet && <span className="font-normal text-working">(set)</span>}
+              </Label>
+              <Input
                 id="pull-password"
                 type="password"
                 value={password}
                 disabled={!canEdit}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={settings.passwordSet ? "Leave empty to keep it" : ""}
-                className={`mt-1.5 ${inputBase} h-10`}
+                className="mt-1.5 h-10"
                 autoComplete="new-password"
               />
-              <p className={hintBase}>Stored on the server, never shown again.</p>
+              <Hint>Stored on the server, never shown again.</Hint>
             </div>
           )}
         </div>
         <details
-          className="rounded-xl border border-slate-200 px-4 py-3"
+          className="rounded-xl border border-card px-4 py-3"
           open={form.preset === "GENERIC"}
         >
-          <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+          <summary className="cursor-pointer text-sm font-semibold text-strong">
             How the answer is read
           </summary>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {text("sinceParam", "Query parameter: from", undefined, "start_time")}
             {text("untilParam", "Query parameter: to", undefined, "end_time")}
             <div>
-              <label htmlFor="pull-queryTimeFormat" className={labelBase}>
-                Window written as
-              </label>
+              <Label htmlFor="pull-queryTimeFormat">Window written as</Label>
               <Select
                 id="pull-queryTimeFormat"
                 value={form.queryTimeFormat}
@@ -1000,9 +959,7 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
               "next",
             )}
             <div>
-              <label htmlFor="pull-timeFormat" className={labelBase}>
-                Row time written as
-              </label>
+              <Label htmlFor="pull-timeFormat">Row time written as</Label>
               <Select
                 id="pull-timeFormat"
                 value={form.timeFormat}
@@ -1018,39 +975,33 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
             {field("deviceId", "Field: device")}
             {field("externalId", "Field: row id")}
             <div>
-              <label htmlFor="pull-inWords" className={labelBase}>
-                Check-in words
-              </label>
-              <input
+              <Label htmlFor="pull-inWords">Check-in words</Label>
+              <Input
                 id="pull-inWords"
                 defaultValue={words(form.inWords)}
                 key={`in-${settings.pull.inWords.join("|")}`}
                 disabled={!canEdit}
                 onBlur={(e) => set("inWords", parseWords(e.target.value))}
                 placeholder="0, 3, 4"
-                className={`mt-1.5 ${inputBase} h-10 font-mono text-xs`}
+                className="mt-1.5 h-10 font-mono text-xs"
               />
-              <p className={hintBase}>Comma separated; IN and OUT always count.</p>
+              <Hint>Comma separated; IN and OUT always count.</Hint>
             </div>
             <div>
-              <label htmlFor="pull-outWords" className={labelBase}>
-                Check-out words
-              </label>
-              <input
+              <Label htmlFor="pull-outWords">Check-out words</Label>
+              <Input
                 id="pull-outWords"
                 defaultValue={words(form.outWords)}
                 key={`out-${settings.pull.outWords.join("|")}`}
                 disabled={!canEdit}
                 onBlur={(e) => set("outWords", parseWords(e.target.value))}
                 placeholder="1, 2, 5"
-                className={`mt-1.5 ${inputBase} h-10 font-mono text-xs`}
+                className="mt-1.5 h-10 font-mono text-xs"
               />
             </div>
             <div>
-              <label htmlFor="pull-everyMin" className={labelBase}>
-                Read every (minutes)
-              </label>
-              <input
+              <Label htmlFor="pull-everyMin">Read every (minutes)</Label>
+              <Input
                 id="pull-everyMin"
                 type="number"
                 min={settings.bounds.everyMin?.min ?? 1}
@@ -1058,14 +1009,12 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
                 value={form.everyMin}
                 disabled={!canEdit}
                 onChange={(e) => set("everyMin", e.target.value)}
-                className={`mt-1.5 ${inputBase} h-10`}
+                className="mt-1.5 h-10"
               />
             </div>
             <div>
-              <label htmlFor="pull-overlapMin" className={labelBase}>
-                Going back (minutes)
-              </label>
-              <input
+              <Label htmlFor="pull-overlapMin">Going back (minutes)</Label>
+              <Input
                 id="pull-overlapMin"
                 type="number"
                 min={settings.bounds.overlapMin?.min ?? 0}
@@ -1073,15 +1022,15 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
                 value={form.overlapMin}
                 disabled={!canEdit}
                 onChange={(e) => set("overlapMin", e.target.value)}
-                className={`mt-1.5 ${inputBase} h-10`}
+                className="mt-1.5 h-10"
               />
-              <p className={hintBase}>
+              <Hint>
                 Each read starts this far before the last one, for devices that sync late.
-              </p>
+              </Hint>
             </div>
           </div>
         </details>
-        {problem && !problem.field && <p className={errorText}>{problem.message}</p>}
+        {problem && !problem.field && <FieldError>{problem.message}</FieldError>}
         {problem?.field &&
           ![
             "url",
@@ -1094,17 +1043,17 @@ function PullSection({ settings, canEdit }: { settings: BiometricSettingsView; c
             "untilParam",
             "listPath",
             "nextPath",
-          ].includes(problem.field) && <p className={errorText}>{problem.message}</p>}
+          ].includes(problem.field) && <FieldError>{problem.message}</FieldError>}
         {canEdit && (
           <div className="flex justify-end">
-            <button type="submit" className={btnPrimary} disabled={!dirty || save.isPending}>
+            <Button variant="primary" type="submit" disabled={!dirty || save.isPending}>
               {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               Save pull settings
-            </button>
+            </Button>
           </div>
         )}
       </form>
-    </section>
+    </Card>
   );
 }
 
@@ -1170,24 +1119,24 @@ function ImportSection() {
   }
 
   return (
-    <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="import-title">
-      <h2 id="import-title" className="flex items-center gap-2 text-base font-bold text-slate-900">
-        <FileUp className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+    <Card as="section" className="px-4 py-4 sm:px-6" aria-labelledby="import-title">
+      <h2 id="import-title" className="flex items-center gap-2 text-base font-bold text-primary">
+        <FileUp className="h-4 w-4 text-brand" aria-hidden />
         Import a CSV export
       </h2>
-      <p className="mt-0.5 text-sm text-slate-500">
+      <p className="mt-0.5 text-sm text-quiet">
         For a backfill, or a device with no API. A header row, then{" "}
         <code className="font-mono text-xs">code,time</code> and optionally{" "}
         <code className="font-mono text-xs">direction,deviceId,externalId</code>; common BioTime and
         eSSL column names are recognised. A long file is sent in parts of 2,000 rows.
       </p>
       <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_16rem]">
-        <textarea
+        <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={6}
           placeholder={"code,time,direction,deviceId\nE1042,2026-11-04 09:02:11,IN,GATE-1"}
-          className={`${textareaBase} font-mono text-xs`}
+          className="font-mono text-xs"
           aria-label="CSV text"
         />
         <div className="space-y-2">
@@ -1199,37 +1148,39 @@ function ImportSection() {
             onChange={(e) => void pick(e.target.files?.[0])}
             aria-label="Choose a CSV file"
           />
-          <button
+          <Button
+            variant="secondary"
             type="button"
-            className={`${btnSecondary} w-full`}
+            className="w-full"
             onClick={() => fileRef.current?.click()}
           >
             <Download className="h-4 w-4" aria-hidden />
             {fileName ? `File: ${fileName}` : "Choose a file"}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             type="button"
-            className={`${btnPrimary} w-full`}
+            className="w-full"
             onClick={() => void run()}
             disabled={importCsv.isPending || !text.trim()}
           >
             {importCsv.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {progress ? `Sending part ${progress.done + 1} of ${progress.of}…` : "Import"}
-          </button>
+          </Button>
         </div>
       </div>
       {result && (
         <div
-          className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-700"
+          className="mt-3 rounded-xl border border-card bg-fill px-3.5 py-3 text-sm text-body"
           aria-live="polite"
         >
-          <p className="font-semibold text-slate-900">
+          <p className="font-semibold text-primary">
             {result.rows} rows: {result.stored} stored, {result.duplicates} already there,{" "}
             {result.unmatched} with a code nobody has, {result.lockedOut} in a locked month,{" "}
             {result.daysUpdated} days worked out again.
           </p>
           {result.ignored.length > 0 && (
-            <ul className="mt-1.5 max-h-40 overflow-y-auto text-xs text-rose-700">
+            <ul className="mt-1.5 max-h-40 overflow-y-auto text-xs text-attention">
               {result.ignored.slice(0, 50).map((x) => (
                 <li key={x.index}>
                   Row {x.index}: {x.reason}
@@ -1240,7 +1191,7 @@ function ImportSection() {
           )}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 

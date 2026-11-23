@@ -6,14 +6,6 @@ import { toast } from "sonner";
 
 import { Select } from "@/components/ui/Select";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnPrimary,
-  cardBase,
-  errorText,
-  hintBase,
-  inputBase,
-  labelBase,
-} from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import {
   useBiometricSettings,
@@ -25,6 +17,9 @@ import type {
   GapRule,
   MissingCheckoutRule,
 } from "@/features/attendance/types";
+import { Card } from "@/components/ui/Card";
+import { FieldError, Hint, Input, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 interface Form {
   gapRule: GapRule;
@@ -100,10 +95,10 @@ export function AttendanceSettingsPanel({ canEdit }: { canEdit: boolean }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className={`${cardBase} space-y-6 p-4 sm:p-6`}>
+    <Card as="form" onSubmit={submit} noValidate className="space-y-6 p-4 sm:p-6">
       <div>
-        <h2 className="text-base font-bold text-slate-900">How a biometric day is worked out</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="text-base font-bold text-primary">How a biometric day is worked out</h2>
+        <p className="text-sm text-quiet">
           {canEdit
             ? "These apply to every biometric person in this organisation."
             : "These apply to every biometric person in this organisation. Only the organisation admin changes them."}
@@ -111,9 +106,7 @@ export function AttendanceSettingsPanel({ canEdit }: { canEdit: boolean }) {
       </div>
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="att-gap" className={labelBase}>
-            Time between a check-out and the next check-in
-          </label>
+          <Label htmlFor="att-gap">Time between a check-out and the next check-in</Label>
           <Select
             id="att-gap"
             value={form.gapRule}
@@ -125,16 +118,14 @@ export function AttendanceSettingsPanel({ canEdit }: { canEdit: boolean }) {
             disabled={!canEdit}
             aria-label="Gap rule"
           />
-          <p className={problem?.field === "gapRule" ? errorText : hintBase}>
+          <Hint error={problem?.field === "gapRule"}>
             {problem?.field === "gapRule"
               ? problem.message
               : "As asked: focus runs from the first punch of the day to the last, with no break taken off. Switch to pairs to leave the gaps out; punches with no direction then alternate in, out, in."}
-          </p>
+          </Hint>
         </div>
         <div>
-          <label htmlFor="att-missing" className={labelBase}>
-            A day with no check-out closes at
-          </label>
+          <Label htmlFor="att-missing">A day with no check-out closes at</Label>
           <Select
             id="att-missing"
             value={form.missingCheckout}
@@ -146,17 +137,15 @@ export function AttendanceSettingsPanel({ canEdit }: { canEdit: boolean }) {
             disabled={!canEdit}
             aria-label="Missing check-out"
           />
-          <p className={problem?.field === "missingCheckout" ? errorText : hintBase}>
+          <Hint error={problem?.field === "missingCheckout"}>
             {problem?.field === "missingCheckout"
               ? problem.message
               : "Once the shift end plus the organisation's automatic close (Settings, Rules, Forgotten End Day) has passed. The day is marked and the person and their manager are told."}
-          </p>
+          </Hint>
         </div>
         <div>
-          <label htmlFor="att-dup" className={labelBase}>
-            Duplicate punches within (seconds)
-          </label>
-          <input
+          <Label htmlFor="att-dup">Duplicate punches within (seconds)</Label>
+          <Input
             id="att-dup"
             type="number"
             inputMode="numeric"
@@ -165,58 +154,54 @@ export function AttendanceSettingsPanel({ canEdit }: { canEdit: boolean }) {
             value={form.duplicateWindowSec}
             disabled={!canEdit}
             onChange={(e) => set("duplicateWindowSec", e.target.value)}
-            className={`mt-1.5 ${inputBase}`}
+            className="mt-1.5"
           />
-          <p className={problem?.field === "duplicateWindowSec" ? errorText : hintBase}>
+          <Hint error={problem?.field === "duplicateWindowSec"}>
             {problem?.field === "duplicateWindowSec"
               ? problem.message
               : "A finger held on the reader: punches this close together, the same way, are one punch."}
-          </p>
+          </Hint>
         </div>
         <div className="grid gap-4">
           <div>
-            <label htmlFor="att-in" className={labelBase}>
-              Pushed check-in words
-            </label>
-            <input
+            <Label htmlFor="att-in">Pushed check-in words</Label>
+            <Input
               id="att-in"
               value={form.pushInWords}
               disabled={!canEdit}
               onChange={(e) => set("pushInWords", e.target.value)}
               placeholder="0, C/In"
-              className={`mt-1.5 ${inputBase} font-mono text-xs`}
+              className="mt-1.5 font-mono text-xs"
             />
-            <p className={problem?.field === "pushInWords" ? errorText : hintBase}>
+            <Hint error={problem?.field === "pushInWords"}>
               {problem?.field === "pushInWords"
                 ? problem.message
                 : "Besides IN, in, check-in, entry. Comma separated, up to 20. Anything else is a punch with no direction."}
-            </p>
+            </Hint>
           </div>
           <div>
-            <label htmlFor="att-out" className={labelBase}>
-              Pushed check-out words
-            </label>
-            <input
+            <Label htmlFor="att-out">Pushed check-out words</Label>
+            <Input
               id="att-out"
               value={form.pushOutWords}
               disabled={!canEdit}
               onChange={(e) => set("pushOutWords", e.target.value)}
               placeholder="1, C/Out"
-              className={`mt-1.5 ${inputBase} font-mono text-xs`}
+              className="mt-1.5 font-mono text-xs"
             />
-            {problem?.field === "pushOutWords" && <p className={errorText}>{problem.message}</p>}
+            {problem?.field === "pushOutWords" && <FieldError>{problem.message}</FieldError>}
           </div>
         </div>
       </fieldset>
-      {problem && !problem.field && <p className={errorText}>{problem.message}</p>}
+      {problem && !problem.field && <FieldError>{problem.message}</FieldError>}
       {canEdit && (
         <div className="flex justify-end">
-          <button type="submit" className={btnPrimary} disabled={!dirty || save.isPending}>
+          <Button variant="primary" type="submit" disabled={!dirty || save.isPending}>
             {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save settings
-          </button>
+          </Button>
         </div>
       )}
-    </form>
+    </Card>
   );
 }

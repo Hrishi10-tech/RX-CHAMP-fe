@@ -6,14 +6,6 @@ import { HardDrive, UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnPrimary,
-  btnSecondary,
-  btnSmall,
-  cardBase,
-  hintBase,
-  labelBase,
-} from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import {
   useAttendancePeople,
@@ -24,6 +16,9 @@ import { dayTime, sinceText } from "@/features/attendance/lib/format";
 import type { PersonAttendanceView, UnmatchedCodeView } from "@/features/attendance/types";
 
 import { SetAttendanceDialog } from "./PeoplePanel";
+import { Hint, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 /**
  * Give a code nobody has to a person of the organisation (4.0: its admin): pick them,
@@ -63,15 +58,13 @@ function GiveCodeDialog({
         className="max-w-md"
       >
         <div className="space-y-4 px-5 py-5 sm:px-6">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-soft">
             {code.punches} {code.punches === 1 ? "punch" : "punches"} from{" "}
             {code.devices.filter(Boolean).join(", ") || "an unnamed device"},{" "}
             {dayTime(code.firstAt)} to {dayTime(code.lastAt)}.
           </p>
           <div>
-            <label htmlFor="give-person" className={labelBase}>
-              Person
-            </label>
+            <Label htmlFor="give-person">Person</Label>
             <Select
               id="give-person"
               value={userId}
@@ -82,23 +75,23 @@ function GiveCodeDialog({
               searchPlaceholder="Search people…"
               aria-label="Person"
             />
-            <p className={hintBase}>
+            <Hint>
               Next you confirm whether they check in by biometric from today, or stay on the agent
               with the ID kept for the record.
-            </p>
+            </Hint>
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button type="button" className={btnSecondary} onClick={onClose}>
+            <Button variant="secondary" type="button" onClick={onClose}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               type="button"
-              className={btnPrimary}
               disabled={!chosen}
               onClick={() => chosen && setEditing([{ ...chosen, biometricCode: code.code }])}
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>
@@ -120,11 +113,11 @@ export function UnmatchedPanel({ canEdit }: { canEdit: boolean }) {
   const [giving, setGiving] = useState<UnmatchedCodeView | null>(null);
   const rows = query.data ?? [];
   return (
-    <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="unmatched-title">
-      <h2 id="unmatched-title" className="text-base font-bold text-slate-900">
+    <Card as="section" className="px-4 py-4 sm:px-6" aria-labelledby="unmatched-title">
+      <h2 id="unmatched-title" className="text-base font-bold text-primary">
         Codes nobody has
       </h2>
-      <p className="mt-0.5 text-sm text-slate-500">
+      <p className="mt-0.5 text-sm text-quiet">
         Punches kept with an ID nobody in this organisation holds.{" "}
         {canEdit
           ? "Give the ID to a person on the People tab (or here) and every punch with it is matched."
@@ -140,27 +133,27 @@ export function UnmatchedPanel({ canEdit }: { canEdit: boolean }) {
             retrying={query.isFetching}
           />
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-500">Every punch has its person.</p>
+          <p className="py-6 text-center text-sm text-quiet">Every punch has its person.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+          <ul className="divide-y divide-divider overflow-hidden rounded-xl border border-card">
             {rows.map((u) => (
               <li
                 key={u.codeKey}
                 className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-4"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block font-mono font-semibold text-slate-900">{u.code}</span>
-                  <span className="block text-xs text-slate-500">
+                  <span className="block font-mono font-semibold text-primary">{u.code}</span>
+                  <span className="block text-xs text-quiet">
                     {u.punches} {u.punches === 1 ? "punch" : "punches"} ·{" "}
                     {u.devices.filter(Boolean).join(", ") || "unnamed device"} ·{" "}
                     {dayTime(u.firstAt)} to {dayTime(u.lastAt)}
                   </span>
                 </span>
                 {canEdit && (
-                  <button type="button" className={btnSmall} onClick={() => setGiving(u)}>
+                  <Button variant="small" type="button" onClick={() => setGiving(u)}>
                     <UserPlus className="h-3.5 w-3.5" aria-hidden />
                     Give to a person
-                  </button>
+                  </Button>
                 )}
               </li>
             ))}
@@ -168,7 +161,7 @@ export function UnmatchedPanel({ canEdit }: { canEdit: boolean }) {
         )}
       </div>
       <GiveCodeDialog code={giving} onClose={() => setGiving(null)} />
-    </section>
+    </Card>
   );
 }
 
@@ -177,11 +170,11 @@ export function DevicesPanel() {
   const query = useDevices();
   const rows = query.data ?? [];
   return (
-    <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="devices-title">
-      <h2 id="devices-title" className="text-base font-bold text-slate-900">
+    <Card as="section" className="px-4 py-4 sm:px-6" aria-labelledby="devices-title">
+      <h2 id="devices-title" className="text-base font-bold text-primary">
         Devices
       </h2>
-      <p className="mt-0.5 text-sm text-slate-500">
+      <p className="mt-0.5 text-sm text-quiet">
         Every device id this organisation&apos;s punches named, with when each last reached RX
         Vision. A device that stops sending shows here first.
       </p>
@@ -195,17 +188,17 @@ export function DevicesPanel() {
             retrying={query.isFetching}
           />
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-500">No punches yet.</p>
+          <p className="py-6 text-center text-sm text-quiet">No punches yet.</p>
         ) : (
           <>
-            <ul className="divide-y divide-slate-100 md:hidden">
+            <ul className="divide-y divide-divider md:hidden">
               {rows.map((d) => (
-                <li key={d.deviceId} className="py-3 text-sm text-slate-700">
-                  <p className="flex items-center gap-1.5 font-semibold text-slate-900">
-                    <HardDrive className="h-4 w-4 text-slate-400" aria-hidden />
+                <li key={d.deviceId} className="py-3 text-sm text-body">
+                  <p className="flex items-center gap-1.5 font-semibold text-primary">
+                    <HardDrive className="h-4 w-4 text-quiet" aria-hidden />
                     {d.deviceId}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-500">
+                  <p className="mt-0.5 text-xs text-quiet">
                     {d.punchesToday} today · {d.punches} in all · last punch{" "}
                     {dayTime(d.lastPunchAt)} · last received {sinceText(d.lastReceivedAt)}
                   </p>
@@ -215,7 +208,7 @@ export function DevicesPanel() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="whitespace-nowrap border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  <tr className="whitespace-nowrap border-b border-divider text-left text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
                     <th className="px-3 py-2.5">Device</th>
                     <th className="px-3 py-2.5">Punches today</th>
                     <th className="px-3 py-2.5">Punches in all</th>
@@ -223,12 +216,12 @@ export function DevicesPanel() {
                     <th className="px-3 py-2.5">Last received</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-divider">
                   {rows.map((d) => (
-                    <tr key={d.deviceId} className="text-slate-700">
-                      <td className="px-3 py-2.5 font-semibold text-slate-900">
+                    <tr key={d.deviceId} className="text-body">
+                      <td className="px-3 py-2.5 font-semibold text-primary">
                         <span className="flex items-center gap-1.5">
-                          <HardDrive className="h-4 w-4 text-slate-400" aria-hidden />
+                          <HardDrive className="h-4 w-4 text-quiet" aria-hidden />
                           {d.deviceId}
                         </span>
                       </td>
@@ -246,6 +239,6 @@ export function DevicesPanel() {
           </>
         )}
       </div>
-    </section>
+    </Card>
   );
 }

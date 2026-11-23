@@ -47,8 +47,8 @@ export function AttendancePage() {
   return (
     <div className="space-y-5">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Attendance</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-primary">Attendance</h1>
+        <p className="text-sm text-quiet">
           Who checks in by the desktop app and who by the biometric device, every punch, and the
           connection to the device{orgName ? `, for ${orgName}` : ""}. Each organisation runs its
           own integration.
@@ -57,9 +57,9 @@ export function AttendancePage() {
       {!canEdit && canWrite && (
         <p
           role="note"
-          className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600"
+          className="flex items-start gap-2 rounded-xl border border-card bg-fill px-3.5 py-2.5 text-sm text-soft"
         >
-          <Eye className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+          <Eye className="mt-0.5 h-4 w-4 shrink-0 text-neutral" aria-hidden />
           <span>
             You can read everything here, and add or void punches. The organisation admin sets who
             checks in how, the keys, the pull and the settings.

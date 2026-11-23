@@ -8,14 +8,6 @@ import { Pager } from "@/components/ui/Pager";
 import { Select } from "@/components/ui/Select";
 import type { SelectOption } from "@/components/ui/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnGhost,
-  btnPrimary,
-  btnSmall,
-  cardBase,
-  checkboxBase,
-  thBase,
-} from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { roleLabel } from "@/constants/roles";
 import { formatDay } from "@/lib/time/businessTime";
@@ -28,6 +20,10 @@ import {
 } from "@/features/shifts/components/OverrideShiftDialog";
 import { FALLBACK_SHIFT } from "@/features/shifts/components/shiftOptions";
 import type { PersonOverride, PersonShiftView, ShiftView } from "@/features/shifts/types";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Checkbox, Input } from "@/components/ui/Field";
+import { Th } from "@/components/ui/Table";
 
 const PAGE_SIZE = 20;
 const ALL_DEPARTMENTS = "__all__";
@@ -48,18 +44,18 @@ function upcomingText(o: PersonOverride): string {
 function ShiftCell({ person }: { person: PersonShiftView }) {
   return (
     <div className="min-w-0 space-y-1">
-      <p className="font-semibold text-slate-900">{shiftRefLabel(person.shift)}</p>
+      <p className="font-semibold text-primary">{shiftRefLabel(person.shift)}</p>
       <div className="flex flex-wrap items-center gap-1.5">
         <SourceChip source={person.source} />
         {person.pickedByTime && (
-          <span className="text-xs text-slate-500">today, by Start Day time</span>
+          <span className="text-xs text-quiet">today, by Start Day time</span>
         )}
         {person.override && (
-          <span className="text-xs text-slate-500">{overrideText(person.override)}</span>
+          <span className="text-xs text-quiet">{overrideText(person.override)}</span>
         )}
       </div>
       {person.upcoming && (
-        <p className="text-xs text-sky-700">Next: {upcomingText(person.upcoming)}</p>
+        <p className="text-xs text-brand">Next: {upcomingText(person.upcoming)}</p>
       )}
     </div>
   );
@@ -139,11 +135,11 @@ export function PeopleTab({
   const filtered = Boolean(search || department);
 
   return (
-    <section className={cardBase} aria-label="People">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+    <Card as="section" aria-label="People">
+      <div className="flex flex-col gap-3 border-b border-card px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">People</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-base font-semibold text-primary">People</h2>
+          <p className="text-sm text-quiet">
             The shift each person works today, and where it comes from.
           </p>
         </div>
@@ -151,15 +147,15 @@ export function PeopleTab({
           <div className="relative">
             <Search
               aria-hidden
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet"
             />
-            <input
+            <Input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search people…"
               aria-label="Search people"
-              className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgb(34_34_204)] focus:ring-2 focus:ring-[rgba(34,34,204,0.15)] sm:w-60"
+              className="pl-9 font-normal sm:w-60"
             />
           </div>
           <div className="sm:w-56">
@@ -178,23 +174,23 @@ export function PeopleTab({
         <div
           role="region"
           aria-label="Selected people"
-          className="flex flex-col gap-3 border-b border-slate-200 bg-[rgba(34,34,204,0.04)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+          className="flex flex-col gap-3 border-b border-card bg-brand/4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
         >
           <div className="flex items-center gap-3 text-sm">
-            <span className="font-semibold text-slate-800">{selected.size} selected</span>
-            <button type="button" onClick={() => setSelected(new Map())} className={btnGhost}>
+            <span className="font-semibold text-strong">{selected.size} selected</span>
+            <Button variant="ghost" type="button" onClick={() => setSelected(new Map())}>
               <X className="h-4 w-4" aria-hidden />
               Clear
-            </button>
+            </Button>
           </div>
-          <button
+          <Button
+            variant="primary"
             type="button"
             onClick={() => openFor([...selected].map(([id, name]) => ({ id, name })))}
-            className={btnPrimary}
           >
             <CalendarClock className="h-4 w-4" aria-hidden />
             Override shift
-          </button>
+          </Button>
         </div>
       )}
 
@@ -217,23 +213,17 @@ export function PeopleTab({
         />
       ) : (
         <div className={isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}>
-          <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 sm:px-6 md:hidden">
-            <label className="flex items-center gap-2.5 text-sm font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                className={checkboxBase}
-                checked={allOnPage}
-                onChange={togglePage}
-              />
+          <div className="flex items-center gap-3 border-b border-divider px-4 py-2.5 sm:px-6 md:hidden">
+            <label className="flex items-center gap-2.5 text-sm font-semibold text-body">
+              <Checkbox checked={allOnPage} onChange={togglePage} />
               Select all on this page
             </label>
           </div>
-          <ul className="divide-y divide-slate-100 md:hidden">
+          <ul className="divide-y divide-divider md:hidden">
             {people.map((p) => (
               <li key={p.userId} className="flex gap-3 px-4 py-4">
-                <input
-                  type="checkbox"
-                  className={`${checkboxBase} mt-1`}
+                <Checkbox
+                  className="mt-1"
                   checked={selected.has(p.userId)}
                   onChange={() => toggle(p)}
                   aria-label={`Select ${p.name}`}
@@ -241,8 +231,8 @@ export function PeopleTab({
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-900">{p.name}</p>
-                      <p className="truncate text-xs text-slate-500">
+                      <p className="truncate font-semibold text-primary">{p.name}</p>
+                      <p className="truncate text-xs text-quiet">
                         {roleLabel(p.role)} · {p.department ?? "No department"}
                       </p>
                     </div>
@@ -257,28 +247,20 @@ export function PeopleTab({
           <div className="relative hidden overflow-x-auto md:block">
             <table className="w-full min-w-[820px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/70">
+                <tr className="border-b border-card bg-fill/70">
                   <th scope="col" className="w-12 py-3 pl-6">
-                    <input
-                      type="checkbox"
-                      className={checkboxBase}
+                    <Checkbox
                       checked={allOnPage}
                       onChange={togglePage}
                       aria-label="Select everyone on this page"
                     />
                   </th>
-                  <th scope="col" className={thBase}>
-                    Person
-                  </th>
-                  <th scope="col" className={thBase}>
-                    Department
-                  </th>
-                  <th scope="col" className={thBase}>
-                    Shift today
-                  </th>
-                  <th scope="col" className={`${thBase} pr-6 text-right`}>
+                  <Th scope="col">Person</Th>
+                  <Th scope="col">Department</Th>
+                  <Th scope="col">Shift today</Th>
+                  <Th scope="col" className="pr-6 text-right">
                     <span className="sr-only">Actions</span>
-                  </th>
+                  </Th>
                 </tr>
               </thead>
               <tbody>
@@ -287,28 +269,26 @@ export function PeopleTab({
                   return (
                     <tr
                       key={p.userId}
-                      className={`border-b border-slate-100 align-top last:border-0 ${
-                        isSelected ? "bg-[rgba(34,34,204,0.04)]" : ""
+                      className={`border-b border-divider align-top last:border-0 ${
+                        isSelected ? "bg-brand/4" : ""
                       }`}
                     >
                       <td className="py-3.5 pl-6">
-                        <input
-                          type="checkbox"
-                          className={checkboxBase}
+                        <Checkbox
                           checked={isSelected}
                           onChange={() => toggle(p)}
                           aria-label={`Select ${p.name}`}
                         />
                       </td>
                       <td className="px-4 py-3.5">
-                        <p className="font-semibold text-slate-900">{p.name}</p>
-                        <p className="text-xs text-slate-500">{p.email}</p>
+                        <p className="font-semibold text-primary">{p.name}</p>
+                        <p className="text-xs text-quiet">{p.email}</p>
                         <Chip tone="brand" className="mt-1">
                           {roleLabel(p.role)}
                         </Chip>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-700">
-                        {p.department ?? <span className="text-slate-400">No department</span>}
+                      <td className="px-4 py-3.5 text-body">
+                        {p.department ?? <span className="text-quiet">No department</span>}
                       </td>
                       <td className="px-4 py-3.5">
                         <ShiftCell person={p} />
@@ -345,7 +325,7 @@ export function PeopleTab({
           })
         }
       />
-    </section>
+    </Card>
   );
 }
 
@@ -359,26 +339,28 @@ function RowAction({
   const target = [{ id: person.userId, name: person.name }];
   if (person.override) {
     return (
-      <button
+      <Button
+        variant="small"
         type="button"
         onClick={() => onOpen(target, FALLBACK_SHIFT)}
-        className={`${btnSmall} shrink-0`}
+        className="shrink-0"
         aria-label={`Put ${person.name} back on the department shift`}
       >
         <Undo2 className="h-3.5 w-3.5" aria-hidden />
         Back to department
-      </button>
+      </Button>
     );
   }
   return (
-    <button
+    <Button
+      variant="small"
       type="button"
       onClick={() => onOpen(target)}
-      className={`${btnSmall} shrink-0`}
+      className="shrink-0"
       aria-label={`Override the shift for ${person.name}`}
     >
       <CalendarClock className="h-3.5 w-3.5" aria-hidden />
       Override
-    </button>
+    </Button>
   );
 }

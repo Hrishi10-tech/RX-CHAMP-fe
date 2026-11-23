@@ -6,15 +6,7 @@ import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-  labelBase,
-} from "@/components/ui/classes";
+import { inputInvalid } from "@/components/ui/classes";
 import { errorCode, errorMessage } from "@/lib/api";
 import { formatDay, formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
 import { formatHmRange } from "@/features/shifts/lib/time";
@@ -25,6 +17,8 @@ import {
   shiftSelectOptions,
 } from "@/features/shifts/components/shiftOptions";
 import type { AssignPeopleResult, ShiftView } from "@/features/shifts/types";
+import { Button } from "@/components/ui/Button";
+import { FieldError, Hint, Input, Label } from "@/components/ui/Field";
 
 export interface OverridePerson {
   id: string;
@@ -149,18 +143,18 @@ export function OverrideShiftDialog({
       {result ? (
         <div className="space-y-4 px-6 py-5">
           {result.assigned.length > 0 && (
-            <p className="flex items-start gap-2 text-sm text-emerald-800">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+            <p className="flex items-start gap-2 text-sm text-working-ink">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-working" aria-hidden />
               {result.assigned.length} {result.assigned.length === 1 ? "person" : "people"} updated
               from {formatDay(result.effectiveFrom)}.
             </p>
           )}
           <div
             role="alert"
-            className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+            className="rounded-xl border border-attention-edge bg-attention-wash p-4 text-sm text-attention-ink"
           >
             <p className="flex items-center gap-2 font-semibold">
-              <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />
+              <AlertTriangle className="h-4 w-4 text-attention" aria-hidden />
               {result.skipped.length} skipped
             </p>
             <ul className="mt-2 space-y-1">
@@ -171,18 +165,16 @@ export function OverrideShiftDialog({
               ))}
             </ul>
           </div>
-          <div className="flex justify-end border-t border-slate-100 pt-4">
-            <button type="button" onClick={onClose} className={btnPrimary}>
+          <div className="flex justify-end border-t border-divider pt-4">
+            <Button variant="primary" type="button" onClick={onClose}>
               Done
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <form onSubmit={submit} noValidate className="space-y-4 px-6 py-5">
           <div>
-            <label htmlFor="ovr-shift" className={labelBase}>
-              Shift
-            </label>
+            <Label htmlFor="ovr-shift">Shift</Label>
             <Select
               id="ovr-shift"
               value={shiftId}
@@ -193,15 +185,13 @@ export function OverrideShiftDialog({
               invalid={!!errors.shift}
               disabled={pending}
             />
-            {errors.shift && <p className={errorText}>{errors.shift}</p>}
+            {errors.shift && <FieldError>{errors.shift}</FieldError>}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="ovr-from" className={labelBase}>
-                From
-              </label>
-              <input
+              <Label htmlFor="ovr-from">From</Label>
+              <Input
                 id="ovr-from"
                 type="date"
                 min={today}
@@ -210,18 +200,18 @@ export function OverrideShiftDialog({
                 aria-invalid={!!errors.from || undefined}
                 aria-describedby="ovr-from-hint"
                 disabled={pending}
-                className={`${inputBase} mt-1.5 ${errors.from ? inputInvalid : ""}`}
+                className={`mt-1.5 ${errors.from ? inputInvalid : ""}`}
               />
-              <p id="ovr-from-hint" className={errors.from ? errorText : hintBase}>
+              <Hint id="ovr-from-hint" error={errors.from}>
                 {errors.from ?? "Today or later."}
-              </p>
+              </Hint>
             </div>
             {!back && (
               <div>
-                <label htmlFor="ovr-until" className={labelBase}>
-                  Until <span className="font-normal text-slate-400">(optional)</span>
-                </label>
-                <input
+                <Label htmlFor="ovr-until">
+                  Until <span className="font-normal text-quiet">(optional)</span>
+                </Label>
+                <Input
                   id="ovr-until"
                   type="date"
                   min={from || today}
@@ -230,33 +220,33 @@ export function OverrideShiftDialog({
                   aria-invalid={!!errors.until || undefined}
                   aria-describedby="ovr-until-hint"
                   disabled={pending}
-                  className={`${inputBase} mt-1.5 ${errors.until ? inputInvalid : ""}`}
+                  className={`mt-1.5 ${errors.until ? inputInvalid : ""}`}
                 />
-                <p id="ovr-until-hint" className={errors.until ? errorText : hintBase}>
+                <Hint id="ovr-until-hint" error={errors.until}>
                   {errors.until ?? "Last day on this shift."}
-                </p>
+                </Hint>
               </div>
             )}
           </div>
 
           {preview && (
-            <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600">
+            <p className="rounded-xl bg-fill px-4 py-3 text-sm leading-relaxed text-soft">
               {preview}
             </p>
           )}
 
-          <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-            <button type="button" onClick={close} disabled={pending} className={btnSecondary}>
+          <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+            <Button variant="secondary" type="button" onClick={close} disabled={pending}>
               Cancel
-            </button>
-            <button type="submit" disabled={pending} className={btnPrimary}>
+            </Button>
+            <Button variant="primary" type="submit" disabled={pending}>
               {pending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
                 <Save className="h-4 w-4" aria-hidden />
               )}
               {pending ? "Saving…" : "Save"}
-            </button>
+            </Button>
           </div>
         </form>
       )}

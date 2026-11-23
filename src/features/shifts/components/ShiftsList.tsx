@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { ActionMenu } from "@/components/ui/ActionMenu";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, btnSmall, cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
 import { BREAK_KINDS, type BreakKind, type ShiftView } from "@/features/shifts/types";
@@ -18,6 +17,8 @@ import { formatWorkDays } from "@/features/shifts/lib/workDays";
 import { useMakeDefaultShift, useShifts } from "@/features/shifts/hooks/useShifts";
 import { BreakSummary, DefaultBadge } from "@/features/shifts/components/ShiftBadges";
 import { DeleteShiftDialog } from "@/features/shifts/components/DeleteShiftDialog";
+import { buttonClass } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 function hoursLabel(s: ShiftView): string {
   const length = formatLength(shiftLengthMinutes(s.start, s.end));
@@ -32,20 +33,20 @@ function UsageSummary({ shift }: { shift: ShiftView }) {
   ].filter(Boolean);
   return (
     <div className="min-w-0">
-      <p className="truncate text-slate-900" title={departments.join(", ") || undefined}>
+      <p className="truncate text-primary" title={departments.join(", ") || undefined}>
         {departments.length
           ? departments.join(", ")
           : shift.isDefault
             ? "Everyone else"
             : "No department"}
       </p>
-      <p className="text-xs text-slate-500">{bits.join(" · ")}</p>
+      <p className="text-xs text-quiet">{bits.join(" · ")}</p>
     </div>
   );
 }
 
 /** Header cells set their own horizontal padding; the table is tight at 1280px. */
-const th = "py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-600";
+const th = "py-3 text-left text-xs font-bold uppercase tracking-wider text-soft";
 
 function breakOf(shift: ShiftView, kind: BreakKind) {
   return shift.breaks.find((b) => b.kind === kind);
@@ -77,7 +78,7 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
   function actionsFor(s: ShiftView) {
     return (
       <div className="flex items-center justify-end gap-1.5">
-        <Link href={`/dashboard/shifts/edit/${s.id}`} className={btnSmall}>
+        <Link href={`/dashboard/shifts/edit/${s.id}`} className={buttonClass("small")}>
           <Pencil className="h-3.5 w-3.5" aria-hidden />
           Edit
         </Link>
@@ -110,7 +111,7 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
           subtitle="Each shift sets working hours and three daily breaks. Assign shifts to departments, or override them for one person."
         />
         {canEdit && (
-          <Link href="/dashboard/shifts/new" className={`${btnPrimary} shrink-0`}>
+          <Link href="/dashboard/shifts/new" className={`${buttonClass("primary")} shrink-0`}>
             <Plus className="h-4 w-4" aria-hidden />
             New shift
           </Link>
@@ -118,10 +119,10 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
       </div>
 
       {defaultShift && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-          <Star className="h-4 w-4 shrink-0 text-[rgb(34_34_204)]" aria-hidden />
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-card bg-card px-4 py-3 text-sm text-soft shadow-sm">
+          <Star className="h-4 w-4 shrink-0 text-brand" aria-hidden />
           <span>Default shift:</span>
-          <span className="font-semibold text-slate-900">{defaultShift.name}</span>
+          <span className="font-semibold text-primary">{defaultShift.name}</span>
           <span>
             ({formatHmRange(defaultShift.start, defaultShift.end)}). It applies to anyone whose
             department has no shift.
@@ -129,13 +130,13 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
         </div>
       )}
       {!canEdit && (
-        <p className="flex items-start gap-2 text-sm text-slate-500">
+        <p className="flex items-start gap-2 text-sm text-quiet">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           Only the Admin changes shifts and who works them. Ask them under Messages.
         </p>
       )}
 
-      <section className={cardBase} aria-label="Shifts">
+      <Card as="section" aria-label="Shifts">
         {isLoading ? (
           <LoadingState label="Loading shifts…" />
         ) : isError ? (
@@ -156,7 +157,7 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
             }
             action={
               canEdit ? (
-                <Link href="/dashboard/shifts/new" className={btnPrimary}>
+                <Link href="/dashboard/shifts/new" className={buttonClass("primary")}>
                   <Plus className="h-4 w-4" aria-hidden />
                   New shift
                 </Link>
@@ -166,26 +167,26 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
         ) : (
           <>
             {/* Phones and small tablets: one card per shift. */}
-            <ul className="divide-y divide-slate-100 lg:hidden">
+            <ul className="divide-y divide-divider lg:hidden">
               {shifts.map((s) => (
                 <li key={s.id} className="space-y-3 px-4 py-4 sm:px-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-base font-bold text-slate-900">{s.name}</h3>
+                        <h3 className="truncate text-base font-bold text-primary">{s.name}</h3>
                         {s.isDefault && <DefaultBadge />}
                       </div>
-                      <p className="mt-0.5 text-sm tabular-nums text-slate-600">
+                      <p className="mt-0.5 text-sm tabular-nums text-soft">
                         {formatHmRange(s.start, s.end)} · {hoursLabel(s)}
                       </p>
-                      <p className="text-sm text-slate-500">{formatWorkDays(s.workDays)}</p>
+                      <p className="text-sm text-quiet">{formatWorkDays(s.workDays)}</p>
                     </div>
                     {canEdit && <div className="shrink-0">{actionsFor(s)}</div>}
                   </div>
                   <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     {BREAK_KINDS.map((kind) => (
-                      <div key={kind} className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
-                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <div key={kind} className="rounded-xl bg-fill px-3 py-2 text-sm">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-quiet">
                           {BREAK_SHORT_LABEL[kind]}
                         </dt>
                         <dd className="mt-0.5">
@@ -195,7 +196,7 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
                     ))}
                   </dl>
                   <div className="flex items-start gap-2 text-sm">
-                    <Users className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                    <Users className="mt-0.5 h-4 w-4 shrink-0 text-quiet" aria-hidden />
                     <UsageSummary shift={s} />
                   </div>
                 </li>
@@ -206,7 +207,7 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
             <div className="relative hidden overflow-x-auto lg:block">
               <table className="w-full min-w-[840px] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/70">
+                  <tr className="border-b border-card bg-fill/70">
                     <th scope="col" className={`${th} pl-5`}>
                       Shift
                     </th>
@@ -230,19 +231,19 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
                 </thead>
                 <tbody>
                   {shifts.map((s) => (
-                    <tr key={s.id} className="border-b border-slate-100 align-top last:border-0">
+                    <tr key={s.id} className="border-b border-divider align-top last:border-0">
                       <td className="py-4 pl-5 pr-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-slate-900">{s.name}</span>
+                          <span className="font-semibold text-primary">{s.name}</span>
                           {s.isDefault && <DefaultBadge />}
                         </div>
                       </td>
                       <td className="px-3 py-4">
-                        <p className="whitespace-nowrap font-semibold tabular-nums text-slate-900">
+                        <p className="whitespace-nowrap font-semibold tabular-nums text-primary">
                           {formatHmRange(s.start, s.end)}
                         </p>
-                        <p className="text-xs text-slate-500">{hoursLabel(s)}</p>
-                        <p className="whitespace-nowrap text-xs text-slate-500">
+                        <p className="text-xs text-quiet">{hoursLabel(s)}</p>
+                        <p className="whitespace-nowrap text-xs text-quiet">
                           {formatWorkDays(s.workDays)}
                         </p>
                       </td>
@@ -262,9 +263,9 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
             </div>
           </>
         )}
-      </section>
+      </Card>
 
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-quiet">
         &quot;Can start&quot; is each break&apos;s window: when it may be started. Outside the
         window the desktop app won&apos;t start the break, and it counts as skipped.
       </p>
@@ -283,7 +284,7 @@ export function ShiftsList({ canEdit }: { canEdit: boolean }) {
         description={
           makingDefault ? (
             <>
-              <span className="font-semibold text-slate-700">{makingDefault.name}</span> (
+              <span className="font-semibold text-body">{makingDefault.name}</span> (
               {formatHmRange(makingDefault.start, makingDefault.end)}) will apply straight away to
               everyone whose department has no shift and who has no personal override.
             </>

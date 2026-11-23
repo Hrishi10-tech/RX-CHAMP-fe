@@ -20,27 +20,23 @@ function Precedence({ defaultName }: { defaultName?: string }) {
     `Default shift${defaultName ? ` (${defaultName})` : ""}`,
   ];
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm sm:px-5">
-      <p className="text-sm font-semibold text-slate-900">Which shift applies</p>
+    <div className="rounded-2xl border border-card bg-card px-4 py-3.5 shadow-sm sm:px-5">
+      <p className="text-sm font-semibold text-primary">Which shift applies</p>
       <ol className="mt-2 flex flex-wrap items-center gap-2 text-sm">
         {steps.map((step, i) => (
           <li key={step} className="flex items-center gap-2">
             <span
               className={`rounded-lg px-2.5 py-1 font-semibold ${
-                i === 0
-                  ? "bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]"
-                  : "bg-slate-100 text-slate-700"
+                i === 0 ? "bg-brand/8 text-brand" : "bg-panel text-body"
               }`}
             >
               {i + 1}. {step}
             </span>
-            {i < steps.length - 1 && (
-              <ChevronRight aria-hidden className="h-4 w-4 text-slate-300" />
-            )}
+            {i < steps.length - 1 && <ChevronRight aria-hidden className="h-4 w-4 text-faint" />}
           </li>
         ))}
       </ol>
-      <p className="mt-2 text-sm text-slate-500">
+      <p className="mt-2 text-sm text-quiet">
         The first one that exists wins. Changes start on the day you pick; past days keep the shift
         they had.
       </p>

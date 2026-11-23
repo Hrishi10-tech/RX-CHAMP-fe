@@ -5,15 +5,9 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Select } from "@/components/ui/Select";
-import {
-  btnPrimary,
-  btnSecondary,
-  cardBase,
-  errorText,
-  hintBase,
-  inputBase,
-  labelBase,
-} from "@/components/ui/classes";
+import { cardBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { FieldError, Hint, Input, Label } from "@/components/ui/Field";
 import { errorMessage } from "@/lib/api";
 import { useSaveSaturdays } from "@/features/calendar/hooks/useCalendar";
 import {
@@ -72,16 +66,16 @@ export function SaturdayRuleCard({
       aria-labelledby={`${id}-title`}
     >
       <div className="min-w-0 lg:max-w-md">
-        <h2 id={`${id}-title`} className="text-sm font-bold text-slate-900">
+        <h2 id={`${id}-title`} className="text-sm font-bold text-primary">
           Saturdays
         </h2>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-quiet">
           {saturdayWorked
             ? "Which Saturdays of the working week are worked. Departments and people with a week of their own follow theirs."
             : "Saturday isn't in the working week now, so every Saturday is off. The rule applies whenever Saturday is in it."}
         </p>
         {!editable && (
-          <p className="mt-1.5 text-sm font-semibold text-slate-800">{view.saturdaysLabel}</p>
+          <p className="mt-1.5 text-sm font-semibold text-strong">{view.saturdaysLabel}</p>
         )}
       </div>
       {editable && (
@@ -101,28 +95,25 @@ export function SaturdayRuleCard({
           </div>
           {rule === "ALTERNATE" && (
             <div className="sm:w-48">
-              <label htmlFor={`${id}-anchor`} className={labelBase}>
-                One Saturday that is worked
-              </label>
-              <input
+              <Label htmlFor={`${id}-anchor`}>One Saturday that is worked</Label>
+              <Input
                 id={`${id}-anchor`}
                 type="date"
                 value={anchor}
                 onChange={(e) => setAnchor(e.target.value)}
-                className={`${inputBase} mt-1.5`}
+                className="mt-1.5"
               />
               {touched && problem ? (
-                <p className={errorText}>{problem}</p>
+                <FieldError>{problem}</FieldError>
               ) : (
-                <p className={hintBase}>Every second Saturday from it is worked.</p>
+                <Hint>Every second Saturday from it is worked.</Hint>
               )}
             </div>
           )}
           {changed && (
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
-                className={btnSecondary}
                 disabled={save.isPending}
                 onClick={() => {
                   setRule(view.saturdays);
@@ -131,16 +122,16 @@ export function SaturdayRuleCard({
                 }}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
                 type="button"
-                className={btnPrimary}
                 disabled={save.isPending}
                 onClick={() => void submit()}
               >
                 {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
                 Save Saturdays
-              </button>
+              </Button>
             </div>
           )}
         </div>

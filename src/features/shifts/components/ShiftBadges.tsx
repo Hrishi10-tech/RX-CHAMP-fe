@@ -5,7 +5,7 @@ import type { ShiftBreakView, ShiftRef, ShiftSource } from "@/features/shifts/ty
 
 export function DefaultBadge() {
   return (
-    <span className="inline-flex items-center rounded-md bg-[rgba(34,34,204,0.1)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[rgb(34_34_204)]">
+    <span className="inline-flex items-center rounded-md bg-brand/10 px-1.5 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wider text-brand">
       Default
     </span>
   );
@@ -30,10 +30,10 @@ export function BreakSummary({ brk }: { brk: ShiftBreakView | undefined }) {
     return <Chip tone="neutral">Off</Chip>;
   }
   return (
-    <div className="min-w-0 text-xs text-slate-500">
-      <p className="text-sm font-semibold tabular-nums text-slate-900">
+    <div className="min-w-0 text-xs text-quiet">
+      <p className="text-sm font-semibold tabular-nums text-primary">
         <span className="whitespace-nowrap">{formatHmRange(brk.startTime, brk.endTime)}</span>{" "}
-        <span className="whitespace-nowrap font-normal text-slate-500">{brk.durationMin} min</span>
+        <span className="whitespace-nowrap font-normal text-quiet">{brk.durationMin} min</span>
       </p>
       <p className="whitespace-nowrap tabular-nums">
         Can start {formatHmRange(brk.windowOpen, brk.windowClose)}

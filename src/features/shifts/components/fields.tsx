@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 
-import { errorText, inputBase, inputInvalid } from "@/components/ui/classes";
+import { FieldError, Input } from "@/components/ui/Field";
 import { normalizeTime12 } from "@/features/shifts/lib/time";
 import { formatTime12 } from "@/lib/time/format";
 
@@ -47,9 +47,9 @@ export function TimeField({
       <div className="relative mt-1.5">
         <Clock
           aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet"
         />
-        <input
+        <Input
           id={id}
           type="text"
           inputMode="numeric"
@@ -58,7 +58,7 @@ export function TimeField({
           placeholder="9:30 AM"
           maxLength={9}
           aria-label={label}
-          aria-invalid={showError || undefined}
+          invalid={showError}
           aria-describedby={showError ? errorId : undefined}
           disabled={disabled}
           value={text}
@@ -76,14 +76,10 @@ export function TimeField({
               onChange(tidy);
             }
           }}
-          className={`${inputBase} pl-9 font-semibold tabular-nums ${showError ? inputInvalid : ""}`}
+          className="pl-9 font-semibold tabular-nums"
         />
       </div>
-      {showError && (
-        <p id={errorId} className={errorText}>
-          {error}
-        </p>
-      )}
+      {showError && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }
@@ -114,7 +110,7 @@ export function MinutesField({
   return (
     <div>
       <div className="relative mt-1.5">
-        <input
+        <Input
           id={id}
           type="number"
           inputMode="numeric"
@@ -122,25 +118,21 @@ export function MinutesField({
           max={max}
           step={1}
           aria-label={label}
-          aria-invalid={Boolean(error) || undefined}
+          invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           disabled={disabled}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`${inputBase} pr-12 tabular-nums ${error ? inputInvalid : ""}`}
+          className="pr-12 tabular-nums"
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400"
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-quiet"
         >
           {suffix}
         </span>
       </div>
-      {error && (
-        <p id={errorId} className={errorText}>
-          {error}
-        </p>
-      )}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }

@@ -7,21 +7,15 @@ import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import type { SelectOption } from "@/components/ui/types";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-  labelBase,
-} from "@/components/ui/classes";
+import { inputInvalid, labelBase } from "@/components/ui/classes";
 import { errorCode, errorMessage } from "@/lib/api";
 import { DEPARTMENT_NAMES } from "@/constants/departments";
 import { formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
 import { formatHmRange } from "@/features/shifts/lib/time";
 import { useAssignDepartment } from "@/features/shifts/hooks/useAssignments";
 import type { DepartmentAssignmentView, ShiftView } from "@/features/shifts/types";
+import { Checkbox, FieldError, Hint, Input, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 /**
  * Sets a department's shifts from a day onward: tick one or more. With several, each
@@ -152,9 +146,7 @@ export function AssignDepartmentDialog({
       <form onSubmit={submit} noValidate className="space-y-4 px-6 py-5">
         {!row && (
           <div>
-            <label htmlFor="dept-name" className={labelBase}>
-              Department
-            </label>
+            <Label htmlFor="dept-name">Department</Label>
             <Select
               id="dept-name"
               value={department}
@@ -168,51 +160,47 @@ export function AssignDepartmentDialog({
               leadingIcon={Briefcase}
               disabled={pending}
             />
-            {errors.department && <p className={errorText}>{errors.department}</p>}
+            {errors.department && <FieldError>{errors.department}</FieldError>}
           </div>
         )}
 
         <fieldset>
           <legend className={labelBase}>Shifts</legend>
-          <p className={hintBase}>
+          <Hint>
             {shared
               ? "Tick one or more. With several, each person gets the shift that's on when they press Start Day; in a gap, the next one."
               : "Pick one shift. To give a department several shifts, turn on Shared computer for it on the Departments page."}
-          </p>
+          </Hint>
           <div
             className={`mt-2 max-h-56 space-y-1.5 overflow-y-auto rounded-xl border px-3 py-2 ${
-              errors.shift ? "border-red-300" : "border-slate-200"
+              errors.shift ? "border-attention-edge-strong" : "border-card"
             }`}
           >
             {(shifts ?? []).length === 0 && (
-              <p className="text-sm text-slate-500">No shifts yet. Create one first.</p>
+              <p className="text-sm text-quiet">No shifts yet. Create one first.</p>
             )}
             {(shifts ?? []).map((s) => (
               <label
                 key={s.id}
-                className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+                className="flex cursor-pointer items-center gap-2 text-sm text-body"
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={chosen.some((c) => c.id === s.id)}
                   onChange={() => toggle(s.id)}
                   disabled={pending}
-                  className="h-4 w-4 rounded border-slate-300"
                 />
                 <span>
-                  {s.name} <span className="text-slate-500">({formatHmRange(s.start, s.end)})</span>
+                  {s.name} <span className="text-quiet">({formatHmRange(s.start, s.end)})</span>
                 </span>
               </label>
             ))}
           </div>
-          {errors.shift && <p className={errorText}>{errors.shift}</p>}
+          {errors.shift && <FieldError>{errors.shift}</FieldError>}
         </fieldset>
 
         <div>
-          <label htmlFor="dept-from" className={labelBase}>
-            From
-          </label>
-          <input
+          <Label htmlFor="dept-from">From</Label>
+          <Input
             id="dept-from"
             type="date"
             min={today}
@@ -221,31 +209,31 @@ export function AssignDepartmentDialog({
             aria-invalid={!!errors.from || undefined}
             aria-describedby="dept-from-hint"
             disabled={pending}
-            className={`${inputBase} mt-1.5 ${errors.from ? inputInvalid : ""}`}
+            className={`mt-1.5 ${errors.from ? inputInvalid : ""}`}
           />
-          <p id="dept-from-hint" className={errors.from ? errorText : hintBase}>
+          <Hint id="dept-from-hint" error={errors.from}>
             {errors.from ?? "Today or later."}
-          </p>
+          </Hint>
         </div>
 
         {preview && (
-          <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600">
+          <p className="rounded-xl bg-fill px-4 py-3 text-sm leading-relaxed text-soft">
             {preview}
           </p>
         )}
 
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button type="button" onClick={close} disabled={pending} className={btnSecondary}>
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button variant="secondary" type="button" onClick={close} disabled={pending}>
             Cancel
-          </button>
-          <button type="submit" disabled={pending} className={btnPrimary}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={pending}>
             {pending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <Save className="h-4 w-4" aria-hidden />
             )}
             {pending ? "Saving…" : "Save"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

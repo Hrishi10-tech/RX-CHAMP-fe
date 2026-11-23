@@ -5,13 +5,15 @@ import { Building, Pencil, Plus } from "lucide-react";
 
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnGhost, btnSecondary, btnSmall, cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { formatDay } from "@/lib/time/businessTime";
 import { useDepartmentAssignments } from "@/features/shifts/hooks/useAssignments";
 import { AssignDepartmentDialog } from "@/features/shifts/components/AssignDepartmentDialog";
 import { shiftRefLabel } from "@/features/shifts/components/ShiftBadges";
 import type { DatedShift, DepartmentAssignmentView, ShiftView } from "@/features/shifts/types";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Th } from "@/components/ui/Table";
 
 /** 4.1: the department's other shifts (Start Day picks the one that is on). */
 function ExtraShifts({ row }: { row: DepartmentAssignmentView }) {
@@ -20,11 +22,11 @@ function ExtraShifts({ row }: { row: DepartmentAssignmentView }) {
   return (
     <div className="mt-1 min-w-0">
       {extras.map((s) => (
-        <p key={s.id} className="font-semibold text-slate-900">
+        <p key={s.id} className="font-semibold text-primary">
           {shiftRefLabel(s)}
         </p>
       ))}
-      <p className="text-xs text-slate-500">Picked by Start Day time</p>
+      <p className="text-xs text-quiet">Picked by Start Day time</p>
     </div>
   );
 }
@@ -39,10 +41,10 @@ function CurrentShift({
   if (!current || !current.shift) {
     return (
       <div className="min-w-0">
-        <p className="font-semibold text-slate-900">
+        <p className="font-semibold text-primary">
           Default shift{defaultShift ? ` (${defaultShift.name})` : ""}
         </p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-quiet">
           {current ? `Since ${formatDay(current.effectiveFrom)}` : "No department shift set"}
         </p>
       </div>
@@ -50,14 +52,14 @@ function CurrentShift({
   }
   return (
     <div className="min-w-0">
-      <p className="font-semibold text-slate-900">{shiftRefLabel(current.shift)}</p>
-      <p className="text-xs text-slate-500">Since {formatDay(current.effectiveFrom)}</p>
+      <p className="font-semibold text-primary">{shiftRefLabel(current.shift)}</p>
+      <p className="text-xs text-quiet">Since {formatDay(current.effectiveFrom)}</p>
     </div>
   );
 }
 
 function Upcoming({ upcoming }: { upcoming: DatedShift | null }) {
-  if (!upcoming) return <span className="text-slate-400">None scheduled</span>;
+  if (!upcoming) return <span className="text-quiet">None scheduled</span>;
   return (
     <Chip tone="info" title={shiftRefLabel(upcoming.shift, "Default shift")}>
       {upcoming.shift?.name ?? "Default shift"} from {formatDay(upcoming.effectiveFrom)}
@@ -72,11 +74,16 @@ function OverridesCell({
   row: DepartmentAssignmentView;
   onShow: (department: string) => void;
 }) {
-  if (!row.overrides) return <span className="text-slate-400">None</span>;
+  if (!row.overrides) return <span className="text-quiet">None</span>;
   return (
-    <button type="button" onClick={() => onShow(row.department)} className={`${btnGhost} -ml-2.5`}>
+    <Button
+      variant="ghost"
+      type="button"
+      onClick={() => onShow(row.department)}
+      className="-ml-2.5"
+    >
       {row.overrides} {row.overrides === 1 ? "override" : "overrides"}
-    </button>
+    </Button>
   );
 }
 
@@ -99,21 +106,21 @@ export function DepartmentsTab({
   const rows = data ?? [];
 
   return (
-    <section className={cardBase} aria-label="Departments">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <Card as="section" aria-label="Departments">
+      <div className="flex flex-col gap-3 border-b border-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">Departments</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-base font-semibold text-primary">Departments</h2>
+          <p className="text-sm text-quiet">
             {canEdit
               ? "Everyone in a department works its shift unless they have a personal override."
               : "Set by the Admin."}
           </p>
         </div>
         {canEdit && (
-          <button type="button" onClick={() => setDialog({ row: null })} className={btnSecondary}>
+          <Button variant="secondary" type="button" onClick={() => setDialog({ row: null })}>
             <Plus className="h-4 w-4" aria-hidden />
             Set a department&apos;s shift
-          </button>
+          </Button>
         )}
       </div>
 
@@ -134,7 +141,7 @@ export function DepartmentsTab({
         />
       ) : (
         <>
-          <ul className="divide-y divide-slate-100 md:hidden">
+          <ul className="divide-y divide-divider md:hidden">
             {rows.map((row) => (
               <li
                 key={`${row.companyId ?? "-"}|${row.departmentKey}`}
@@ -142,28 +149,28 @@ export function DepartmentsTab({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="truncate font-semibold text-slate-900">{row.department}</h3>
-                    <p className="text-sm text-slate-500">
+                    <h3 className="truncate font-semibold text-primary">{row.department}</h3>
+                    <p className="text-sm text-quiet">
                       {row.people} {row.people === 1 ? "person" : "people"}
                     </p>
                   </div>
                   {canEdit && (
-                    <button
+                    <Button
+                      variant="small"
                       type="button"
                       onClick={() => setDialog({ row })}
-                      className={btnSmall}
                       aria-label={`Change the shift for ${row.department}`}
                     >
                       <Pencil className="h-3.5 w-3.5" aria-hidden />
                       Change
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <CurrentShift current={row.current} defaultShift={defaultShift} />
                 <ExtraShifts row={row} />
                 <dl className="grid grid-cols-2 gap-3 text-sm">
                   <div className="min-w-0">
-                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-quiet">
                       Upcoming
                     </dt>
                     <dd className="mt-1">
@@ -171,7 +178,7 @@ export function DepartmentsTab({
                     </dd>
                   </div>
                   <div className="min-w-0">
-                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-quiet">
                       Overrides
                     </dt>
                     <dd className="mt-0.5">
@@ -186,26 +193,18 @@ export function DepartmentsTab({
           <div className="relative hidden overflow-x-auto md:block">
             <table className="w-full min-w-[760px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/70">
-                  <th scope="col" className={`${thBase} pl-6`}>
+                <tr className="border-b border-card bg-fill/70">
+                  <Th scope="col" className="pl-6">
                     Department
-                  </th>
-                  <th scope="col" className={thBase}>
-                    People
-                  </th>
-                  <th scope="col" className={thBase}>
-                    Shift today
-                  </th>
-                  <th scope="col" className={thBase}>
-                    Upcoming
-                  </th>
-                  <th scope="col" className={thBase}>
-                    Overrides
-                  </th>
+                  </Th>
+                  <Th scope="col">People</Th>
+                  <Th scope="col">Shift today</Th>
+                  <Th scope="col">Upcoming</Th>
+                  <Th scope="col">Overrides</Th>
                   {canEdit && (
-                    <th scope="col" className={`${thBase} pr-6 text-right`}>
+                    <Th scope="col" className="pr-6 text-right">
                       <span className="sr-only">Actions</span>
-                    </th>
+                    </Th>
                   )}
                 </tr>
               </thead>
@@ -213,12 +212,12 @@ export function DepartmentsTab({
                 {rows.map((row) => (
                   <tr
                     key={`${row.companyId ?? "-"}|${row.departmentKey}`}
-                    className="border-b border-slate-100 last:border-0"
+                    className="border-b border-divider last:border-0"
                   >
-                    <td className="py-3.5 pl-6 pr-4 font-semibold text-slate-900">
+                    <td className="py-3.5 pl-6 pr-4 font-semibold text-primary">
                       {row.department}
                     </td>
-                    <td className="px-4 py-3.5 tabular-nums text-slate-700">{row.people}</td>
+                    <td className="px-4 py-3.5 tabular-nums text-body">{row.people}</td>
                     <td className="px-4 py-3.5">
                       <CurrentShift current={row.current} defaultShift={defaultShift} />
                       <ExtraShifts row={row} />
@@ -231,15 +230,15 @@ export function DepartmentsTab({
                     </td>
                     {canEdit && (
                       <td className="py-3.5 pl-4 pr-6 text-right">
-                        <button
+                        <Button
+                          variant="small"
                           type="button"
                           onClick={() => setDialog({ row })}
-                          className={btnSmall}
                           aria-label={`Change the shift for ${row.department}`}
                         >
                           <Pencil className="h-3.5 w-3.5" aria-hidden />
                           Change
-                        </button>
+                        </Button>
                       </td>
                     )}
                   </tr>
@@ -259,6 +258,6 @@ export function DepartmentsTab({
           onClose={() => setDialog(null)}
         />
       )}
-    </section>
+    </Card>
   );
 }

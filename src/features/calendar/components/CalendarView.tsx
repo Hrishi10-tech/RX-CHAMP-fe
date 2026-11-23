@@ -8,16 +8,9 @@ import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnGhost,
-  btnPrimary,
-  btnSecondary,
-  cardBase,
-  errorText,
-  hintBase,
-  inputBase,
-  labelBase,
-} from "@/components/ui/classes";
+import { cardBase, labelBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { FieldError, Hint, Input, Label } from "@/components/ui/Field";
 import { errorCode, errorDetails, errorMessage } from "@/lib/api";
 import { formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
 import { MONTH_NAMES, WEEKDAY_SHORT, formatMonth } from "@/lib/time/months";
@@ -55,6 +48,8 @@ import type { CalendarDayCell, CalendarMonthGrid } from "@/features/calendar/typ
 import { DepartmentWeeks } from "./DepartmentWeeks";
 import { PeopleWeeks } from "./PeopleWeeks";
 import { SaturdayRuleCard } from "./SaturdayRuleCard";
+import { IconButton } from "@/components/ui/IconButton";
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
 
 export { calendarKeys };
 
@@ -63,12 +58,12 @@ const NO_NAMES = new Map<string, string>();
 function dayClass(cell: CalendarDayCell): string {
   // 3.5: a day set for some departments only; the square keeps the organisation's answer.
   if (cell.departmentIds.length)
-    return `${cell.isWorking ? "bg-white text-slate-700" : "bg-slate-100 text-slate-500"} font-semibold ring-1 ring-inset ring-sky-400`;
-  if (!cell.isWorking && cell.label) return "bg-violet-100 text-violet-800 font-semibold";
-  if (!cell.isWorking) return "bg-slate-100 text-slate-400";
+    return `${cell.isWorking ? "bg-card text-body" : "bg-panel text-quiet"} font-semibold ring-1 ring-inset ring-brand`;
+  if (!cell.isWorking && cell.label) return "bg-meeting-wash-strong text-meeting-ink font-semibold";
+  if (!cell.isWorking) return "bg-panel text-quiet";
   if (cell.overridden)
-    return "bg-emerald-50 text-emerald-800 font-semibold ring-1 ring-inset ring-emerald-300";
-  return "bg-white text-slate-700";
+    return "bg-working-wash text-working-ink font-semibold ring-1 ring-inset ring-working-edge";
+  return "bg-card text-body";
 }
 
 /** "Mon 9 Nov: Working day; day off for Sales, Diwali" for a day set for some departments. */
@@ -91,7 +86,7 @@ function DayMark({ cell }: { cell: CalendarDayCell }) {
     <span
       aria-hidden
       className={`absolute bottom-0.5 h-1 w-1 rounded-full ${
-        cell.departmentIds.length ? "bg-sky-500" : "bg-current"
+        cell.departmentIds.length ? "bg-brand" : "bg-current"
       }`}
     />
   );
@@ -112,17 +107,16 @@ function MonthCard({
   return (
     <section className={`${cardBase} p-4`} aria-label={MONTH_NAMES[monthIndex]}>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-sm font-bold text-slate-900">{MONTH_NAMES[monthIndex]}</h2>
-        <span className="text-xs font-semibold text-slate-500">
-          <span className="tabular-nums text-[rgb(34_34_204)]">{grid.workingDays}</span> working
-          days
+        <h2 className="text-sm font-bold text-primary">{MONTH_NAMES[monthIndex]}</h2>
+        <span className="text-xs font-semibold text-quiet">
+          <span className="tabular-nums text-brand">{grid.workingDays}</span> working days
         </span>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center" role="grid">
         {WEEKDAY_SHORT.map((w) => (
           <span
             key={w}
-            className="pb-1 text-[10px] font-semibold uppercase text-slate-400"
+            className="pb-1 text-[0.625rem] font-semibold uppercase text-quiet"
             role="columnheader"
           >
             {w.slice(0, 2)}
@@ -138,8 +132,8 @@ function MonthCard({
                 onClick={() => onPick(cell)}
                 title={dayTitle(cell, departmentNames)}
                 aria-label={dayTitle(cell, departmentNames)}
-                className={`relative flex h-8 items-center justify-center rounded-md text-xs tabular-nums transition hover:ring-2 hover:ring-[rgba(34,34,204,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(34_34_204)] ${dayClass(cell)} ${
-                  cell.isToday ? "outline outline-2 outline-[rgb(34_34_204)]" : ""
+                className={`relative flex h-8 items-center justify-center rounded-md text-xs tabular-nums transition hover:ring-2 hover:ring-brand/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${dayClass(cell)} ${
+                  cell.isToday ? "outline outline-2 outline-brand" : ""
                 }`}
               >
                 {cell.day}
@@ -152,7 +146,7 @@ function MonthCard({
                 title={dayTitle(cell, departmentNames)}
                 aria-label={dayTitle(cell, departmentNames)}
                 className={`relative flex h-8 items-center justify-center rounded-md text-xs tabular-nums ${dayClass(cell)} ${
-                  cell.isToday ? "outline outline-2 outline-[rgb(34_34_204)]" : ""
+                  cell.isToday ? "outline outline-2 outline-brand" : ""
                 }`}
               >
                 {cell.day}
@@ -250,12 +244,12 @@ export function DayDialog({
               role="radio"
               aria-checked={working === o.value}
               onClick={() => setWorking(o.value)}
-              className={`rounded-xl border px-3 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
+              className={`rounded-xl border px-3 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 ${
                 working === o.value
                   ? o.value
-                    ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-                    : "border-violet-500 bg-violet-50 text-violet-800"
-                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "border-working bg-working-wash text-working-ink"
+                    : "border-meeting bg-meeting-wash text-meeting-ink"
+                  : "border-card text-soft hover:bg-fill"
               }`}
             >
               {o.label}
@@ -263,22 +257,22 @@ export function DayDialog({
           ))}
         </div>
         <div>
-          <label htmlFor={id} className={labelBase}>
-            Name <span className="font-normal text-slate-400">(optional)</span>
-          </label>
-          <input
+          <Label htmlFor={id}>
+            Name <span className="font-normal text-quiet">(optional)</span>
+          </Label>
+          <Input
             id={id}
             value={label}
             maxLength={60}
             onChange={(e) => setLabel(e.target.value)}
             placeholder={working ? "e.g. Make-up day" : "e.g. Diwali"}
-            className={`${inputBase} mt-1.5`}
+            className="mt-1.5"
           />
-          <p className={hintBase}>
+          <Hint>
             {some
               ? "Named days off appear as holidays to the people of those departments, in the app too."
               : "Named days off appear as holidays to everyone, in the app too."}
-          </p>
+          </Hint>
         </div>
         <fieldset className="space-y-2">
           <legend className={labelBase}>Who it is for</legend>
@@ -293,10 +287,10 @@ export function DayDialog({
                 role="radio"
                 aria-checked={some === o.value}
                 onClick={() => setSome(o.value)}
-                className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
+                className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 ${
                   some === o.value
-                    ? "border-[rgb(34_34_204)] bg-[rgba(34,34,204,0.06)] text-[rgb(34_34_204)]"
-                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "border-brand bg-brand/6 text-brand"
+                    : "border-card text-soft hover:bg-fill"
                 }`}
               >
                 {o.label}
@@ -314,38 +308,38 @@ export function DayDialog({
                 invalid={touched && Boolean(departmentsProblem)}
               />
               {touched && departmentsProblem ? (
-                <p className={errorText}>{departmentsProblem}</p>
+                <FieldError>{departmentsProblem}</FieldError>
               ) : (
-                <p className={hintBase}>
+                <Hint>
                   Only the people of these departments get this day; everyone else keeps the
                   week&apos;s.
-                </p>
+                </Hint>
               )}
             </>
           )}
         </fieldset>
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:items-center sm:justify-between">
           {cell.overridden ? (
-            <button
+            <Button
+              variant="ghost"
               type="button"
-              className={btnGhost}
               disabled={saving}
               onClick={() => onSave(cell.date, { kind: "delete" })}
             >
               <RotateCcw className="h-4 w-4" aria-hidden />
               Back to the week pattern
-            </button>
+            </Button>
           ) : (
             <span />
           )}
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <button type="button" className={btnSecondary} onClick={onClose} disabled={saving}>
+            <Button type="button" onClick={onClose} disabled={saving}>
               Cancel
-            </button>
-            <button type="submit" className={btnPrimary} disabled={saving}>
+            </Button>
+            <Button variant="primary" type="submit" disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               Save
-            </button>
+            </Button>
           </div>
         </div>
       </form>
@@ -485,29 +479,19 @@ export function CalendarView({ editable }: { editable: boolean }) {
             : "Working days and holidays for the organisation. Monthly focus targets follow this calendar."
         }
         actions={
-          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
-              onClick={() => setYear((y) => y - 1)}
-              aria-label="Previous year"
-            >
+          <div className="flex items-center gap-1 rounded-xl border border-card bg-card p-1 shadow-sm">
+            <IconButton label="Previous year" onClick={() => setYear((y) => y - 1)}>
               <ChevronLeft className="h-4 w-4" />
-            </button>
+            </IconButton>
             <span
-              className="min-w-[4rem] text-center text-sm font-bold tabular-nums text-slate-900"
+              className="min-w-[4rem] text-center text-sm font-bold tabular-nums text-primary"
               aria-live="polite"
             >
               {year}
             </span>
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
-              onClick={() => setYear((y) => y + 1)}
-              aria-label="Next year"
-            >
+            <IconButton label="Next year" onClick={() => setYear((y) => y + 1)}>
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </IconButton>
           </div>
         }
       />
@@ -551,8 +535,8 @@ export function CalendarView({ editable }: { editable: boolean }) {
             className={`${cardBase} flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between`}
           >
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Working week</h2>
-              <p className="text-xs text-slate-500">
+              <h2 className="text-sm font-bold text-primary">Working week</h2>
+              <p className="text-xs text-quiet">
                 {editable
                   ? "Tap a day to switch it on or off, then choose the day the new week applies from."
                   : "Set by the Admin."}
@@ -561,7 +545,7 @@ export function CalendarView({ editable }: { editable: boolean }) {
                   : ""}
               </p>
               {upcoming && !changed && (
-                <p className="mt-1 text-xs font-semibold text-[rgb(34_34_204)]">
+                <p className="mt-1 text-xs font-semibold text-brand">
                   {patternText(upcoming.days)} from {formatDayWithWeekday(upcoming.from)}{" "}
                   {upcoming.from.slice(0, 4)}
                 </p>
@@ -572,45 +556,40 @@ export function CalendarView({ editable }: { editable: boolean }) {
                 const day = i + 1;
                 const on = shownPattern.includes(day);
                 return (
-                  <button
+                  <ChoiceChip
                     key={label}
-                    type="button"
-                    aria-pressed={on}
+                    on={on}
                     disabled={!editable || savePattern.isPending}
                     onClick={() => {
                       if (draft === null) setFrom(today);
                       setDraft(toggleWeekday(shownPattern, day));
                     }}
-                    className={`h-10 min-w-[3.25rem] rounded-xl border px-3 text-sm font-semibold transition disabled:cursor-default ${
-                      on
-                        ? "border-[rgb(34_34_204)] bg-[rgb(34_34_204)] text-white"
-                        : "border-slate-200 bg-white text-slate-500"
-                    } ${editable ? "hover:brightness-105" : ""}`}
+                    className="h-10 min-w-[3.25rem] rounded-xl disabled:cursor-default disabled:opacity-100"
                   >
                     {label}
-                  </button>
+                  </ChoiceChip>
                 );
               })}
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-soft">
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded border border-slate-200 bg-white" /> Working
+                <span className="h-3 w-3 rounded border border-card bg-card" /> Working
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-slate-100" /> Off
+                <span className="h-3 w-3 rounded bg-panel" /> Off
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-violet-100" /> Holiday
+                <span className="h-3 w-3 rounded bg-meeting-wash-strong" /> Holiday
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-emerald-50 ring-1 ring-emerald-300" /> Extra
+                <span className="h-3 w-3 rounded bg-working-wash ring-1 ring-working-edge" /> Extra
                 working day
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-white ring-1 ring-sky-400" /> Some departments
+                <span className="h-3 w-3 rounded bg-card ring-1 ring-brand" /> Some departments
               </span>
               {!editable && (
-                <span className="flex items-center gap-1 text-slate-400">
+                <span className="flex items-center gap-1 text-quiet">
                   <Lock className="h-3 w-3" aria-hidden /> Read only
                 </span>
               )}
@@ -620,38 +599,37 @@ export function CalendarView({ editable }: { editable: boolean }) {
           {editable && changed && draft && (
             <section
               aria-label="Save the working week"
-              className={`${cardBase} flex flex-col gap-3 border-[rgba(34,34,204,0.35)] p-4 sm:flex-row sm:items-end sm:justify-between`}
+              className={`${cardBase} flex flex-col gap-3 border-brand/35 p-4 sm:flex-row sm:items-end sm:justify-between`}
             >
               <div>
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-primary">
                   New working week: {patternText(draft)}
                 </p>
-                <label htmlFor={fromId} className={`${labelBase} mt-2 block`}>
+                <Label htmlFor={fromId} className="mt-2 block">
                   Applies from
-                </label>
-                <input
+                </Label>
+                <Input
                   id={fromId}
                   type="date"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
-                  className={`${inputBase} mt-1.5 w-48`}
+                  className="mt-1.5 w-48"
                 />
-                <p className={hintBase}>
+                <Hint>
                   Days before it keep the working week they had. Targets follow from that day.
-                </p>
+                </Hint>
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
                   type="button"
-                  className={btnSecondary}
                   onClick={() => setDraft(null)}
                   disabled={savePattern.isPending}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="primary"
                   type="button"
-                  className={btnPrimary}
                   disabled={savePattern.isPending || !/^\d{4}-\d{2}-\d{2}$/.test(from)}
                   onClick={() => savePattern.mutate({ days: draft, from })}
                 >
@@ -659,7 +637,7 @@ export function CalendarView({ editable }: { editable: boolean }) {
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   )}
                   Save working week
-                </button>
+                </Button>
               </div>
             </section>
           )}
@@ -681,34 +659,32 @@ export function CalendarView({ editable }: { editable: boolean }) {
 
             <aside className="space-y-5">
               <section className={`${cardBase} p-4`}>
-                <h2 className="mb-3 text-sm font-bold text-slate-900">Working days by month</h2>
-                <ul className="divide-y divide-slate-100 text-sm">
+                <h2 className="mb-3 text-sm font-bold text-primary">Working days by month</h2>
+                <ul className="divide-y divide-divider text-sm">
                   {months.map((m) => (
                     <li key={m.month} className="flex items-center justify-between py-1.5">
-                      <span className="text-slate-600">
-                        {MONTH_NAMES[Number(m.month.slice(5)) - 1]}
-                      </span>
-                      <span className="font-semibold tabular-nums text-slate-900">
+                      <span className="text-soft">{MONTH_NAMES[Number(m.month.slice(5)) - 1]}</span>
+                      <span className="font-semibold tabular-nums text-primary">
                         {m.workingDays}
                       </span>
                     </li>
                   ))}
                   <li className="flex items-center justify-between pt-2 font-bold">
-                    <span className="text-slate-800">{year}</span>
-                    <span className="tabular-nums text-[rgb(34_34_204)]">{totalWorking}</span>
+                    <span className="text-strong">{year}</span>
+                    <span className="tabular-nums text-brand">{totalWorking}</span>
                   </li>
                 </ul>
               </section>
 
               {past.length > 0 && (
                 <section className={`${cardBase} p-4`}>
-                  <h2 className="mb-1 text-sm font-bold text-slate-900">Earlier working weeks</h2>
-                  <p className="mb-3 text-xs text-slate-500">Kept for the days they covered.</p>
+                  <h2 className="mb-1 text-sm font-bold text-primary">Earlier working weeks</h2>
+                  <p className="mb-3 text-xs text-quiet">Kept for the days they covered.</p>
                   <ul className="space-y-2 text-sm">
                     {past.map((p) => (
                       <li key={p.from} className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-slate-800">{patternText(p.days)}</span>
-                        <span className="shrink-0 text-xs text-slate-500">
+                        <span className="font-semibold text-strong">{patternText(p.days)}</span>
+                        <span className="shrink-0 text-xs text-quiet">
                           {isSinceAlways(p.from)
                             ? "Until"
                             : `${formatDayWithWeekday(p.from)} ${p.from.slice(0, 4)} to`}{" "}
@@ -721,12 +697,12 @@ export function CalendarView({ editable }: { editable: boolean }) {
               )}
 
               <section className={`${cardBase} p-4`}>
-                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-                  <PartyPopper className="h-4 w-4 text-violet-600" aria-hidden />
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-primary">
+                  <PartyPopper className="h-4 w-4 text-meeting" aria-hidden />
                   Holidays
                 </h2>
                 {holidays.length === 0 ? (
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-quiet">
                     {editable ? "None yet. Click a day and name it." : "None this year."}
                   </p>
                 ) : (
@@ -734,16 +710,16 @@ export function CalendarView({ editable }: { editable: boolean }) {
                     {holidays.map((h) => (
                       <li key={h.date} className="flex items-start justify-between gap-2 text-sm">
                         <span className="min-w-0">
-                          <span className="block truncate font-semibold text-slate-800">
+                          <span className="block truncate font-semibold text-strong">
                             {h.label || "Day off"}
                           </span>
                           {h.departmentIds?.length ? (
-                            <span className="block text-xs text-sky-700">
+                            <span className="block text-xs text-brand">
                               Only {departmentsText(h.departmentIds, departmentNames)}
                             </span>
                           ) : null}
                         </span>
-                        <span className="shrink-0 text-xs text-slate-500">
+                        <span className="shrink-0 text-xs text-quiet">
                           {formatDayWithWeekday(h.date)}
                         </span>
                       </li>
