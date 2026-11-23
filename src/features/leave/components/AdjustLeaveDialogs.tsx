@@ -1,5 +1,6 @@
 "use client";
 
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -7,16 +8,6 @@ import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-  labelBase,
-  textareaBase,
-} from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import { todayKey } from "@/lib/time/businessTime";
 import { useAdjustLeave, usePersonLeave, useSetLeaveQuota } from "@/features/leave/hooks/useLeave";
@@ -26,6 +17,8 @@ import type { PersonBalanceRow, PoolCategory } from "@/features/leave/types";
 import { CompOffBalanceCard } from "./CompOffPanel";
 import { BalanceCard, LedgerList } from "./LeaveBits";
 import { RequestRow } from "./RequestRow";
+import { FieldError, Hint, Input, Label, Textarea } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 type Mode = "ADD" | "SUBTRACT" | "SET";
 
@@ -157,10 +150,8 @@ export function AdjustLeaveDialog({
           ]}
         />
         <div>
-          <label htmlFor="adjust-days" className={labelBase}>
-            {mode === "SET" ? "New balance (days)" : "Days"}
-          </label>
-          <input
+          <Label htmlFor="adjust-days">{mode === "SET" ? "New balance (days)" : "Days"}</Label>
+          <Input
             id="adjust-days"
             type="number"
             inputMode="decimal"
@@ -171,41 +162,35 @@ export function AdjustLeaveDialog({
               setDays(e.target.value);
               setServer(null);
             }}
-            className={`mt-1.5 ${inputBase} ${touched && daysProblem ? inputInvalid : ""}`}
+            invalid={!!(touched && daysProblem)}
+            className="mt-1.5"
             placeholder={mode === "SET" ? String(current.balanceDays) : "1"}
             data-autofocus
           />
           <div className="mt-2 flex flex-wrap gap-1.5">
             {[0.5, 1, 2, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setDays(String(n))}
-                className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
-              >
+              <ChoiceChip on={days === String(n)} key={n} onClick={() => setDays(String(n))}>
                 {daysText(n)}
-              </button>
+              </ChoiceChip>
             ))}
           </div>
           {touched && daysProblem ? (
-            <p className={errorText}>{daysProblem}</p>
+            <FieldError>{daysProblem}</FieldError>
           ) : (
             after !== null && (
-              <p className={`${hintBase} flex items-center gap-1.5`}>
+              <Hint className="flex items-center gap-1.5">
                 {CATEGORY_TEXT[category].label} balance {daysText(current.balanceDays)}
                 <ArrowRight className="h-3 w-3" aria-hidden />
-                <span className={`font-semibold ${after < 0 ? "text-rose-600" : "text-slate-800"}`}>
+                <span className={`font-semibold ${after < 0 ? "text-attention" : "text-strong"}`}>
                   {daysText(after)}
                 </span>
-              </p>
+              </Hint>
             )
           )}
         </div>
         <div>
-          <label htmlFor="adjust-reason" className={labelBase}>
-            Reason
-          </label>
-          <textarea
+          <Label htmlFor="adjust-reason">Reason</Label>
+          <Textarea
             id="adjust-reason"
             rows={2}
             maxLength={300}
@@ -214,25 +199,21 @@ export function AdjustLeaveDialog({
               setReason(e.target.value);
               setServer(null);
             }}
-            className={`mt-1.5 ${textareaBase} ${touched && reasonProblem ? inputInvalid : ""}`}
+            invalid={!!(touched && reasonProblem)}
+            className="mt-1.5"
             placeholder="For example: leave taken in October before RX Vision"
           />
-          {touched && reasonProblem && <p className={errorText}>{reasonProblem}</p>}
+          {touched && reasonProblem && <FieldError>{reasonProblem}</FieldError>}
         </div>
-        {server && <p className={errorText}>{server.message}</p>}
+        {server && <FieldError>{server.message}</FieldError>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={adjust.isPending}
-          >
+          <Button variant="secondary" type="button" onClick={onClose} disabled={adjust.isPending}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={adjust.isPending}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={adjust.isPending}>
             {adjust.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -302,10 +283,8 @@ export function QuotaDialog({
       <form onSubmit={submit} noValidate className="space-y-4 px-5 py-5 sm:px-6">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="quota-clsl" className={labelBase}>
-              CL/SL a year
-            </label>
-            <input
+            <Label htmlFor="quota-clsl">CL/SL a year</Label>
+            <Input
               id="quota-clsl"
               type="number"
               inputMode="decimal"
@@ -315,15 +294,13 @@ export function QuotaDialog({
               value={clsl}
               placeholder={String(defaults.clsl)}
               onChange={(e) => setClsl(e.target.value)}
-              className={`mt-1.5 ${inputBase}`}
+              className="mt-1.5"
               data-autofocus
             />
           </div>
           <div>
-            <label htmlFor="quota-elpl" className={labelBase}>
-              EL/PL a year
-            </label>
-            <input
+            <Label htmlFor="quota-elpl">EL/PL a year</Label>
+            <Input
               id="quota-elpl"
               type="number"
               inputMode="decimal"
@@ -333,24 +310,19 @@ export function QuotaDialog({
               value={elpl}
               placeholder={String(defaults.elpl)}
               onChange={(e) => setElpl(e.target.value)}
-              className={`mt-1.5 ${inputBase}`}
+              className="mt-1.5"
             />
           </div>
         </div>
-        {problem && <p className={errorText}>{problem}</p>}
+        {problem && <FieldError>{problem}</FieldError>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={save.isPending}
-          >
+          <Button variant="secondary" type="button" onClick={onClose} disabled={save.isPending}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={save.isPending}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending}>
             {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -391,27 +363,27 @@ export function PersonLeaveDialog({
             {/* 3.5: comp off, when their organisation has it on. */}
             {q.data.compOff?.enabled && <CompOffBalanceCard b={q.data.compOff} />}
           </div>
-          <div className="rounded-2xl border border-slate-200">
-            <h3 className="border-b border-slate-100 px-4 py-2.5 text-sm font-bold text-slate-900">
+          <div className="rounded-2xl border border-card">
+            <h3 className="border-b border-divider px-4 py-2.5 text-sm font-bold text-primary">
               Ledger
             </h3>
             <LedgerList lines={q.data.ledger} />
           </div>
-          <div className="rounded-2xl border border-slate-200">
-            <h3 className="border-b border-slate-100 px-4 py-2.5 text-sm font-bold text-slate-900">
+          <div className="rounded-2xl border border-card">
+            <h3 className="border-b border-divider px-4 py-2.5 text-sm font-bold text-primary">
               Requests
             </h3>
             {q.data.requests.length ? (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-divider">
                 {q.data.requests.map((r) => (
                   <RequestRow key={r.id} r={r} />
                 ))}
               </ul>
             ) : (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">No requests in {year}.</p>
+              <p className="px-4 py-6 text-center text-sm text-quiet">No requests in {year}.</p>
             )}
           </div>
-          <p className="text-xs text-slate-400">As of {todayKey()}.</p>
+          <p className="text-xs text-quiet">As of {todayKey()}.</p>
         </div>
       )}
     </Modal>

@@ -6,21 +6,15 @@ import { toast } from "sonner";
 
 import { Select } from "@/components/ui/Select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnPrimary,
-  cardBase,
-  checkboxBase,
-  errorText,
-  hintBase,
-  inputBase,
-  labelBase,
-} from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import type { ApproverRoute } from "@/features/leave/types";
 import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
 import { policyRuleText, ROUTE_TEXT } from "@/features/wfh/lib/format";
 import { useSaveWfhPolicy, useWfhPolicy } from "@/features/wfh/hooks/useWfh";
 import type { CreditBasis, WfhPolicyPatch, WfhPolicyView } from "@/features/wfh/types";
+import { Card } from "@/components/ui/Card";
+import { Checkbox, FieldError, Hint, Input, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 interface Form {
   enabled: boolean;
@@ -61,13 +55,13 @@ export function WfhPolicyPanel() {
 
   if (mixed) {
     return (
-      <section className={cardBase} aria-label="Work-from-home policy">
+      <Card as="section" aria-label="Work-from-home policy">
         <EmptyState
           icon={Building2}
           title="Each organisation has its own policy"
           message="Pick an organisation in the switch at the top to see its work-from-home policy."
         />
-      </section>
+      </Card>
     );
   }
   if (q.isLoading || (!form && !q.isError)) return <LoadingState label="Loading the policy…" />;
@@ -105,19 +99,17 @@ export function WfhPolicyPanel() {
   }
 
   return (
-    <form onSubmit={submit} noValidate className={`${cardBase} space-y-6 p-4 sm:p-6`}>
+    <Card as="form" onSubmit={submit} noValidate className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-slate-900">Work-from-home policy</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-base font-bold text-primary">Work-from-home policy</h2>
+          <p className="text-sm text-quiet">
             {policyRuleText(p)}
             {editable ? "" : " Only the organisation admin changes it."}
           </p>
         </div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <input
-            type="checkbox"
-            className={checkboxBase}
+        <label className="flex items-center gap-2 text-sm font-semibold text-body">
+          <Checkbox
             checked={form.enabled}
             disabled={!editable}
             onChange={(e) => set("enabled", e.target.checked)}
@@ -127,14 +119,12 @@ export function WfhPolicyPanel() {
       </div>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-quiet">
           Asking
         </legend>
         <div>
-          <label htmlFor="wfh-notice" className={labelBase}>
-            Notice (days ahead)
-          </label>
-          <input
+          <Label htmlFor="wfh-notice">Notice (days ahead)</Label>
+          <Input
             id="wfh-notice"
             type="number"
             inputMode="numeric"
@@ -144,19 +134,17 @@ export function WfhPolicyPanel() {
             value={form.noticeDays}
             disabled={!editable}
             onChange={(e) => set("noticeDays", e.target.value)}
-            className={`mt-1.5 ${inputBase}`}
+            className="mt-1.5"
           />
-          <p className={problem?.field === "noticeDays" ? errorText : hintBase}>
+          <Hint error={problem?.field === "noticeDays"}>
             {problem?.field === "noticeDays"
               ? problem.message
               : "0 allows the same day. Schedules need no notice."}
-          </p>
+          </Hint>
         </div>
         <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              className={checkboxBase}
+          <label className="flex items-center gap-2 text-sm font-semibold text-body">
+            <Checkbox
               checked={form.capped}
               disabled={!editable}
               onChange={(e) => set("capped", e.target.checked)}
@@ -165,10 +153,8 @@ export function WfhPolicyPanel() {
           </label>
           {form.capped && (
             <div className="mt-3">
-              <label htmlFor="wfh-cap" className={labelBase}>
-                At most, a month
-              </label>
-              <input
+              <Label htmlFor="wfh-cap">At most, a month</Label>
+              <Input
                 id="wfh-cap"
                 type="number"
                 inputMode="numeric"
@@ -178,26 +164,24 @@ export function WfhPolicyPanel() {
                 value={form.maxDaysPerMonth}
                 disabled={!editable}
                 onChange={(e) => set("maxDaysPerMonth", e.target.value)}
-                className={`mt-1.5 ${inputBase}`}
+                className="mt-1.5"
               />
-              <p className={problem?.field === "maxDaysPerMonth" ? errorText : hintBase}>
+              <Hint error={problem?.field === "maxDaysPerMonth"}>
                 {problem?.field === "maxDaysPerMonth"
                   ? problem.message
                   : "Approved and waiting requests together; scheduled days count too."}
-              </p>
+              </Hint>
             </div>
           )}
         </div>
       </fieldset>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-quiet">
           Approval and credit
         </legend>
         <div>
-          <label htmlFor="wfh-approver" className={labelBase}>
-            Who approves
-          </label>
+          <Label htmlFor="wfh-approver">Who approves</Label>
           <Select
             id="wfh-approver"
             value={form.approver}
@@ -209,7 +193,7 @@ export function WfhPolicyPanel() {
             disabled={!p.canRoute}
             aria-label="Who approves"
           />
-          <p className={problem?.field === "approver" ? errorText : hintBase}>
+          <Hint error={problem?.field === "approver"}>
             {problem?.field === "approver" ? (
               problem.message
             ) : p.canRoute ? (
@@ -219,12 +203,10 @@ export function WfhPolicyPanel() {
                 <Lock className="h-3 w-3" aria-hidden /> Set by the organisation admin.
               </span>
             )}
-          </p>
+          </Hint>
         </div>
         <div>
-          <label htmlFor="wfh-basis" className={labelBase}>
-            A full day at home credits at most
-          </label>
+          <Label htmlFor="wfh-basis">A full day at home credits at most</Label>
           <Select
             id="wfh-basis"
             value={form.creditBasis}
@@ -233,23 +215,23 @@ export function WfhPolicyPanel() {
             disabled={!editable}
             aria-label="Credit basis"
           />
-          <p className={problem?.field === "creditBasis" ? errorText : hintBase}>
+          <Hint error={problem?.field === "creditBasis"}>
             {problem?.field === "creditBasis"
               ? problem.message
               : "Biometric staff, tracked on the phone: a half day credits half of it, a quarter day a quarter. Time at the office the same day counts in full. Agent staff are tracked by the desktop app as usual."}
-          </p>
+          </Hint>
         </div>
       </fieldset>
 
-      {problem && !problem.field && <p className={errorText}>{problem.message}</p>}
+      {problem && !problem.field && <FieldError>{problem.message}</FieldError>}
       {editable && (
         <div className="flex justify-end">
-          <button type="submit" className={btnPrimary} disabled={!dirty || save.isPending}>
+          <Button variant="primary" type="submit" disabled={!dirty || save.isPending}>
             {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save policy
-          </button>
+          </Button>
         </div>
       )}
-    </form>
+    </Card>
   );
 }

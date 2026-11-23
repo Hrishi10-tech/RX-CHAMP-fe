@@ -6,7 +6,6 @@ import { Eye, Search, SlidersHorizontal, UserCog } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnSmall, cardBase, inputBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { todayKey } from "@/lib/time/businessTime";
@@ -17,21 +16,26 @@ import { daysNumber, daysText } from "@/features/leave/lib/format";
 import type { CategoryBalanceView, PersonBalanceRow } from "@/features/leave/types";
 
 import { AdjustLeaveDialog, PersonLeaveDialog, QuotaDialog } from "./AdjustLeaveDialogs";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { ActionMenu } from "@/components/ui/ActionMenu";
 
 function Pool({ b, own }: { b: CategoryBalanceView; own: boolean }) {
   return (
     <span className="block whitespace-nowrap">
       <span
-        className={`text-base font-bold tabular-nums ${b.availableDays <= 0 ? "text-rose-600" : "text-slate-900"}`}
+        className={`text-base font-bold tabular-nums ${b.availableDays <= 0 ? "text-attention" : "text-primary"}`}
       >
         {daysNumber(b.availableDays)}
       </span>
-      <span className="text-xs text-slate-400">
+      <span className="text-xs text-quiet">
         {" "}
         of {daysNumber(b.grantedDays + b.carriedDays + b.adjustedDays)}
       </span>
       {(own || b.pendingDays > 0) && (
-        <span className="block text-[11px] text-slate-500">
+        <span className="block text-[0.6875rem] text-quiet">
           {own ? "own yearly days" : ""}
           {own && b.pendingDays > 0 ? ", " : ""}
           {b.pendingDays > 0 ? `${daysText(b.pendingDays)} waiting` : ""}
@@ -61,9 +65,9 @@ export function BalancesPanel() {
   const rows = list.data?.rows ?? [];
 
   return (
-    <section className={cardBase} aria-labelledby="leave-balances">
-      <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <h2 id="leave-balances" className="text-sm font-bold text-slate-900">
+    <Card as="section" aria-labelledby="leave-balances">
+      <div className="flex flex-col gap-3 border-b border-divider px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <h2 id="leave-balances" className="text-sm font-bold text-primary">
           Balances
         </h2>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -80,15 +84,15 @@ export function BalancesPanel() {
           <label className="relative block">
             <span className="sr-only">Search people</span>
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet"
               aria-hidden
             />
-            <input
+            <Input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search people"
-              className={`${inputBase} !py-2 pl-9 sm:w-56`}
+              className="!py-2 pl-9 sm:w-56"
             />
           </label>
         </div>
@@ -99,11 +103,11 @@ export function BalancesPanel() {
       ) : list.isError ? (
         <ErrorState message={errorMessage(list.error)} onRetry={() => void list.refetch()} />
       ) : !rows.length ? (
-        <p className="px-4 py-10 text-center text-sm text-slate-500">Nobody here.</p>
+        <p className="px-4 py-10 text-center text-sm text-quiet">Nobody here.</p>
       ) : (
         <>
           {/* Phones: one card per person. */}
-          <ul className="divide-y divide-slate-100 md:hidden">
+          <ul className="divide-y divide-divider md:hidden">
             {rows.map((r) => (
               <li key={r.user.id} className="px-4 py-3.5">
                 <div className="flex items-start justify-between gap-3">
@@ -114,40 +118,39 @@ export function BalancesPanel() {
                     size={32}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900">{r.user.name}</p>
-                    <p className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                    <p className="truncate text-sm font-semibold text-primary">{r.user.name}</p>
+                    <p className="flex flex-wrap items-center gap-1.5 text-xs text-quiet">
                       {r.user.department ?? "No department"}
                       <OrgChip name={r.user.companyName} show={org.mixed} />
                     </p>
                   </div>
-                  <button
+                  <IconButton
                     type="button"
-                    className={btnSmall}
                     onClick={() => setViewing(r)}
-                    aria-label={`Open ${r.user.name}'s leave`}
+                    label={`Open ${r.user.name}'s leave`}
                   >
                     <Eye className="h-3.5 w-3.5" aria-hidden />
-                  </button>
+                  </IconButton>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-brand">
                       CL/SL left
                     </p>
                     <Pool b={r.clsl} own={r.quota.clslDaysPerYear !== null} />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-meeting">
                       EL/PL left
                     </p>
                     <Pool b={r.elpl} own={r.quota.elplDaysPerYear !== null} />
                   </div>
                   {r.compOff && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                      <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-working">
                         Comp off
                       </p>
-                      <p className="font-semibold tabular-nums text-slate-900">
+                      <p className="font-semibold tabular-nums text-primary">
                         {daysText(r.compOff.availableDays)}
                       </p>
                     </div>
@@ -155,14 +158,14 @@ export function BalancesPanel() {
                 </div>
                 {canAdjust && (
                   <div className="mt-3 flex gap-2">
-                    <button type="button" className={btnSmall} onClick={() => setAdjusting(r)}>
+                    <Button variant="small" type="button" onClick={() => setAdjusting(r)}>
                       <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
                       Change balance
-                    </button>
-                    <button type="button" className={btnSmall} onClick={() => setQuota(r)}>
+                    </Button>
+                    <Button variant="small" type="button" onClick={() => setQuota(r)}>
                       <UserCog className="h-3.5 w-3.5" aria-hidden />
                       Yearly days
-                    </button>
+                    </Button>
                   </div>
                 )}
               </li>
@@ -173,7 +176,7 @@ export function BalancesPanel() {
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="whitespace-nowrap border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                <tr className="whitespace-nowrap border-b border-divider text-left text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
                   <th className="px-5 py-2.5">Person</th>
                   <th className="px-3 py-2.5">CL/SL left</th>
                   <th className="px-3 py-2.5">EL/PL left</th>
@@ -185,11 +188,11 @@ export function BalancesPanel() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-divider">
                 {rows.map((r) => (
                   <tr key={r.user.id} className="align-top">
                     <td className="px-5 py-3">
-                      <p className="flex items-center gap-2 font-semibold text-slate-900">
+                      <p className="flex items-center gap-2 font-semibold text-primary">
                         <PersonAvatar
                           name={r.user.name}
                           avatarId={r.user.avatarId}
@@ -198,7 +201,7 @@ export function BalancesPanel() {
                         />
                         {r.user.name}
                       </p>
-                      <p className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                      <p className="flex flex-wrap items-center gap-1.5 text-xs text-quiet">
                         {[
                           r.user.department,
                           r.user.managerName ? `reports to ${r.user.managerName}` : null,
@@ -214,49 +217,47 @@ export function BalancesPanel() {
                     <td className="px-3 py-3">
                       <Pool b={r.elpl} own={r.quota.elplDaysPerYear !== null} />
                     </td>
-                    <td className="whitespace-nowrap px-3 py-3 tabular-nums text-slate-700">
+                    <td className="whitespace-nowrap px-3 py-3 tabular-nums text-body">
                       {r.compOff ? (
                         <>
-                          <span className="font-semibold text-slate-900">
+                          <span className="font-semibold text-primary">
                             {daysText(r.compOff.availableDays)}
                           </span>
                           {r.compOff.claimsWaitingDays > 0 && (
-                            <span className="block text-xs text-amber-700">
+                            <span className="block text-xs text-attention">
                               {daysText(r.compOff.claimsWaitingDays)} claimed
                             </span>
                           )}
                         </>
                       ) : (
-                        <span className="text-slate-400">–</span>
+                        <span className="text-quiet">–</span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-3 tabular-nums text-slate-700">
+                    <td className="whitespace-nowrap px-3 py-3 tabular-nums text-body">
                       {daysText(r.clsl.takenDays + r.elpl.takenDays + (r.compOff?.takenDays ?? 0))}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-3 tabular-nums text-slate-700">
+                    <td className="whitespace-nowrap px-3 py-3 tabular-nums text-body">
                       {r.upcomingDays ? daysText(r.upcomingDays) : "None"}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-2 whitespace-nowrap">
-                        <button type="button" className={btnSmall} onClick={() => setViewing(r)}>
+                        <Button variant="small" type="button" onClick={() => setViewing(r)}>
                           <Eye className="h-3.5 w-3.5" aria-hidden />
                           Open
-                        </button>
+                        </Button>
+                        {/* W-38: one button per row; the two rarer changes sit in its menu. */}
                         {canAdjust && (
-                          <>
-                            <button
-                              type="button"
-                              className={btnSmall}
-                              onClick={() => setAdjusting(r)}
-                            >
-                              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
-                              Change
-                            </button>
-                            <button type="button" className={btnSmall} onClick={() => setQuota(r)}>
-                              <UserCog className="h-3.5 w-3.5" aria-hidden />
-                              Yearly days
-                            </button>
-                          </>
+                          <ActionMenu
+                            label={`More for ${r.user.name}`}
+                            items={[
+                              {
+                                label: "Change balance",
+                                icon: SlidersHorizontal,
+                                onSelect: () => setAdjusting(r),
+                              },
+                              { label: "Yearly days", icon: UserCog, onSelect: () => setQuota(r) },
+                            ]}
+                          />
                         )}
                       </div>
                     </td>
@@ -283,6 +284,6 @@ export function BalancesPanel() {
         year={year}
         onClose={() => setViewing(null)}
       />
-    </section>
+    </Card>
   );
 }

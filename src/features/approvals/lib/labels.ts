@@ -197,7 +197,8 @@ export function effectChip(item: Pick<ApprovalItemView, "effect" | "status">): {
   const text = server ? withMinusSign(server) : fallbackEffectText(effect, item.status);
   if (effect.mode === "NONE" || !effect.minutes) return { text, tone: "neutral" };
   if (item.status === "PENDING")
-    return { text, tone: effect.mode === "PLUS" ? "success" : "danger" };
+    // 3.6 (W-18): a forecast, not an error; red is kept for overdue and rejected.
+    return { text, tone: effect.mode === "PLUS" ? "success" : "warning" };
   if (item.status === "APPROVED") {
     return { text, tone: effect.mode === "PLUS" ? "successSolid" : "neutral" };
   }

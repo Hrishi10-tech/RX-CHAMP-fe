@@ -8,15 +8,15 @@ import type {
 } from "@/features/breaks/types";
 import { formatMinutes } from "@/lib/time/businessTime";
 
-/** "On time", "12 min late", "5 min early", "Outside window", "Unscheduled". */
+/** 3.6 (W-09): "Started on time", "Started 12 min late", "Outside window", "Unscheduled": the start, not the length. */
 export function timingLabel(r: Pick<BreakRecordView, "timing" | "minutesOff">): string {
   switch (r.timing) {
     case "ON_TIME":
-      return "On time";
+      return "Started on time";
     case "EARLY":
-      return `${Math.max(1, r.minutesOff)} min early`;
+      return `Started ${Math.max(1, r.minutesOff)} min early`;
     case "LATE":
-      return `${Math.max(1, r.minutesOff)} min late`;
+      return `Started ${Math.max(1, r.minutesOff)} min late`;
     case "OUTSIDE_WINDOW":
       return "Outside window";
     default:
@@ -122,13 +122,13 @@ export function tookLabel(
   return length ? `Took ${took} of ${length}` : `Took ${took}`;
 }
 
-/** "4 min over", or null when the break stayed within its length. */
+/** "Ran 4 min over", or null when the break stayed within its length. */
 export function overrunLabel(
   r: Pick<BreakRecordView, "overrunSec"> &
     Partial<Pick<BreakRecordView, "kind" | "plannedMin" | "tookSec" | "inProgress">>,
 ): string | null {
   const over = r.overrunSec > 0 ? r.overrunSec : quickOverSec(r);
-  return over > 0 ? `${formatMinutes(over)} over` : null;
+  return over > 0 ? `Ran ${formatMinutes(over)} over` : null;
 }
 
 /**

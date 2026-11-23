@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { formatDuration } from "@/lib/format/duration";
 import { formatDayWithWeekday } from "@/lib/time/businessTime";
@@ -17,21 +16,23 @@ import type { WfhRequestView, WfhScheduleView } from "@/features/wfh/types";
 
 import { AskWfhDialog } from "./AskWfhDialog";
 import { WfhRequestRow } from "./WfhBits";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 /** One of the person's schedules, read-only (whoever oversees them sets and ends it). */
 export function ScheduleSummary({ s }: { s: WfhScheduleView }) {
   return (
     <li className="px-4 py-3 sm:px-5">
-      <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
-        <CalendarRange className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+      <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-primary">
+        <CalendarRange className="h-4 w-4 text-brand" aria-hidden />
         {s.label}
         {s.state === "UPCOMING" && (
-          <span className="text-xs font-normal text-slate-500">
+          <span className="text-xs font-normal text-quiet">
             from {formatDayWithWeekday(s.fromDate)}
           </span>
         )}
       </p>
-      <p className="mt-0.5 text-xs text-slate-500">
+      <p className="mt-0.5 text-xs text-quiet">
         {s.toDate ? `Until ${formatDayWithWeekday(s.toDate)}` : "Until it is ended"}
         {s.createdByName ? ` · set by ${s.createdByName}` : ""}
         {s.next.length ? ` · next: ${s.next.map((n) => n.label).join(", ")}` : ""}
@@ -84,123 +85,118 @@ export function MyWfhPanel({ compact = false }: { compact?: boolean }) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-bold tracking-tight text-slate-900">Work from home</h2>
-          <p className="text-sm text-slate-500">{myRuleText(d.policy, d.waitingFor)}</p>
+          <h2 className="text-lg font-bold tracking-tight text-primary">Work from home</h2>
+          <p className="text-sm text-quiet">{myRuleText(d.policy, d.waitingFor)}</p>
         </div>
-        <button
+        <Button
+          variant="primary"
           type="button"
-          className={btnPrimary}
           onClick={() => setAsking(true)}
           disabled={!d.policy.enabled}
         >
           <Home className="h-4 w-4" aria-hidden />
           Ask for work from home
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
-        <section className={`${cardBase} p-4 sm:p-5`} aria-label="Today">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Today</p>
+        <Card as="section" className="p-4 sm:p-5" aria-label="Today">
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">Today</p>
           {d.todayWfh ? (
             <>
-              <p className="mt-1 text-xl font-bold text-slate-900">
+              <p className="mt-1 text-xl font-bold text-primary">
                 From home, {d.todayWfh.label.toLowerCase()}
               </p>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-quiet">
                 {d.todayWfh.source}
                 {biometric ? ` · up to ${formatDuration(d.todayWfh.capSec)} counts` : ""}
               </p>
             </>
           ) : (
-            <p className="mt-1 text-xl font-bold text-slate-900">At the office</p>
+            <p className="mt-1 text-xl font-bold text-primary">At the office</p>
           )}
-          <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-500">
+          <p className="mt-2 flex items-start gap-1.5 text-xs text-quiet">
             <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             {biometric
               ? "On a work-from-home day, start and end your day in the RX Vision phone app."
               : "Your desktop app tracks the day at home as at the office."}
           </p>
-        </section>
-        <section className={`${cardBase} p-4 sm:p-5`} aria-label="This month">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        </Card>
+        <Card as="section" className="p-4 sm:p-5" aria-label="This month">
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
             This month
           </p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
+          <p className="mt-1 text-xl font-bold tabular-nums text-primary">
             {daysText(d.thisMonth.days)}
             {d.thisMonth.capDays !== null && (
-              <span className="text-sm font-semibold text-slate-500">
-                {" "}
-                of {d.thisMonth.capDays}
-              </span>
+              <span className="text-sm font-semibold text-quiet"> of {d.thisMonth.capDays}</span>
             )}
           </p>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-quiet">
             {d.thisMonth.capDays === null
               ? "No monthly cap."
               : `At most ${d.thisMonth.capDays} days a month, approved and waiting together.`}
             {d.thisMonth.waitingDays > 0 ? ` ${daysText(d.thisMonth.waitingDays)} waiting.` : ""}
           </p>
-        </section>
+        </Card>
       </div>
 
       {d.schedules.length > 0 && (
-        <section className={cardBase} aria-labelledby="wfh-schedules-mine">
+        <Card as="section" aria-labelledby="wfh-schedules-mine">
           <h3
             id="wfh-schedules-mine"
-            className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5"
+            className="border-b border-divider px-4 py-3 text-sm font-bold text-primary sm:px-5"
           >
             Your schedule
           </h3>
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-divider">
             {d.schedules.map((s) => (
               <ScheduleSummary key={s.id} s={s} />
             ))}
           </ul>
-          <p className="border-t border-slate-100 px-4 py-2.5 text-xs text-slate-500 sm:px-5">
+          <p className="border-t border-divider px-4 py-2.5 text-xs text-quiet sm:px-5">
             Scheduled days count as approved work from home; no request is needed. Whoever set it
             changes or ends it.
           </p>
-        </section>
+        </Card>
       )}
 
-      <section className={cardBase} aria-labelledby="wfh-upcoming">
+      <Card as="section" aria-labelledby="wfh-upcoming">
         <h3
           id="wfh-upcoming"
-          className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5"
+          className="border-b border-divider px-4 py-3 text-sm font-bold text-primary sm:px-5"
         >
           Coming up
         </h3>
         {d.upcoming.length ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-divider">
             {d.upcoming.map((r) => (
               <WfhRequestRow key={r.id} r={r} onCancel={setCancelling} busy={cancel.isPending} />
             ))}
           </ul>
         ) : (
-          <p className="px-4 py-6 text-center text-sm text-slate-500">
-            No work from home coming up.
-          </p>
+          <p className="px-4 py-6 text-center text-sm text-quiet">No work from home coming up.</p>
         )}
-      </section>
+      </Card>
 
       {!compact && (
-        <section className={cardBase} aria-labelledby="wfh-history">
+        <Card as="section" aria-labelledby="wfh-history">
           <h3
             id="wfh-history"
-            className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5"
+            className="border-b border-divider px-4 py-3 text-sm font-bold text-primary sm:px-5"
           >
             Earlier requests
           </h3>
           {past.length ? (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-divider">
               {past.map((r) => (
                 <WfhRequestRow key={r.id} r={r} onCancel={setCancelling} busy={cancel.isPending} />
               ))}
             </ul>
           ) : (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">Nothing earlier.</p>
+            <p className="px-4 py-6 text-center text-sm text-quiet">Nothing earlier.</p>
           )}
-        </section>
+        </Card>
       )}
 
       <AskWfhDialog open={asking} onClose={() => setAsking(false)} />

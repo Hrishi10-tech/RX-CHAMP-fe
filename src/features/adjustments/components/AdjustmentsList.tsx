@@ -8,7 +8,9 @@ import { toast } from "sonner";
 import { Chip } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/StatePanel";
-import { btnSmall, cardBase, thBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { cardBase } from "@/components/ui/classes";
+import { Th } from "@/components/ui/Table";
 import { errorCode, errorMessage } from "@/lib/api";
 import { dateKeyOf, formatDayWithWeekday, relativeDay, todayKey } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
@@ -112,7 +114,7 @@ export function AdjustmentsList({
   const personCell = (a: FocusAdjustmentView) => (
     <Link
       href={`/dashboard/reports/person/${encodeURIComponent(a.userId)}?date=${a.date}`}
-      className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+      className="font-semibold text-brand underline-offset-2 hover:underline"
     >
       {a.userName}
     </Link>
@@ -121,29 +123,27 @@ export function AdjustmentsList({
   return (
     <>
       {/* Phone: cards. */}
-      <ul className={`${frame} divide-y divide-slate-100 overflow-hidden md:hidden`}>
+      <ul className={`${frame} divide-y divide-divider overflow-hidden md:hidden`}>
         {items.map((a) => (
           <li key={a.id} className="space-y-2 px-4 py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 {showPerson && <p className="truncate">{personCell(a)}</p>}
-                <p className="text-sm font-semibold text-slate-900">
-                  {formatDayWithWeekday(a.date)}
-                </p>
+                <p className="text-sm font-semibold text-primary">{formatDayWithWeekday(a.date)}</p>
                 <OrgChip name={a.companyName} show={showOrg} className="mt-1" />
               </div>
               <AmountChip a={a} />
             </div>
-            <p className="text-sm text-slate-700">{a.reason}</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm text-body">{a.reason}</p>
+            <p className="text-xs text-quiet">
               By {a.createdByName}, {when(a.createdAt)}
               {a.voidedAt ? ` · undone ${when(a.voidedAt)}` : ""}
             </p>
             {canVoid && !a.voidedAt && (
-              <button type="button" onClick={() => setToUndo(a)} className={btnSmall}>
+              <Button variant="small" type="button" onClick={() => setToUndo(a)}>
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                 Undo
-              </button>
+              </Button>
             )}
           </li>
         ))}
@@ -152,19 +152,19 @@ export function AdjustmentsList({
       {/* Wider screens: a table. */}
       <div className={`${frame} hidden overflow-x-auto md:block`}>
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead className="bg-fill">
             <tr>
-              {showPerson && <th className={thBase}>Person</th>}
-              <th className={thBase}>Day</th>
-              <th className={thBase}>Change</th>
-              <th className={thBase}>Reason</th>
-              <th className={thBase}>By</th>
-              {canVoid && <th className={`${thBase} text-right`}>Action</th>}
+              {showPerson && <Th>Person</Th>}
+              <Th>Day</Th>
+              <Th>Change</Th>
+              <Th>Reason</Th>
+              <Th>By</Th>
+              {canVoid && <Th className="text-right">Action</Th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-divider">
             {items.map((a) => (
-              <tr key={a.id} className={a.voidedAt ? "text-slate-500" : ""}>
+              <tr key={a.id} className={a.voidedAt ? "text-quiet" : ""}>
                 {showPerson && (
                   <td className="px-4 py-3 align-top">
                     <div className="flex flex-col gap-1">
@@ -173,18 +173,18 @@ export function AdjustmentsList({
                     </div>
                   </td>
                 )}
-                <td className="whitespace-nowrap px-4 py-3 align-top font-medium text-slate-800">
+                <td className="whitespace-nowrap px-4 py-3 align-top font-medium text-strong">
                   {formatDayWithWeekday(a.date)}
                 </td>
                 <td className="px-4 py-3 align-top">
                   <AmountChip a={a} />
                 </td>
-                <td className="max-w-md px-4 py-3 align-top text-slate-700">{a.reason}</td>
-                <td className="px-4 py-3 align-top text-xs text-slate-500">
+                <td className="max-w-md px-4 py-3 align-top text-body">{a.reason}</td>
+                <td className="px-4 py-3 align-top text-xs text-quiet">
                   <span className="block">{a.createdByName}</span>
                   <span className="block">{when(a.createdAt)}</span>
                   {a.voidedAt && (
-                    <span className="mt-1 flex items-center gap-1 text-slate-400">
+                    <span className="mt-1 flex items-center gap-1 text-quiet">
                       <History className="h-3 w-3" aria-hidden />
                       undone {when(a.voidedAt)}
                     </span>
@@ -193,10 +193,10 @@ export function AdjustmentsList({
                 {canVoid && (
                   <td className="px-4 py-3 text-right align-top">
                     {!a.voidedAt && (
-                      <button type="button" onClick={() => setToUndo(a)} className={btnSmall}>
+                      <Button variant="small" type="button" onClick={() => setToUndo(a)}>
                         <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                         Undo
-                      </button>
+                      </Button>
                     )}
                   </td>
                 )}

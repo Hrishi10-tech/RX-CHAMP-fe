@@ -8,7 +8,6 @@ import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, btnSmall, cardBase, checkboxBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { formatDayWithWeekday } from "@/lib/time/businessTime";
 import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
@@ -21,6 +20,9 @@ import {
 import type { WfhScheduleView } from "@/features/wfh/types";
 
 import { ScheduleDialog } from "./ScheduleDialog";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Field";
+import { Card } from "@/components/ui/Card";
 
 const STATE_LOOK: Record<
   WfhScheduleView["state"],
@@ -51,25 +53,23 @@ function ScheduleRow({
     <li className="px-4 py-3.5 sm:px-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+          <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-primary">
             <PersonAvatar name={s.userName} avatarId={s.avatarId} userId={s.userId} size={22} />
             <span className="truncate">{s.userName}</span>
             <OrgChip name={s.companyName} show={showOrg} />
-            {s.department && (
-              <span className="text-xs font-normal text-slate-400">{s.department}</span>
-            )}
+            {s.department && <span className="text-xs font-normal text-quiet">{s.department}</span>}
             <Chip tone={look.tone}>{look.label}</Chip>
           </p>
-          <p className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold text-slate-900">
-            <CalendarRange className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+          <p className="mt-1 flex items-center gap-1.5 text-[0.9375rem] font-semibold text-primary">
+            <CalendarRange className="h-4 w-4 text-brand" aria-hidden />
             {s.label}
           </p>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-soft">
             From {formatDayWithWeekday(s.fromDate)}
             {s.toDate ? ` to ${formatDayWithWeekday(s.toDate)}` : ", until it is ended"}
             {s.note ? ` · ${s.note}` : ""}
           </p>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-quiet">
             Set by {s.createdByName}
             {s.skipDates.length
               ? ` · ${s.skipDates.length} ${s.skipDates.length === 1 ? "day" : "days"} left out`
@@ -77,12 +77,12 @@ function ScheduleRow({
           </p>
           {s.state !== "ENDED" && s.next.length > 0 && (
             <div className="mt-2">
-              <p className="text-xs font-semibold text-slate-500">Next days at home</p>
+              <p className="text-xs font-semibold text-quiet">Next days at home</p>
               <ul className="mt-1 flex flex-wrap gap-1.5">
                 {s.next.map((n) => (
                   <li
                     key={n.date}
-                    className="flex items-center gap-1 rounded-md bg-slate-50 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200"
+                    className="flex items-center gap-1 rounded-md bg-fill px-1.5 py-0.5 text-[0.6875rem] font-semibold text-body ring-1 ring-edge"
                   >
                     {n.label}
                     {s.can.edit && (
@@ -92,7 +92,7 @@ function ScheduleRow({
                         aria-label={`Leave ${n.label} out of the schedule`}
                         onClick={() => onSkip(s, n.date, true)}
                         disabled={busy}
-                        className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                        className="rounded p-0.5 text-quiet hover:bg-edge hover:text-body"
                       >
                         <CalendarX2 className="h-3 w-3" aria-hidden />
                       </button>
@@ -104,12 +104,12 @@ function ScheduleRow({
           )}
           {s.state !== "ENDED" && s.skipDates.length > 0 && s.can.edit && (
             <div className="mt-2">
-              <p className="text-xs font-semibold text-slate-500">Days left out</p>
+              <p className="text-xs font-semibold text-quiet">Days left out</p>
               <ul className="mt-1 flex flex-wrap gap-1.5">
                 {s.skipDates.map((d) => (
                   <li
                     key={d}
-                    className="flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 line-through ring-1 ring-slate-200"
+                    className="flex items-center gap-1 rounded-md bg-panel px-1.5 py-0.5 text-[0.6875rem] font-semibold text-quiet line-through ring-1 ring-edge"
                   >
                     {formatDayWithWeekday(d)}
                     <button
@@ -118,7 +118,7 @@ function ScheduleRow({
                       aria-label={`Put ${formatDayWithWeekday(d)} back on the schedule`}
                       onClick={() => onSkip(s, d, false)}
                       disabled={busy}
-                      className="rounded p-0.5 text-slate-400 no-underline hover:bg-slate-200 hover:text-slate-700"
+                      className="rounded p-0.5 text-quiet no-underline hover:bg-edge hover:text-body"
                     >
                       <Undo2 className="h-3 w-3" aria-hidden />
                     </button>
@@ -130,19 +130,20 @@ function ScheduleRow({
         </div>
         {s.can.edit && s.state !== "ENDED" && (
           <div className="flex shrink-0 flex-wrap gap-2">
-            <button type="button" className={btnSmall} onClick={() => onEdit(s)} disabled={busy}>
+            <Button variant="small" type="button" onClick={() => onEdit(s)} disabled={busy}>
               <Pencil className="h-3.5 w-3.5" aria-hidden />
               Change
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="small"
               type="button"
-              className={`${btnSmall} border-rose-200 text-rose-600 hover:bg-rose-50`}
+              className="border-attention-edge text-attention hover:bg-attention-wash"
               onClick={() => onEnd(s)}
               disabled={busy}
             >
               <CalendarX2 className="h-3.5 w-3.5" aria-hidden />
               End
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -205,37 +206,32 @@ export function SchedulesPanel() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-quiet">
           Periodic work from home: every Wednesday, 1st and 3rd Fridays, and so on. Scheduled days
           count as approved; the person is told.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              className={checkboxBase}
-              checked={includeEnded}
-              onChange={(e) => setIncludeEnded(e.target.checked)}
-            />
+          <label className="flex items-center gap-2 text-sm text-body">
+            <Checkbox checked={includeEnded} onChange={(e) => setIncludeEnded(e.target.checked)} />
             Show ended
           </label>
-          <button
+          <Button
+            variant="primary"
             type="button"
-            className={btnPrimary}
             onClick={() => setDialog({ open: true, editing: null })}
           >
             <Plus className="h-4 w-4" aria-hidden />
             Set a schedule
-          </button>
+          </Button>
         </div>
       </div>
-      <section className={cardBase} aria-label="Schedules">
+      <Card as="section" aria-label="Schedules">
         {list.isLoading ? (
           <LoadingState label="Loading schedules…" />
         ) : list.isError ? (
           <ErrorState message={errorMessage(list.error)} onRetry={() => void list.refetch()} />
         ) : items.length ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-divider">
             {items.map((s) => (
               <ScheduleRow
                 key={s.id}
@@ -249,9 +245,9 @@ export function SchedulesPanel() {
             ))}
           </ul>
         ) : (
-          <p className="px-4 py-10 text-center text-sm text-slate-500">No schedules yet.</p>
+          <p className="px-4 py-10 text-center text-sm text-quiet">No schedules yet.</p>
         )}
-      </section>
+      </Card>
       <ScheduleDialog
         open={dialog.open}
         editing={dialog.editing}

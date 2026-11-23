@@ -59,8 +59,8 @@ export function WfhPage() {
   return (
     <div className="space-y-5">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Work from home</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-primary">Work from home</h1>
+        <p className="text-sm text-quiet">
           A day, a half day or a quarter day at home, asked for and approved; managers and the
           organisation admin can also set a regular schedule.
         </p>

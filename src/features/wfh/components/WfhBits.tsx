@@ -4,13 +4,14 @@ import { Check, Home, Smartphone, Undo2, X } from "lucide-react";
 
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
-import { btnSmall } from "@/components/ui/classes";
 import { OrgChip } from "@/features/organisations/components/OrgChip";
 import { LeaveStatusChip } from "@/features/leave/components/LeaveBits";
 import { amountText } from "@/features/leave/lib/format";
 import type { WfhDecisionMode } from "@/features/wfh/api/wfh";
 import { partTimesText } from "@/features/wfh/lib/format";
 import type { WfhRequestView } from "@/features/wfh/types";
+import { WaitingFor } from "@/features/leave/components/WaitingFor";
+import { Button } from "@/components/ui/Button";
 
 /** "From home" in the brand colour, wherever a day or a request is work from home. */
 export function WfhChip({ label = "From home", title }: { label?: string; title?: string }) {
@@ -66,12 +67,12 @@ export function WfhRequestRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {approver && (
-            <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+            <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-primary">
               <PersonAvatar name={r.userName} avatarId={r.avatarId} userId={r.userId} size={22} />
               <span className="truncate">{r.userName}</span>
               <OrgChip name={r.companyName} show={showOrg} />
               {r.department && (
-                <span className="text-xs font-normal text-slate-400">{r.department}</span>
+                <span className="text-xs font-normal text-quiet">{r.department}</span>
               )}
             </p>
           )}
@@ -79,28 +80,26 @@ export function WfhRequestRow({
             <LeaveStatusChip status={r.status} />
             {r.attendanceSource === "BIOMETRIC" && <PhoneChip />}
           </p>
-          <p className="mt-1.5 text-[15px] font-semibold text-slate-900">{r.span}</p>
-          <p className="text-sm text-slate-600">
+          <p className="mt-1.5 text-[0.9375rem] font-semibold text-primary">{r.span}</p>
+          <p className="text-sm text-soft">
             {amountText(r)}
             {r.partTimes ? ` (${partTimesText(r.partTimes)})` : ""}
           </p>
-          <p className="mt-1 text-sm text-slate-500">&ldquo;{r.reason}&rdquo;</p>
-          {r.status === "PENDING" && r.waitingFor && (
-            <p className="mt-1 text-xs text-amber-700">Waiting for {r.waitingFor}</p>
-          )}
+          <p className="mt-1 text-sm text-quiet">&ldquo;{r.reason}&rdquo;</p>
+          {r.status === "PENDING" && r.waitingFor && <WaitingFor name={r.waitingFor} />}
           {decided && (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-quiet">
               {decided}
               {r.decisionNote ? `: ${r.decisionNote}` : ""}
             </p>
           )}
           {r.status === "CANCELLED" && r.decisionNote && (
-            <p className="mt-1 text-xs text-slate-500">{r.decisionNote}</p>
+            <p className="mt-1 text-xs text-quiet">{r.decisionNote}</p>
           )}
         </div>
         <span className="shrink-0 text-right">
-          <span className="block text-lg font-bold tabular-nums text-slate-900">{r.days}</span>
-          <span className="block text-[11px] text-slate-400">
+          <span className="block text-lg font-bold tabular-nums text-primary">{r.days}</span>
+          <span className="block text-[0.6875rem] text-quiet">
             {r.days === 1 || r.days < 1 ? "day" : "days"}
           </span>
         </span>
@@ -109,42 +108,44 @@ export function WfhRequestRow({
         <div className="mt-3 flex flex-wrap gap-2">
           {r.can.decide && onDecide && (
             <>
-              <button
+              <Button
+                variant="small"
                 type="button"
-                className={`${btnSmall} border-emerald-200 text-emerald-700 hover:bg-emerald-50`}
+                className="border-working-edge text-working hover:bg-working-wash"
                 onClick={() => onDecide(r, "approve")}
                 disabled={busy}
               >
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 Approve
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="small"
                 type="button"
-                className={`${btnSmall} border-rose-200 text-rose-600 hover:bg-rose-50`}
+                className="border-attention-edge text-attention hover:bg-attention-wash"
                 onClick={() => onDecide(r, "reject")}
                 disabled={busy}
               >
                 <X className="h-3.5 w-3.5" aria-hidden />
                 Reject
-              </button>
+              </Button>
             </>
           )}
           {r.can.revoke && onDecide && (
-            <button
+            <Button
+              variant="small"
               type="button"
-              className={btnSmall}
               onClick={() => onDecide(r, "revoke")}
               disabled={busy}
             >
               <Undo2 className="h-3.5 w-3.5" aria-hidden />
               Revoke
-            </button>
+            </Button>
           )}
           {r.can.cancel && onCancel && (
-            <button type="button" className={btnSmall} onClick={() => onCancel(r)} disabled={busy}>
+            <Button variant="small" type="button" onClick={() => onCancel(r)} disabled={busy}>
               <X className="h-3.5 w-3.5" aria-hidden />
               Cancel request
-            </button>
+            </Button>
           )}
         </div>
       )}

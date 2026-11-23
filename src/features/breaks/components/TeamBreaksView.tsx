@@ -8,7 +8,6 @@ import { Chip } from "@/components/ui/Chip";
 import { Select } from "@/components/ui/Select";
 import type { SelectOption } from "@/components/ui/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnGhost, cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { addDaysToKey, formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
@@ -36,6 +35,10 @@ import type {
   TeamBreakRowView,
   TeamBreakTotals,
 } from "@/features/breaks/types";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { Card } from "@/components/ui/Card";
+import { Th } from "@/components/ui/Table";
 
 const EVERYONE = "__everyone__";
 
@@ -43,7 +46,7 @@ function TakenDetails({ record }: { record: BreakRecordView }) {
   if (isSkipRecord(record)) {
     return (
       <div className="space-y-1">
-        <p className="text-xs text-slate-600">
+        <p className="text-xs text-soft">
           {record.outcome === "AUTO_SKIPPED" ? "Auto-skipped" : "Skipped"} at{" "}
           {formatTime12(record.startedAt)}
         </p>
@@ -57,7 +60,7 @@ function TakenDetails({ record }: { record: BreakRecordView }) {
   const overrun = overrunLabel(record);
   return (
     <div className="space-y-1">
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-soft">
         Started {formatTime12(record.startedAt)} · {tookLabel(record)}
       </p>
       <div className="flex flex-wrap items-center gap-1">
@@ -71,11 +74,11 @@ function TakenDetails({ record }: { record: BreakRecordView }) {
 }
 
 function Cell({ cell }: { cell: TeamBreakCellView | undefined }) {
-  if (!cell) return <span className="text-xs text-slate-400">Off for this shift</span>;
+  if (!cell) return <span className="text-xs text-quiet">Off for this shift</span>;
   return (
     <div className="min-w-0 space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-sm font-semibold tabular-nums text-slate-900">
+        <span className="text-sm font-semibold tabular-nums text-primary">
           {formatTime12(cell.localStart) || cell.localStart}
         </span>
         <CellStatusChip status={cell.status} />
@@ -95,12 +98,12 @@ function Unscheduled({ records }: { records: BreakRecordView[] }) {
   if (!records.length) return null;
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <p className="text-xs font-semibold uppercase tracking-wide text-quiet">
         {unscheduledHeading(records)}
       </p>
       {records.map((r) => (
-        <div key={r.id} className="rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-xs font-semibold text-slate-700">{recordLabel(r)}</p>
+        <div key={r.id} className="rounded-lg bg-fill px-3 py-2">
+          <p className="text-xs font-semibold text-body">{recordLabel(r)}</p>
           <TakenDetails record={r} />
         </div>
       ))}
@@ -112,8 +115,8 @@ function Totals({ totals }: { totals: TeamBreakTotals }) {
   const items: { label: string; value: number; tone?: string; hint?: ReactNode }[] = [
     { label: "People", value: totals.people },
     { label: "Taken", value: totals.taken },
-    { label: "Late", value: totals.late, tone: totals.late ? "text-amber-700" : undefined },
-    { label: "Early", value: totals.early, tone: totals.early ? "text-amber-700" : undefined },
+    { label: "Late", value: totals.late, tone: totals.late ? "text-attention" : undefined },
+    { label: "Early", value: totals.early, tone: totals.early ? "text-attention" : undefined },
     // 3.1: skip records (by hand or automatic) apart from windows that closed
     // with nothing recorded.
     { label: "Skipped", value: totals.skipped ?? 0 },
@@ -121,22 +124,20 @@ function Totals({ totals }: { totals: TeamBreakTotals }) {
     {
       label: "Ran over",
       value: totals.overrun,
-      tone: totals.overrun ? "text-rose-600" : undefined,
+      tone: totals.overrun ? "text-attention" : undefined,
     },
     {
       label: "Pending",
       value: totals.pending,
-      tone: totals.pending ? "text-amber-700" : undefined,
+      tone: totals.pending ? "text-attention" : undefined,
     },
   ];
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-4 xl:grid-cols-8">
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-card bg-edge shadow-sm sm:grid-cols-4 xl:grid-cols-8">
       {items.map((item) => (
-        <div key={item.label} className="bg-white px-4 py-3">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {item.label}
-          </dt>
-          <dd className={`mt-0.5 text-xl font-bold tabular-nums ${item.tone ?? "text-slate-900"}`}>
+        <div key={item.label} className="bg-card px-4 py-3">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-quiet">{item.label}</dt>
+          <dd className={`mt-0.5 text-xl font-bold tabular-nums ${item.tone ?? "text-primary"}`}>
             {item.value}
           </dd>
         </div>
@@ -204,36 +205,34 @@ export function TeamBreaksView() {
             </div>
           )}
           <div className="flex items-center gap-1">
-            <button
+            <IconButton
               type="button"
               onClick={() => setDate(addDaysToKey(date || today, -1))}
-              className={btnGhost}
-              aria-label="Previous day"
+              label="Previous day"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden />
-            </button>
-            <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm">
-              <CalendarDays className="h-4 w-4 text-slate-400" aria-hidden />
+            </IconButton>
+            <label className="flex h-11 items-center gap-2 rounded-lg border border-card bg-card px-3 text-sm font-semibold text-soft shadow-sm">
+              <CalendarDays className="h-4 w-4 text-quiet" aria-hidden />
               <span className="sr-only">Day</span>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value || today)}
-                className="bg-transparent font-semibold text-slate-900 outline-none"
+                className="bg-transparent font-semibold text-primary outline-none"
               />
             </label>
-            <button
+            <IconButton
               type="button"
               onClick={() => setDate(addDaysToKey(date || today, 1))}
-              className={btnGhost}
-              aria-label="Next day"
+              label="Next day"
             >
               <ChevronRight className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
             {date !== today && (
-              <button type="button" onClick={() => setDate(today)} className={btnGhost}>
+              <Button variant="ghost" type="button" onClick={() => setDate(today)}>
                 Today
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -242,25 +241,25 @@ export function TeamBreaksView() {
       {data && <Totals totals={data.totals} />}
 
       {data && data.totals.pending > 0 && (
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-soft">
           {data.totals.pending} {data.totals.pending === 1 ? "break waits" : "breaks wait"} for a
           decision.{" "}
           <Link
             href="/dashboard/approvals"
-            className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+            className="font-semibold text-brand underline-offset-2 hover:underline"
           >
             Go to Approvals
           </Link>
         </p>
       )}
 
-      <section className={cardBase} aria-label={`Breaks on ${formatDayWithWeekday(date)}`}>
-        <div className="border-b border-slate-200 px-4 py-3 sm:px-6">
-          <h2 className="text-base font-semibold text-slate-900">
+      <Card as="section" aria-label={`Breaks on ${formatDayWithWeekday(date)}`}>
+        <div className="border-b border-card px-4 py-3 sm:px-6">
+          <h2 className="text-base font-semibold text-primary">
             {date === today ? "Today" : formatDayWithWeekday(date)}
             {date === today && " "}
             {date === today && (
-              <span className="ml-1 text-sm font-normal text-slate-500">
+              <span className="ml-1 text-sm font-normal text-quiet">
                 {formatDayWithWeekday(date)}
               </span>
             )}
@@ -286,13 +285,13 @@ export function TeamBreaksView() {
           <div
             className={isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}
           >
-            <ul className="divide-y divide-slate-100 md:hidden">
+            <ul className="divide-y divide-divider md:hidden">
               {rows.map((row) => (
                 <li key={row.user.id} className="space-y-3 px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-900">{row.user.name}</p>
-                      <p className="truncate text-xs text-slate-500">
+                      <p className="truncate font-semibold text-primary">{row.user.name}</p>
+                      <p className="truncate text-xs text-quiet">
                         {shiftRefLabel(row.shift)}
                         {row.user.department ? ` · ${row.user.department}` : ""}
                       </p>
@@ -305,15 +304,15 @@ export function TeamBreaksView() {
                     )}
                   </div>
                   {row.cells.length === 0 ? (
-                    <p className="text-sm text-slate-500">{noScheduleText(row)}</p>
+                    <p className="text-sm text-quiet">{noScheduleText(row)}</p>
                   ) : (
                     <dl className="grid grid-cols-1 gap-2">
                       {BREAK_KINDS.map((kind) => (
                         <div
                           key={kind}
-                          className="flex items-start gap-3 rounded-xl bg-slate-50 px-3 py-2.5"
+                          className="flex items-start gap-3 rounded-xl bg-fill px-3 py-2.5"
                         >
-                          <dt className="w-16 shrink-0 pt-0.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          <dt className="w-16 shrink-0 pt-0.5 text-xs font-semibold uppercase tracking-wide text-quiet">
                             {BREAK_SHORT_LABEL[kind]}
                           </dt>
                           <dd className="min-w-0 flex-1">
@@ -331,18 +330,18 @@ export function TeamBreaksView() {
             <div className="relative hidden overflow-x-auto md:block">
               <table className="w-full min-w-[900px] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/70">
-                    <th scope="col" className={`${thBase} pl-6`}>
+                  <tr className="border-b border-card bg-fill/70">
+                    <Th scope="col" className="pl-6">
                       Person
-                    </th>
+                    </Th>
                     {BREAK_KINDS.map((kind) => (
-                      <th key={kind} scope="col" className={thBase}>
+                      <Th key={kind} scope="col">
                         {BREAK_SHORT_LABEL[kind]}
-                      </th>
+                      </Th>
                     ))}
-                    <th scope="col" className={`${thBase} pr-6 text-right`}>
+                    <Th scope="col" className="pr-6 text-right">
                       Pending
-                    </th>
+                    </Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -350,22 +349,22 @@ export function TeamBreaksView() {
                     <Fragment key={row.user.id}>
                       <tr
                         className={`align-top ${
-                          row.unscheduled.length ? "" : "border-b border-slate-100"
+                          row.unscheduled.length ? "" : "border-b border-divider"
                         }`}
                       >
                         <th scope="row" className="w-64 py-4 pl-6 pr-4 text-left font-normal">
-                          <p className="font-semibold text-slate-900">{row.user.name}</p>
-                          <p className="text-xs text-slate-500">{shiftRefLabel(row.shift)}</p>
+                          <p className="font-semibold text-primary">{row.user.name}</p>
+                          <p className="text-xs text-quiet">{shiftRefLabel(row.shift)}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             <SourceChip source={row.source} />
                             {row.user.department && (
-                              <span className="text-xs text-slate-500">{row.user.department}</span>
+                              <span className="text-xs text-quiet">{row.user.department}</span>
                             )}
                             <OrgChip name={row.user.companyName} show={mixed} />
                           </div>
                         </th>
                         {row.cells.length === 0 ? (
-                          <td colSpan={3} className="px-4 py-4 text-sm text-slate-500">
+                          <td colSpan={3} className="px-4 py-4 text-sm text-quiet">
                             {noScheduleText(row)}
                           </td>
                         ) : (
@@ -381,12 +380,12 @@ export function TeamBreaksView() {
                               {row.pending}
                             </Chip>
                           ) : (
-                            <span className="text-slate-400">0</span>
+                            <span className="text-quiet">0</span>
                           )}
                         </td>
                       </tr>
                       {row.unscheduled.length > 0 && (
-                        <tr className="border-b border-slate-100">
+                        <tr className="border-b border-divider">
                           <td />
                           <td colSpan={4} className="px-4 pb-4">
                             <div className="max-w-xl">
@@ -402,7 +401,7 @@ export function TeamBreaksView() {
             </div>
           </div>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

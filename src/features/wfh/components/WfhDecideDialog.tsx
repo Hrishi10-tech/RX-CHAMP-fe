@@ -1,18 +1,11 @@
 "use client";
 
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
 import { useEffect, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  labelBase,
-  textareaBase,
-} from "@/components/ui/classes";
 import { errorCode, errorMessage } from "@/lib/api";
 import { usePresetsFor } from "@/features/settings/hooks/usePresets";
 import { amountText, NOTE_MAX, NOTE_MIN } from "@/features/leave/lib/format";
@@ -20,6 +13,8 @@ import type { WfhDecisionMode } from "@/features/wfh/api/wfh";
 import { useDecideWfh } from "@/features/wfh/hooks/useWfh";
 import { partTimesText } from "@/features/wfh/lib/format";
 import type { WfhRequestView } from "@/features/wfh/types";
+import { Hint, Label, Textarea } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 const COPY: Record<
   WfhDecisionMode,
@@ -107,39 +102,36 @@ export function WfhDecideDialog({
   return (
     <Modal open={!!request} onClose={onClose} title={copy.title} className="max-w-md">
       <form onSubmit={submit} noValidate className="space-y-4 px-5 py-5 sm:px-6">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm">
-          <p className="font-semibold text-slate-900">
+        <div className="rounded-xl border border-card bg-fill px-3.5 py-3 text-sm">
+          <p className="font-semibold text-primary">
             {request.userName}: from home, {request.span}
           </p>
-          <p className="text-slate-600">
+          <p className="text-soft">
             {amountText(request)}
             {request.partTimes ? ` (${partTimesText(request.partTimes)})` : ""}
             {request.attendanceSource === "BIOMETRIC" ? " · tracked on the phone app" : ""}
           </p>
-          <p className="mt-1 text-slate-500">&ldquo;{request.reason}&rdquo;</p>
+          <p className="mt-1 text-quiet">&ldquo;{request.reason}&rdquo;</p>
         </div>
         <div>
-          <label htmlFor="wfh-note" className={labelBase}>
-            {copy.ask}
-          </label>
+          <Label htmlFor="wfh-note">{copy.ask}</Label>
           {presets.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Quick answers">
               {presets.map((p) => (
-                <button
+                <ChoiceChip
+                  on={note === p}
                   key={p}
-                  type="button"
                   onClick={() => {
                     setNote(p);
                     setProblem(null);
                   }}
-                  className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
                 >
                   {p}
-                </button>
+                </ChoiceChip>
               ))}
             </div>
           )}
-          <textarea
+          <Textarea
             id="wfh-note"
             rows={3}
             value={note}
@@ -148,31 +140,26 @@ export function WfhDecideDialog({
               setNote(e.target.value);
               setProblem(null);
             }}
-            className={`mt-2 ${textareaBase}`}
+            className="mt-2"
             data-autofocus
           />
-          <p className={problem ? errorText : hintBase}>
+          <Hint error={problem}>
             {problem ??
               (mode === "revoke"
                 ? "The days become office days again, and the person is told."
                 : mode === "reject"
                   ? "The person is told, with your note."
                   : "Shown to them with the decision.")}
-          </p>
+          </Hint>
         </div>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={decide.isPending}
-          >
+          <Button variant="secondary" type="button" onClick={onClose} disabled={decide.isPending}>
             Back
-          </button>
-          <button type="submit" className={btnPrimary} disabled={decide.isPending}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={decide.isPending}>
             {decide.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {copy.button}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

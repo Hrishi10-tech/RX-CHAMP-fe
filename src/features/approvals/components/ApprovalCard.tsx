@@ -1,21 +1,11 @@
 "use client";
 
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { Check, Loader2, Lock, Mail, MessageSquarePlus, RotateCcw, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
-import {
-  btnDanger,
-  btnDangerOutline,
-  btnGhost,
-  btnSecondary,
-  btnSuccess,
-  checkboxBase,
-  errorText,
-  hintBase,
-  textareaBase,
-} from "@/components/ui/classes";
 import { roleLabel } from "@/constants/roles";
 import { OrgChip } from "@/features/organisations/components/OrgChip";
 import { errorCode, errorMessage, errorStatus } from "@/lib/api";
@@ -47,6 +37,8 @@ import {
 import type { ApprovalItemView } from "@/features/approvals/types";
 import { usePresetsFor } from "@/features/settings/hooks/usePresets";
 import { reasonAccepted } from "@/features/settings/lib/presets";
+import { Checkbox, Hint, Textarea } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 /** Rejection notes are shown to the person; the API wants at least this many characters. */
 export const MIN_REJECT_NOTE = 3;
@@ -260,8 +252,8 @@ export function ApprovalCard({
   return (
     <article
       aria-labelledby={titleId}
-      className={`border-t border-slate-100 px-4 py-4 first:border-t-0 sm:px-6 ${
-        selected ? "bg-[rgba(34,34,204,0.04)]" : ""
+      className={`border-t border-divider px-4 py-4 first:border-t-0 sm:px-6 ${
+        selected ? "bg-brand/4" : ""
       }`}
     >
       <div className="flex gap-3">
@@ -270,9 +262,7 @@ export function ApprovalCard({
             {isBulkSelectable(item) && (
               // A 44px tap target around the 20px box; it still takes 20px of the row.
               <label className="-m-3 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
-                <input
-                  type="checkbox"
-                  className={checkboxBase}
+                <Checkbox
                   checked={selected}
                   onChange={onToggle}
                   disabled={busy}
@@ -291,9 +281,13 @@ export function ApprovalCard({
         <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(7rem,9rem)_minmax(0,1fr)_minmax(9.5rem,11rem)] lg:gap-x-5 xl:grid-cols-[minmax(8rem,10rem)_minmax(14rem,1fr)_minmax(9.5rem,12rem)_14rem]">
           {/* Who */}
           <div className="min-w-0 lg:col-start-1 lg:row-start-1">
-            <p className="break-words font-semibold text-slate-900">{name}</p>
-            {who && <p className="break-words text-xs text-slate-500">{who}</p>}
-            <OrgChip name={item.user?.companyName} show={showOrg} className="mt-1" />
+            <p className="break-words font-semibold text-primary">{name}</p>
+            {(who || (showOrg && item.user?.companyName)) && (
+              <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 break-words text-xs text-quiet">
+                {who && <span>{who}</span>}
+                <OrgChip name={item.user?.companyName} show={!!showOrg} />
+              </p>
+            )}
           </div>
 
           {/* What and when */}
@@ -307,10 +301,10 @@ export function ApprovalCard({
               {live && <LiveMeetingChip durationSec={item.durationSec} fetchedAt={clock} />}
               {item.locked && <LockedChip />}
             </div>
-            <h3 id={titleId} className="break-words text-sm font-semibold text-slate-900">
+            <h3 id={titleId} className="break-words text-sm font-semibold text-primary">
               {item.title}
             </h3>
-            <p className="break-words text-xs leading-relaxed text-slate-600">
+            <p className="break-words text-xs leading-relaxed text-soft">
               {relativeDay(item.date)}
               {item.detail ? ` · ${item.detail}` : ""}
             </p>
@@ -325,32 +319,32 @@ export function ApprovalCard({
           </div>
 
           {/* Reason, comment or agenda */}
-          <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-2 lg:col-start-2 lg:col-end-4 lg:row-start-2 xl:col-end-5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          <div className="min-w-0 rounded-lg bg-fill px-3 py-2 lg:col-start-2 lg:col-end-4 lg:row-start-2 xl:col-end-5">
+            <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
               {reasonLabel(item.category)}
             </p>
             {reason ? (
-              <p className="break-words text-sm leading-relaxed text-slate-800">
+              <p className="break-words text-sm leading-relaxed text-strong">
                 &ldquo;{reason}&rdquo;
               </p>
             ) : (
-              <p className="text-sm italic text-slate-500">{NO_COMMENT_TEXT}</p>
+              <p className="text-sm italic text-quiet">{NO_COMMENT_TEXT}</p>
             )}
             {item.needsComment && !reason && (
-              <p id={hintId} className="mt-1 text-xs font-medium text-amber-800">
+              <p id={hintId} className="mt-1 text-xs font-medium text-attention-ink">
                 {first} adds a comment in the desktop app before ending the day. You can decide now
                 or wait for it.
               </p>
             )}
             {people.length > 0 && (
-              <p className="mt-1 flex items-start gap-1.5 break-words text-xs text-slate-600">
-                <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+              <p className="mt-1 flex items-start gap-1.5 break-words text-xs text-soft">
+                <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quiet" aria-hidden />
                 With {people.join(", ")}
               </p>
             )}
             {momSender && (
-              <p className="mt-1 flex items-start gap-1.5 break-words text-xs text-slate-600">
-                <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+              <p className="mt-1 flex items-start gap-1.5 break-words text-xs text-soft">
+                <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral" aria-hidden />
                 Minutes mailed by {momSender}
               </p>
             )}
@@ -361,7 +355,7 @@ export function ApprovalCard({
               {decided && (
                 <p
                   className={`break-words text-xs ${
-                    item.status === "REJECTED" ? "text-rose-700" : "text-emerald-700"
+                    item.status === "REJECTED" ? "text-attention" : "text-working"
                   }`}
                 >
                   {decided}
@@ -369,18 +363,18 @@ export function ApprovalCard({
                 </p>
               )}
               {lockNote && (
-                <p className="flex items-start gap-1.5 text-xs text-slate-600">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                <p className="flex items-start gap-1.5 text-xs text-soft">
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-quiet" aria-hidden />
                   {lockNote}
                 </p>
               )}
               {live && !item.locked && (
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-soft">
                   The meeting is still running. Approve or reject it once it ends.
                 </p>
               )}
               {pending && !item.canDecide && !item.locked && !live && (
-                <p className="text-xs text-slate-500">View only: routed to another approver.</p>
+                <p className="text-xs text-quiet">View only: routed to another approver.</p>
               )}
             </div>
           )}
@@ -389,13 +383,14 @@ export function ApprovalCard({
           {decidable && mode === null && (
             <div className="grid grid-cols-2 gap-2 lg:col-start-2 lg:col-end-4 lg:flex lg:flex-wrap lg:items-center xl:col-start-4 xl:col-end-5 xl:row-start-1 xl:flex-col xl:flex-nowrap xl:items-end">
               <div className="col-span-2 grid grid-cols-2 gap-2 lg:flex xl:justify-end">
-                <button
+                <Button
+                  variant="success"
                   type="button"
                   onClick={() => void doApprove()}
                   disabled={busy}
                   aria-label={`Approve ${name}: ${item.title}`}
                   aria-describedby={item.needsComment ? hintId : undefined}
-                  className={`${btnSuccess} px-3 py-2`}
+                  className="px-3 py-2"
                 >
                   {approve.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -403,8 +398,9 @@ export function ApprovalCard({
                     <Check className="h-4 w-4" aria-hidden />
                   )}
                   Approve
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="attention-outline"
                   type="button"
                   onClick={() => {
                     setMode("reject");
@@ -412,13 +408,14 @@ export function ApprovalCard({
                   }}
                   disabled={busy}
                   aria-label={`Reject ${name}: ${item.title}`}
-                  className={`${btnDangerOutline} px-3 py-2`}
+                  className="px-3 py-2"
                 >
                   <X className="h-4 w-4" aria-hidden />
                   Reject
-                </button>
+                </Button>
               </div>
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 onClick={() => {
                   setMode("approve");
@@ -426,22 +423,23 @@ export function ApprovalCard({
                 }}
                 disabled={busy}
                 aria-label={`Approve with a note: ${name}, ${item.title}`}
-                className={`${btnGhost} col-span-2 justify-self-start py-1 text-[13px] xl:-mr-2.5`}
+                className="col-span-2 justify-self-start py-1 text-[0.8125rem] xl:-mr-2.5"
               >
                 <MessageSquarePlus className="h-4 w-4" aria-hidden />
                 Approve with a note
-              </button>
+              </Button>
             </div>
           )}
 
           {!pending && item.canDecide && !item.locked && canReopen && (
             <div className="lg:col-start-2 lg:col-end-4 xl:col-start-4 xl:col-end-5 xl:row-start-1 xl:flex xl:justify-end">
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 onClick={() => void doReopen()}
                 disabled={busy}
                 aria-label={`Reopen ${name}: ${item.title}`}
-                className={`${btnGhost} -ml-2.5 xl:-mr-2.5 xl:ml-0`}
+                className="-ml-2.5 xl:-mr-2.5 xl:ml-0"
               >
                 {reopen.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -449,7 +447,7 @@ export function ApprovalCard({
                   <RotateCcw className="h-4 w-4" aria-hidden />
                 )}
                 Reopen
-              </button>
+              </Button>
             </div>
           )}
 
@@ -459,37 +457,34 @@ export function ApprovalCard({
               noValidate
               className={`space-y-2 rounded-xl border p-3 lg:col-start-2 lg:col-end-4 xl:col-end-5 ${
                 mode === "reject"
-                  ? "border-rose-200 bg-rose-50/60"
-                  : "border-emerald-200 bg-emerald-50/60"
+                  ? "border-attention-edge bg-attention-wash/60"
+                  : "border-working-edge bg-working-wash/60"
               }`}
             >
-              <label htmlFor={noteId} className="block text-sm font-semibold text-slate-800">
+              <label htmlFor={noteId} className="block text-sm font-semibold text-strong">
                 {mode === "reject"
                   ? `Why are you rejecting it? ${first} sees this note.`
                   : `Note for ${first} (optional)`}
               </label>
-              {mode === "reject" && (
-                <p className="text-xs text-slate-600">{rejectConsequence(item)}</p>
-              )}
+              {mode === "reject" && <p className="text-xs text-soft">{rejectConsequence(item)}</p>}
               {presets.length > 0 && (
                 <div className="flex flex-wrap gap-1.5" aria-label="Quick answers">
                   {presets.map((p) => (
-                    <button
+                    <ChoiceChip
+                      on={note === p}
                       key={p}
-                      type="button"
                       onClick={() => {
                         setNote(p);
                         setNoteError(null);
                       }}
                       disabled={busy}
-                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
                     >
                       {p}
-                    </button>
+                    </ChoiceChip>
                   ))}
                 </div>
               )}
-              <textarea
+              <Textarea
                 id={noteId}
                 rows={2}
                 value={note}
@@ -506,28 +501,27 @@ export function ApprovalCard({
                     ? "For example: please take lunch, and tell me if the workload does not allow it."
                     : "For example: fine this time."
                 }
-                className={textareaBase}
               />
-              <p id={`${noteId}-hint`} className={noteError ? errorText : hintBase}>
+              <Hint id={`${noteId}-hint`} error={noteError}>
                 {noteError ??
                   (mode === "reject"
                     ? `At least ${MIN_REJECT_NOTE} characters.`
                     : "Shown to them with the decision.")}
-              </p>
+              </Hint>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button type="button" onClick={closePanel} disabled={busy} className={btnSecondary}>
+                <Button variant="secondary" type="button" onClick={closePanel} disabled={busy}>
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant={mode === "reject" ? "attention" : "success"}
                   type="submit"
                   disabled={
                     busy || (mode === "reject" && !reasonAccepted(note, MIN_REJECT_NOTE, presets))
                   }
-                  className={mode === "reject" ? btnDanger : btnSuccess}
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
                   {mode === "reject" ? "Reject" : "Approve"}
-                </button>
+                </Button>
               </div>
             </form>
           )}

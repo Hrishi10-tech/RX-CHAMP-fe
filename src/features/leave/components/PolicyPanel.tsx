@@ -6,15 +6,7 @@ import { toast } from "sonner";
 
 import { Select } from "@/components/ui/Select";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnPrimary,
-  cardBase,
-  checkboxBase,
-  errorText,
-  hintBase,
-  inputBase,
-  labelBase,
-} from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import { formatDayWithWeekday } from "@/lib/time/businessTime";
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -22,6 +14,9 @@ import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
 import { useLeavePolicy, useSaveLeavePolicy } from "@/features/leave/hooks/useLeave";
 import { policyLockNote } from "@/features/leave/lib/compoff";
 import type { ApproverRoute, LeavePolicyPatch, LeavePolicyView } from "@/features/leave/types";
+import { Checkbox, FieldError, Hint, Input, Label } from "@/components/ui/Field";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 interface Form {
   enabled: boolean;
@@ -184,10 +179,8 @@ export function PolicyPanel() {
     disabled = false,
   ) => (
     <div>
-      <label htmlFor={`policy-${key}`} className={labelBase}>
-        {label}
-      </label>
-      <input
+      <Label htmlFor={`policy-${key}`}>{label}</Label>
+      <Input
         id={`policy-${key}`}
         type="number"
         inputMode="decimal"
@@ -197,28 +190,24 @@ export function PolicyPanel() {
         value={form[key]}
         disabled={!editable || disabled}
         onChange={(e) => set(key, e.target.value)}
-        className={`mt-1.5 ${inputBase}`}
+        className="mt-1.5"
       />
-      <p className={problem?.field === key ? errorText : hintBase}>
-        {problem?.field === key ? problem.message : hint}
-      </p>
+      <Hint error={problem?.field === key}>{problem?.field === key ? problem.message : hint}</Hint>
     </div>
   );
 
   return (
-    <form onSubmit={submit} noValidate className={`${cardBase} space-y-6 p-4 sm:p-6`}>
+    <Card as="form" onSubmit={submit} noValidate className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-slate-900">Leave policy</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-base font-bold text-primary">Leave policy</h2>
+          <p className="text-sm text-quiet">
             In use since {formatDayWithWeekday(p.startedOn)}.{" "}
             {policyLockNote(role, editable, mixed)}
           </p>
         </div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <input
-            type="checkbox"
-            className={checkboxBase}
+        <label className="flex items-center gap-2 text-sm font-semibold text-body">
+          <Checkbox
             checked={form.enabled}
             disabled={!editable}
             onChange={(e) => set("enabled", e.target.checked)}
@@ -228,7 +217,7 @@ export function PolicyPanel() {
       </div>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-sky-700">
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand">
           CL/SL, casual or sick leave
         </legend>
         {numberField(
@@ -246,7 +235,7 @@ export function PolicyPanel() {
       </fieldset>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-violet-700">
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-meeting">
           EL/PL, earned or privilege leave
         </legend>
         {numberField(
@@ -262,10 +251,8 @@ export function PolicyPanel() {
           1,
         )}
         <div className="sm:col-span-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              className={checkboxBase}
+          <label className="flex items-center gap-2 text-sm font-semibold text-body">
+            <Checkbox
               checked={form.carryAll}
               disabled={!editable}
               onChange={(e) => set("carryAll", e.target.checked)}
@@ -286,13 +273,11 @@ export function PolicyPanel() {
       </fieldset>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-quiet">
           Approval and joiners
         </legend>
         <div>
-          <label htmlFor="policy-approver" className={labelBase}>
-            Who approves
-          </label>
+          <Label htmlFor="policy-approver">Who approves</Label>
           <Select
             id="policy-approver"
             value={form.approver}
@@ -301,7 +286,7 @@ export function PolicyPanel() {
             disabled={!p.canRoute}
             aria-label="Who approves"
           />
-          <p className={problem?.field === "approver" ? errorText : hintBase}>
+          <Hint error={problem?.field === "approver"}>
             {problem?.field === "approver" ? (
               problem.message
             ) : p.canRoute ? (
@@ -311,14 +296,12 @@ export function PolicyPanel() {
                 <Lock className="h-3 w-3" aria-hidden /> Set by the organisation admin.
               </span>
             )}
-          </p>
+          </Hint>
         </div>
         <div>
           <span className={labelBase}>People who join during the year</span>
-          <label className="mt-2.5 flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              className={checkboxBase}
+          <label className="mt-2.5 flex items-center gap-2 text-sm text-body">
+            <Checkbox
               checked={form.prorateJoiners}
               disabled={!editable}
               onChange={(e) => set("prorateJoiners", e.target.checked)}
@@ -330,12 +313,10 @@ export function PolicyPanel() {
 
       {hasCompOff && (
         <fieldset className="grid gap-4 sm:grid-cols-2">
-          <legend className="mb-2 flex w-full flex-wrap items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+          <legend className="mb-2 flex w-full flex-wrap items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-working">
             <span>Comp off, for extra days worked</span>
-            <label className="flex items-center gap-2 text-sm font-semibold normal-case tracking-normal text-slate-700">
-              <input
-                type="checkbox"
-                className={checkboxBase}
+            <label className="flex items-center gap-2 text-sm font-semibold normal-case tracking-normal text-body">
+              <Checkbox
                 checked={form.compOffEnabled}
                 disabled={!editable}
                 onChange={(e) => set("compOffEnabled", e.target.checked)}
@@ -368,9 +349,7 @@ export function PolicyPanel() {
             1,
           )}
           <div>
-            <label htmlFor="policy-compOffApprover" className={labelBase}>
-              Who approves claims
-            </label>
+            <Label htmlFor="policy-compOffApprover">Who approves claims</Label>
             <Select
               id="policy-compOffApprover"
               value={form.compOffApprover}
@@ -379,7 +358,7 @@ export function PolicyPanel() {
               disabled={!p.canRoute}
               aria-label="Who approves comp off claims"
             />
-            <p className={problem?.field === "compOffApprover" ? errorText : hintBase}>
+            <Hint error={problem?.field === "compOffApprover"}>
               {problem?.field === "compOffApprover" ? (
                 problem.message
               ) : p.canRoute ? (
@@ -389,23 +368,19 @@ export function PolicyPanel() {
                   <Lock className="h-3 w-3" aria-hidden /> Set by the organisation admin.
                 </span>
               )}
-            </p>
+            </Hint>
           </div>
           <div className="space-y-3">
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                className={checkboxBase}
+            <label className="flex items-center gap-2 text-sm text-body">
+              <Checkbox
                 checked={form.compOffCountLeaveDays}
                 disabled={!editable}
                 onChange={(e) => set("compOffCountLeaveDays", e.target.checked)}
               />
               A full day of leave that was worked anyway counts as an extra day
             </label>
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                className={checkboxBase}
+            <label className="flex items-center gap-2 text-sm text-body">
+              <Checkbox
                 checked={form.compOffCapped}
                 disabled={!editable}
                 onChange={(e) => set("compOffCapped", e.target.checked)}
@@ -427,10 +402,9 @@ export function PolicyPanel() {
       )}
 
       {editable && touchesYear && (
-        <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-900">
-          <input
-            type="checkbox"
-            className={`${checkboxBase} mt-0.5`}
+        <label className="flex items-start gap-2 rounded-xl border border-attention-edge bg-attention-wash px-3.5 py-3 text-sm text-attention-ink">
+          <Checkbox
+            className="mt-0.5"
             checked={applyNow}
             onChange={(e) => setApplyNow(e.target.checked)}
           />
@@ -442,15 +416,15 @@ export function PolicyPanel() {
         </label>
       )}
 
-      {problem && !problem.field && <p className={errorText}>{problem.message}</p>}
+      {problem && !problem.field && <FieldError>{problem.message}</FieldError>}
       {editable && (
         <div className="flex justify-end">
-          <button type="submit" className={btnPrimary} disabled={!dirty || save.isPending}>
+          <Button variant="primary" type="submit" disabled={!dirty || save.isPending}>
             {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save policy
-          </button>
+          </Button>
         </div>
       )}
-    </form>
+    </Card>
   );
 }

@@ -1,20 +1,13 @@
 "use client";
 
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AlertTriangle, Home, Loader2, Smartphone, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  inputBase,
-  inputInvalid,
-  labelBase,
-  textareaBase,
-} from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { addDaysToKey, todayKey } from "@/lib/time/businessTime";
@@ -24,6 +17,8 @@ import type { LeaveKind, LeavePart } from "@/features/leave/types";
 import { useAskWfh, useMyWfh, useWfhPreview } from "@/features/wfh/hooks/useWfh";
 import { myRuleText, partTimesText, wfhDraftProblems } from "@/features/wfh/lib/format";
 import type { WfhDraft, WfhPreview } from "@/features/wfh/types";
+import { FieldError, Input, Label, Textarea } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 const EMPTY = (start: string): WfhDraft => ({
   kind: "FULL_DAY",
@@ -92,10 +87,29 @@ export function AskWfhDialog({ open, onClose }: { open: boolean; onClose: () => 
     setServerProblem(null);
   }
 
+  // A press while the preview is still catching up with what was just typed (it follows the
+  // form by 300 ms) used to do nothing. It is kept, and sent the moment the preview answers.
+  const [sendWhenReady, setSendWhenReady] = useState(false);
+  useEffect(() => {
+    if (!sendWhenReady || stale) return;
+    setSendWhenReady(false);
+    if (pv?.ok && !ownBlocking) void send();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sendWhenReady, stale, pv?.ok]);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setTouched(true);
-    if (ownBlocking || !pv?.ok) return;
+    if (ownBlocking) return;
+    if (stale || !pv) {
+      setSendWhenReady(true);
+      return;
+    }
+    if (!pv.ok) return;
+    await send();
+  }
+
+  async function send() {
     try {
       const saved = await ask.mutateAsync(draft);
       toast.success(
@@ -150,37 +164,37 @@ export function AskWfhDialog({ open, onClose }: { open: boolean; onClose: () => 
                 onChange={(v) => update("part", v)}
                 tabs={PART_OPTIONS[draft.kind]}
               />
-              {show("part") && <p className={errorText}>{show("part")}</p>}
+              {show("part") && <FieldError>{show("part")}</FieldError>}
             </div>
           )}
         </div>
 
         <div className={`grid gap-4 ${draft.kind === "FULL_DAY" ? "grid-cols-2" : "grid-cols-1"}`}>
           <div>
-            <label htmlFor="wfh-start" className={labelBase}>
-              {draft.kind === "FULL_DAY" ? "First day" : "Day"}
-            </label>
-            <input
+            <Label htmlFor="wfh-start">{draft.kind === "FULL_DAY" ? "First day" : "Day"}</Label>
+            <Input
               id="wfh-start"
               type="date"
               value={draft.startDate}
               min={earliest}
               onChange={(e) => update("startDate", e.target.value)}
-              className={`mt-1.5 ${inputBase} ${show("startDate") ? inputInvalid : ""}`}
+              invalid={!!show("startDate")}
+              className="mt-1.5"
             />
           </div>
           {draft.kind === "FULL_DAY" && (
             <div>
-              <label htmlFor="wfh-end" className={labelBase}>
-                Last day <span className="font-normal text-slate-400">(optional)</span>
-              </label>
-              <input
+              <Label htmlFor="wfh-end">
+                Last day <span className="font-normal text-quiet">(optional)</span>
+              </Label>
+              <Input
                 id="wfh-end"
                 type="date"
                 value={draft.endDate}
                 min={draft.startDate || earliest}
                 onChange={(e) => update("endDate", e.target.value)}
-                className={`mt-1.5 ${inputBase} ${show("endDate") ? inputInvalid : ""}`}
+                invalid={!!show("endDate")}
+                className="mt-1.5"
               />
             </div>
           )}
@@ -189,47 +203,44 @@ export function AskWfhDialog({ open, onClose }: { open: boolean; onClose: () => 
         <PreviewBox pv={stale ? null : pv} loading={!pv || stale} problem={problem} />
 
         <div>
-          <label htmlFor="wfh-reason" className={labelBase}>
-            Reason
-          </label>
+          <Label htmlFor="wfh-reason">Reason</Label>
           {presets.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Quick answers">
               {presets.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => update("reason", p)}
-                  className={`rounded-full border px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
-                    draft.reason === p
-                      ? "border-[rgba(34,34,204,0.4)] bg-[rgba(34,34,204,0.08)] font-semibold text-[rgb(34_34_204)]"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
+                <ChoiceChip on={draft.reason === p} key={p} onClick={() => update("reason", p)}>
                   {p}
-                </button>
+                </ChoiceChip>
               ))}
             </div>
           )}
-          <textarea
+          <Textarea
             id="wfh-reason"
             rows={2}
             value={draft.reason}
             maxLength={REASON_MAX}
             onChange={(e) => update("reason", e.target.value)}
-            className={`mt-2 ${textareaBase} ${show("reason") ? inputInvalid : ""}`}
+            invalid={!!show("reason")}
+            className="mt-2"
             placeholder="Your approver sees this."
           />
-          {show("reason") && <p className={errorText}>{show("reason")}</p>}
+          {show("reason") && <FieldError>{show("reason")}</FieldError>}
         </div>
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" className={btnSecondary} onClick={onClose} disabled={ask.isPending}>
+          <Button variant="secondary" type="button" onClick={onClose} disabled={ask.isPending}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={!canSend && touched}>
-            {ask.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+          </Button>
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={(!canSend && touched && !stale) || sendWhenReady}
+            aria-busy={sendWhenReady || ask.isPending || undefined}
+          >
+            {(ask.isPending || sendWhenReady) && (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            )}
             {pv?.approvedAtOnce ? "Work from home" : "Send request"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -249,7 +260,7 @@ function PreviewBox({
     return (
       <div
         role="alert"
-        className="flex gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-800"
+        className="flex gap-2.5 rounded-xl border border-attention-edge bg-attention-wash px-3.5 py-3 text-sm text-attention-ink"
       >
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
         <p>{problem}</p>
@@ -258,7 +269,7 @@ function PreviewBox({
   }
   if (loading || !pv) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-500">
+      <div className="flex items-center gap-2 rounded-xl border border-card bg-fill px-3.5 py-3 text-sm text-quiet">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
         Checking…
       </div>
@@ -267,11 +278,11 @@ function PreviewBox({
   const skipped = pv.dates.filter((d) => !d.covered);
   return (
     <div
-      className="rounded-xl border border-[rgba(34,34,204,0.2)] bg-[rgba(34,34,204,0.04)] px-3.5 py-3 text-sm"
+      className="rounded-xl border border-brand/20 bg-brand/4 px-3.5 py-3 text-sm"
       aria-live="polite"
     >
-      <p className="flex items-center gap-2 font-semibold text-slate-900">
-        <Home className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+      <p className="flex items-center gap-2 font-semibold text-primary">
+        <Home className="h-4 w-4 text-brand" aria-hidden />
         {pv.daysLabel} from home
         {pv.partTimes ? `, ${partTimesText(pv.partTimes)}` : ""}
       </p>
@@ -281,10 +292,10 @@ function PreviewBox({
             <li
               key={d.date}
               title={d.why ?? undefined}
-              className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+              className={`rounded-md px-1.5 py-0.5 text-[0.6875rem] font-semibold ${
                 d.covered
-                  ? "bg-white text-slate-700 ring-1 ring-slate-200"
-                  : "bg-slate-100 text-slate-400 line-through"
+                  ? "bg-card text-body ring-1 ring-edge"
+                  : "bg-panel text-quiet line-through"
               }`}
             >
               {d.label}
@@ -293,16 +304,16 @@ function PreviewBox({
         </ul>
       )}
       {skipped.length > 0 && (
-        <p className="mt-1.5 text-xs text-slate-500">
+        <p className="mt-1.5 text-xs text-quiet">
           Not counted: {skipped.map((d) => `${d.label} (${d.why ?? "day off"})`).join(", ")}
         </p>
       )}
-      <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-600">
+      <p className="mt-2 flex items-start gap-1.5 text-xs text-soft">
         <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
         {/* The server's sentence already names the most a full day credits. */}
         <span>{pv.tracking}</span>
       </p>
-      <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-quiet">
         <UserCheck className="h-3.5 w-3.5" aria-hidden />
         {pv.approvedAtOnce
           ? "Nobody else approves it: it is approved at once."

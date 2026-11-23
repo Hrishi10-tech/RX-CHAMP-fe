@@ -1,5 +1,6 @@
 "use client";
 
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -7,16 +8,7 @@ import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Select } from "@/components/ui/Select";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-  labelBase,
-  textareaBase,
-} from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
 import { errorCode, errorDetails, errorMessage } from "@/lib/api";
 import { formatDuration } from "@/lib/format/duration";
 import { addDaysToKey, formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
@@ -33,6 +25,8 @@ import {
 import { compOffPickable } from "@/features/leave/lib/compoff";
 import { daysText, NOTE_MAX, NOTE_MIN, REASON_MAX, REASON_MIN } from "@/features/leave/lib/format";
 import type { CompOffCreditView, ExtraDayView } from "@/features/leave/types";
+import { FieldError, Hint, Input, Label, Textarea } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 const DAY_TABS: { value: "1" | "0.5"; label: string }[] = [
   { value: "1", label: "A full day" },
@@ -61,19 +55,23 @@ export function useCompOffPeople(enabled: boolean) {
   return { options, isLoading: people.isLoading, isError: people.isError };
 }
 
-function Presets({ list, onPick }: { list: string[]; onPick: (p: string) => void }) {
+function Presets({
+  list,
+  value,
+  onPick,
+}: {
+  list: string[];
+  /** What the field holds now: the preset it matches is shown chosen. */
+  value: string;
+  onPick: (p: string) => void;
+}) {
   if (!list.length) return null;
   return (
     <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Quick answers">
       {list.map((p) => (
-        <button
-          key={p}
-          type="button"
-          onClick={() => onPick(p)}
-          className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
-        >
+        <ChoiceChip on={value === p} key={p} onClick={() => onPick(p)}>
           {p}
-        </button>
+        </ChoiceChip>
       ))}
     </div>
   );
@@ -138,11 +136,11 @@ export function ClaimCompOffDialog({
   return (
     <Modal open={!!day} onClose={onClose} title="Claim comp off" className="max-w-md">
       <form onSubmit={submit} noValidate className="space-y-4 px-5 py-5 sm:px-6">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm">
-          <p className="font-semibold text-slate-900">
+        <div className="rounded-xl border border-card bg-fill px-3.5 py-3 text-sm">
+          <p className="font-semibold text-primary">
             {day.label}: {day.dayLabel}
           </p>
-          <p className="text-slate-600">
+          <p className="text-soft">
             You worked {day.workedLabel}. A full day needs {formatDuration(day.fullDayNeedsSec)}, a
             half day {formatDuration(day.halfDayNeedsSec)}.
           </p>
@@ -162,24 +160,23 @@ export function ClaimCompOffDialog({
             />
           </div>
           {days === "1" && day.earnsDays < 1 && (
-            <p className={errorText}>
+            <FieldError>
               You worked {day.workedLabel}: a full day needs {formatDuration(day.fullDayNeedsSec)}.
               Claim a half day.
-            </p>
+            </FieldError>
           )}
         </div>
         <div>
-          <label htmlFor="compoff-reason" className={labelBase}>
-            What you worked on
-          </label>
+          <Label htmlFor="compoff-reason">What you worked on</Label>
           <Presets
             list={presets}
+            value={reason}
             onPick={(p) => {
               setReason(p);
               setProblem(null);
             }}
           />
-          <textarea
+          <Textarea
             id="compoff-reason"
             rows={2}
             value={reason}
@@ -188,32 +185,28 @@ export function ClaimCompOffDialog({
               setReason(e.target.value);
               setProblem(null);
             }}
-            className={`mt-2 ${textareaBase} ${touched && reasonProblem ? inputInvalid : ""}`}
+            invalid={!!(touched && reasonProblem)}
+            className="mt-2"
             placeholder="Your approver sees this."
           />
-          <p className={problem || (touched && reasonProblem) ? errorText : hintBase}>
+          <Hint error={problem || (touched && reasonProblem)}>
             {problem ??
               (touched && reasonProblem) ??
               "Your approver can approve it as asked, approve a half day instead, or reject it with a note."}
-          </p>
+          </Hint>
         </div>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={claim.isPending}
-          >
+          <Button variant="secondary" type="button" onClick={onClose} disabled={claim.isPending}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             type="submit"
-            className={btnPrimary}
             disabled={claim.isPending || (days === "1" && day.earnsDays < 1)}
           >
             {claim.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Claim {days === "1" ? "a full day" : "a half day"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -309,14 +302,14 @@ export function CompOffDecideDialog({
   return (
     <Modal open={!!credit} onClose={onClose} title={copy.title} className="max-w-md">
       <form onSubmit={submit} noValidate className="space-y-4 px-5 py-5 sm:px-6">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm">
-          <p className="font-semibold text-slate-900">
+        <div className="rounded-xl border border-card bg-fill px-3.5 py-3 text-sm">
+          <p className="font-semibold text-primary">
             {credit.userName}: {credit.workedLabel}, {credit.dayLabel.toLowerCase()}
           </p>
-          <p className="text-slate-600">
+          <p className="text-soft">
             Worked {credit.workedTime} · asks for {daysText(credit.askedDays)}
           </p>
-          <p className="mt-1 text-slate-500">&ldquo;{credit.reason}&rdquo;</p>
+          <p className="mt-1 text-quiet">&ldquo;{credit.reason}&rdquo;</p>
         </div>
         {mode === "approve" && credit.askedDays >= 1 && (
           <div>
@@ -335,17 +328,16 @@ export function CompOffDecideDialog({
           </div>
         )}
         <div>
-          <label htmlFor="compoff-note" className={labelBase}>
-            {copy.ask}
-          </label>
+          <Label htmlFor="compoff-note">{copy.ask}</Label>
           <Presets
             list={presets}
+            value={note}
             onPick={(p) => {
               setNote(p);
               setProblem(null);
             }}
           />
-          <textarea
+          <Textarea
             id="compoff-note"
             rows={3}
             value={note}
@@ -354,31 +346,26 @@ export function CompOffDecideDialog({
               setNote(e.target.value);
               setProblem(null);
             }}
-            className={`mt-2 ${textareaBase}`}
+            className="mt-2"
             data-autofocus
           />
-          <p className={problem ? errorText : hintBase}>
+          <Hint error={problem}>
             {problem ??
               (mode === "revoke"
                 ? "Only a credit nothing has drawn on can be taken back."
                 : mode === "reject"
                   ? "The person is told, with your note."
                   : "The credit is valid for a set number of days from the day worked; the person is told by when to take it.")}
-          </p>
+          </Hint>
         </div>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={decide.isPending}
-          >
+          <Button variant="secondary" type="button" onClick={onClose} disabled={decide.isPending}>
             Back
-          </button>
-          <button type="submit" className={btnPrimary} disabled={decide.isPending}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={decide.isPending}>
             {decide.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {copy.button}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -477,15 +464,13 @@ export function GrantCompOffDialog({
         {presetUserId ? (
           <div>
             <span className={labelBase}>Who</span>
-            <p className="mt-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-900">
+            <p className="mt-1.5 rounded-xl border border-card bg-fill px-3.5 py-2.5 text-sm font-semibold text-primary">
               {presetName || "This person"}
             </p>
           </div>
         ) : (
           <div>
-            <label htmlFor="grant-person" className={labelBase}>
-              Who
-            </label>
+            <Label htmlFor="grant-person">Who</Label>
             <Select
               id="grant-person"
               value={userId}
@@ -501,22 +486,20 @@ export function GrantCompOffDialog({
               aria-label="Who"
             />
             {show("userId") ? (
-              <p className={errorText}>{show("userId")}</p>
+              <FieldError>{show("userId")}</FieldError>
             ) : (
-              <p className={hintBase}>
+              <Hint>
                 {role === "MANAGER"
                   ? "Staff of the departments you manage."
                   : "Their organisation's comp off rules apply: the validity and any cap."}
-              </p>
+              </Hint>
             )}
           </div>
         )}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="grant-date" className={labelBase}>
-              Day worked
-            </label>
-            <input
+            <Label htmlFor="grant-date">Day worked</Label>
+            <Input
               id="grant-date"
               type="date"
               value={date}
@@ -526,12 +509,13 @@ export function GrantCompOffDialog({
                 setDate(e.target.value);
                 setProblem(null);
               }}
-              className={`mt-1.5 ${inputBase} ${show("date") ? inputInvalid : ""}`}
+              invalid={!!show("date")}
+              className="mt-1.5"
             />
             {show("date") ? (
-              <p className={errorText}>{show("date")}</p>
+              <FieldError>{show("date")}</FieldError>
             ) : (
-              date && <p className={hintBase}>{formatDayWithWeekday(date)}</p>
+              date && <Hint>{formatDayWithWeekday(date)}</Hint>
             )}
           </div>
           <div>
@@ -551,10 +535,8 @@ export function GrantCompOffDialog({
           </div>
         </div>
         <div>
-          <label htmlFor="grant-reason" className={labelBase}>
-            Reason
-          </label>
-          <textarea
+          <Label htmlFor="grant-reason">Reason</Label>
+          <Textarea
             id="grant-reason"
             rows={2}
             value={reason}
@@ -563,25 +545,21 @@ export function GrantCompOffDialog({
               setReason(e.target.value);
               setProblem(null);
             }}
-            className={`mt-1.5 ${textareaBase} ${show("reason") ? inputInvalid : ""}`}
+            invalid={!!show("reason")}
+            className="mt-1.5"
             placeholder="Worked the go-live on Friday night"
           />
-          {show("reason") && <p className={errorText}>{show("reason")}</p>}
+          {show("reason") && <FieldError>{show("reason")}</FieldError>}
         </div>
-        {problem && !problem.field && <p className={errorText}>{problem.message}</p>}
+        {problem && !problem.field && <FieldError>{problem.message}</FieldError>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={grant.isPending}
-          >
+          <Button variant="secondary" type="button" onClick={onClose} disabled={grant.isPending}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={grant.isPending}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={grant.isPending}>
             {grant.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Credit comp off
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

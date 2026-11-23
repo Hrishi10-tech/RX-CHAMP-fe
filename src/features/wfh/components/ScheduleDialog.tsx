@@ -7,15 +7,7 @@ import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Select } from "@/components/ui/Select";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-  labelBase,
-} from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import { todayKey } from "@/lib/time/businessTime";
 import { KIND_OPTIONS, PART_OPTIONS } from "@/features/leave/lib/format";
@@ -32,6 +24,8 @@ import {
   WEEKDAY_OPTIONS,
 } from "@/features/wfh/lib/format";
 import type { WfhScheduleInput, WfhScheduleView } from "@/features/wfh/types";
+import { FieldError, Hint, Input, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 function emptyInput(userId: string, today: string): WfhScheduleInput {
   return {
@@ -77,9 +71,7 @@ function Toggle({
       aria-label={pressedLabel}
       onClick={onClick}
       className={`min-h-10 min-w-12 rounded-lg border px-3 text-sm font-semibold ${
-        on
-          ? "border-[rgb(34_34_204)] bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]"
-          : "border-slate-200 bg-white text-slate-600"
+        on ? "border-brand bg-brand/8 text-brand" : "border-card bg-card text-soft"
       }`}
     >
       {label}
@@ -179,9 +171,7 @@ export function ScheduleDialog({
       <form onSubmit={submit} noValidate className="space-y-5 px-5 py-5 sm:px-6">
         {!editing && (
           <div>
-            <label htmlFor="sched-person" className={labelBase}>
-              Who
-            </label>
+            <Label htmlFor="sched-person">Who</Label>
             <Select
               id="sched-person"
               value={form.userId}
@@ -193,7 +183,7 @@ export function ScheduleDialog({
               invalid={!!show("userId")}
               aria-label="Who"
             />
-            {show("userId") && <p className={errorText}>{show("userId")}</p>}
+            {show("userId") && <FieldError>{show("userId")}</FieldError>}
           </div>
         )}
 
@@ -210,13 +200,13 @@ export function ScheduleDialog({
               />
             ))}
           </div>
-          {show("weekdays") && <p className={errorText}>{show("weekdays")}</p>}
+          {show("weekdays") && <FieldError>{show("weekdays")}</FieldError>}
         </fieldset>
 
         <fieldset>
           <legend className={labelBase}>
             Weeks of the month{" "}
-            <span className="font-normal text-slate-400">(none picked: every week)</span>
+            <span className="font-normal text-quiet">(none picked: every week)</span>
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {WEEK_OPTIONS.map((w) => (
@@ -256,50 +246,50 @@ export function ScheduleDialog({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="sched-from" className={labelBase}>
-              From
-            </label>
-            <input
+            <Label htmlFor="sched-from">From</Label>
+            <Input
               id="sched-from"
               type="date"
               value={form.fromDate}
               min={editing ? undefined : today}
               onChange={(e) => set("fromDate", e.target.value)}
-              className={`mt-1.5 ${inputBase} ${show("fromDate") ? inputInvalid : ""}`}
+              invalid={!!show("fromDate")}
+              className="mt-1.5"
             />
-            {show("fromDate") && <p className={errorText}>{show("fromDate")}</p>}
+            {show("fromDate") && <FieldError>{show("fromDate")}</FieldError>}
           </div>
           <div>
-            <label htmlFor="sched-to" className={labelBase}>
-              Until <span className="font-normal text-slate-400">(optional)</span>
-            </label>
-            <input
+            <Label htmlFor="sched-to">
+              Until <span className="font-normal text-quiet">(optional)</span>
+            </Label>
+            <Input
               id="sched-to"
               type="date"
               value={form.toDate}
               min={form.fromDate || today}
               onChange={(e) => set("toDate", e.target.value)}
-              className={`mt-1.5 ${inputBase} ${show("toDate") ? inputInvalid : ""}`}
+              invalid={!!show("toDate")}
+              className="mt-1.5"
             />
-            {show("toDate") && <p className={errorText}>{show("toDate")}</p>}
+            {show("toDate") && <FieldError>{show("toDate")}</FieldError>}
           </div>
         </div>
 
         <div>
-          <label htmlFor="sched-note" className={labelBase}>
-            Note <span className="font-normal text-slate-400">(optional)</span>
-          </label>
-          <input
+          <Label htmlFor="sched-note">
+            Note <span className="font-normal text-quiet">(optional)</span>
+          </Label>
+          <Input
             id="sched-note"
             value={form.note}
             maxLength={NOTE_MAX}
             placeholder="Agreed for the move"
             onChange={(e) => set("note", e.target.value)}
-            className={`mt-1.5 ${inputBase}`}
+            className="mt-1.5"
           />
         </div>
 
-        <p className="rounded-xl border border-[rgba(34,34,204,0.2)] bg-[rgba(34,34,204,0.04)] px-3.5 py-2.5 text-sm text-slate-700">
+        <p className="rounded-xl border border-brand/20 bg-brand/4 px-3.5 py-2.5 text-sm text-body">
           {scheduleText(form.weekdays, form.weeks)},{" "}
           {KIND_OPTIONS.find((k) => k.value === form.kind)?.label.toLowerCase()}
           {form.kind !== "FULL_DAY" && form.part
@@ -309,24 +299,19 @@ export function ScheduleDialog({
             ? ". The old schedule ends today; this one starts from the next free day."
             : "."}
         </p>
-        {problem && <p className={errorText}>{problem.message}</p>}
-        <p className={hintBase}>
+        {problem && <FieldError>{problem.message}</FieldError>}
+        <Hint>
           Days off and leave are never work from home; a request on a scheduled day is refused.
-        </p>
+        </Hint>
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={save.isPending}
-          >
+          <Button variant="secondary" type="button" onClick={onClose} disabled={save.isPending}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={save.isPending}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={save.isPending}>
             {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {editing ? "Save changes" : "Set schedule"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

@@ -1,9 +1,19 @@
 "use client";
 
+import { IconButton } from "@/components/ui/IconButton";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CheckCheck, ClipboardCheck, Info, Loader2, Users, X } from "lucide-react";
+import {
+  CheckCheck,
+  ChevronDown,
+  ClipboardCheck,
+  Info,
+  Loader2,
+  SlidersHorizontal,
+  Users,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Pager } from "@/components/ui/Pager";
@@ -15,7 +25,6 @@ import {
   LoadingState,
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
-import { btnGhost, btnSuccess, cardBase, checkboxBase } from "@/components/ui/classes";
 import type { SelectOption } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
 import { todayKey } from "@/lib/time/businessTime";
@@ -46,6 +55,9 @@ import {
   type ApprovalsSummary,
   type BulkApproveResult,
 } from "@/features/approvals/types";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Field";
 
 const PAGE_SIZE = 50;
 const ANY = "__any__";
@@ -102,38 +114,41 @@ function SummaryStrip({
   /** What the counts cover ("Your queue", "Whole organisation, October 2026"). */
   heading: string;
 }) {
-  const items: { label: string; value: number; tone?: string }[] = [
+  // 3.6 (W-07): a phone shows the three that need action; the rest from `sm`.
+  const items: { label: string; value: number; tone?: string; wide?: boolean }[] = [
     { label: "Waiting", value: summary.pending },
     {
       label: "Due within 12h",
       value: summary.dueSoon,
-      tone: summary.dueSoon ? "text-amber-700" : undefined,
+      tone: summary.dueSoon ? "text-attention" : undefined,
     },
     {
       label: "Overdue",
       value: summary.overdue,
-      tone: summary.overdue ? "text-rose-600" : undefined,
+      tone: summary.overdue ? "text-attention" : undefined,
     },
     {
       label: "Escalated",
       value: summary.escalated,
-      tone: summary.escalated ? "text-rose-600" : undefined,
+      tone: summary.escalated ? "text-attention" : undefined,
+      wide: true,
     },
-    { label: "Approved today", value: summary.approvedToday },
-    { label: "Rejected today", value: summary.rejectedToday },
+    { label: "Approved today", value: summary.approvedToday, wide: true },
+    { label: "Rejected today", value: summary.rejectedToday, wide: true },
   ];
   return (
     <section aria-label="Approval counts" className="space-y-1.5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{heading}</p>
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-3 xl:grid-cols-6">
+      <p className="text-xs font-semibold uppercase tracking-wide text-quiet">{heading}</p>
+      <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-card bg-edge shadow-sm xl:grid-cols-6">
         {items.map((item) => (
-          <div key={item.label} className="bg-white px-4 py-3">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div
+            key={item.label}
+            className={`bg-card px-3 py-3 sm:px-4 ${item.wide ? "hidden sm:block" : ""}`}
+          >
+            <dt className="text-xs font-semibold uppercase tracking-wide text-quiet">
               {item.label}
             </dt>
-            <dd
-              className={`mt-0.5 text-xl font-bold tabular-nums ${item.tone ?? "text-slate-900"}`}
-            >
+            <dd className={`mt-0.5 text-xl font-bold tabular-nums ${item.tone ?? "text-primary"}`}>
               {Number.isFinite(item.value) ? item.value : 0}
             </dd>
           </div>
@@ -143,16 +158,26 @@ function SummaryStrip({
   );
 }
 
+/** 3.6 (W-07): one line until opened, so the first item to decide is near the top. */
 function Banner({ slaHours, isSuperAdmin }: { slaHours: number; isSuperAdmin: boolean }) {
   return (
-    <div
+    <details
       role="note"
-      className="flex items-start gap-2.5 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm leading-relaxed text-indigo-950"
+      className="group rounded-2xl border border-brand/18 bg-brand/4 px-4 py-2.5 text-sm leading-relaxed text-strong"
     >
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-indigo-700" aria-hidden />
-      <div className="space-y-1">
-        <p>
+      <summary className="flex cursor-pointer list-none items-center gap-2.5 [&::-webkit-details-marker]:hidden">
+        <Info className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+        <span className="min-w-0 flex-1">
           <span className="font-semibold">Decide every item within {slaHours} hours.</span>{" "}
+          <span className="text-soft">How decisions change focus time</span>
+        </span>
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-quiet transition group-open:rotate-180"
+          aria-hidden
+        />
+      </summary>
+      <div className="mt-2 space-y-1 pl-[26px]">
+        <p>
           {isSuperAdmin
             ? "Overdue items go to the Admin and stop their manager ending the day."
             : "Overdue items go to the Admin and stop you ending your day."}
@@ -163,7 +188,7 @@ function Banner({ slaHours, isSuperAdmin }: { slaHours: number; isSuperAdmin: bo
           approve them. A late or early start changes nothing.
         </p>
       </div>
-    </div>
+    </details>
   );
 }
 
@@ -346,6 +371,7 @@ export function ApprovalsView({
 
   const names = new Map(items.map((i) => [keyOf(i), `${i.user?.name ?? "Someone"}: ${i.title}`]));
   const empty = emptyCopy(tab, slaHours, filtered);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   return (
     <div className="space-y-5">
@@ -382,7 +408,19 @@ export function ApprovalsView({
             { value: "decisions", label: "All decisions" },
           ]}
         />
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <Button
+          variant="ghost"
+          type="button"
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-expanded={filtersOpen}
+          className="self-start sm:hidden"
+        >
+          <SlidersHorizontal className="h-4 w-4" aria-hidden />
+          {filtered ? "Filters on" : "Filter"}
+        </Button>
+        <div
+          className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center`}
+        >
           <FilterField label="Type">
             <Select
               aria-label="Type"
@@ -436,10 +474,10 @@ export function ApprovalsView({
             />
           )}
           {filtered && (
-            <button type="button" onClick={clearFilters} className={btnGhost}>
+            <Button variant="ghost" type="button" onClick={clearFilters}>
               <X className="h-4 w-4" aria-hidden />
               Clear filters
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -447,7 +485,7 @@ export function ApprovalsView({
       {bulkResult && (
         <div
           role="alert"
-          className="flex items-start justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          className="flex items-start justify-between gap-3 rounded-2xl border border-attention-edge bg-attention-wash px-4 py-3 text-sm text-attention-ink"
         >
           <div className="min-w-0">
             <p className="font-semibold">{bulkResult.skipped.length} not approved</p>
@@ -460,42 +498,40 @@ export function ApprovalsView({
               ))}
             </ul>
           </div>
-          <button
-            type="button"
+          <IconButton
+            label="Dismiss"
             onClick={() => setBulkResult(null)}
-            aria-label="Dismiss"
-            className="rounded-lg p-1 text-amber-700 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+            className="text-attention hover:bg-attention-wash-strong hover:text-attention"
           >
             <X className="h-4 w-4" aria-hidden />
-          </button>
+          </IconButton>
         </div>
       )}
 
-      <section
+      <Card
+        as="section"
         id="approvals-panel"
         role="tabpanel"
         aria-labelledby={`approvals-tab-${tab}`}
-        className={`${cardBase} overflow-hidden`}
+        className="overflow-hidden"
       >
         {decidable.length > 0 && (
-          <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-            <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                className={checkboxBase}
+          <div className="flex flex-col gap-3 border-b border-card bg-fill/70 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-body">
+              <Checkbox
                 checked={allChosen}
                 onChange={() => setSelected(allChosen ? new Set() : new Set(decidable.map(keyOf)))}
               />
               Select all on this page
             </label>
-            <p className="min-w-0 flex-1 text-[13px] text-slate-600 sm:px-2">
+            <p className="min-w-0 flex-1 text-[0.8125rem] text-soft sm:px-2">
               {atStakeText(items)}
             </p>
-            <button
+            <Button
+              variant="success"
               type="button"
               onClick={approveSelected}
               disabled={chosen.length === 0 || bulk.isPending}
-              className={btnSuccess}
             >
               {bulk.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -503,7 +539,7 @@ export function ApprovalsView({
                 <CheckCheck className="h-4 w-4" aria-hidden />
               )}
               {chosen.length ? `Approve selected (${chosen.length})` : "Approve selected"}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -520,7 +556,7 @@ export function ApprovalsView({
           <>
             {/* A failed poll keeps the rows (and any note being typed) on screen. */}
             {list.isError && (
-              <div className="border-b border-slate-200 px-4 py-2.5 sm:px-6">
+              <div className="border-b border-card px-4 py-2.5 sm:px-6">
                 <RefreshFailedNotice
                   what="approvals"
                   updatedAt={list.dataUpdatedAt}
@@ -536,13 +572,13 @@ export function ApprovalsView({
                 message={empty.message}
                 action={
                   filtered ? (
-                    <button type="button" onClick={clearFilters} className={btnGhost}>
+                    <Button variant="ghost" type="button" onClick={clearFilters}>
                       Clear filters
-                    </button>
+                    </Button>
                   ) : tab !== "pending" ? null : (
                     <Link
                       href="/dashboard/overview"
-                      className="text-sm font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                      className="text-sm font-semibold text-brand underline-offset-2 hover:underline"
                     >
                       Open the overview
                     </Link>
@@ -584,7 +620,7 @@ export function ApprovalsView({
             />
           </>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

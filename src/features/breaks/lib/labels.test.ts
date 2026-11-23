@@ -31,13 +31,13 @@ describe("quick breaks (4.0, GET /breaks/team unscheduled)", () => {
 
   it("says how far a quick break ran past its planned length (the API sends overrunSec 0)", () => {
     const done = { ...quick, overrunSec: 0, inProgress: false };
-    expect(overrunLabel({ ...done, tookSec: 15 * 60 })).toBe("5 min over");
+    expect(overrunLabel({ ...done, tookSec: 15 * 60 })).toBe("Ran 5 min over");
     expect(overrunLabel({ ...done, tookSec: 10 * 60 + 20 })).toBeNull();
     expect(overrunLabel({ ...done, tookSec: 9 * 60 })).toBeNull();
     // Still running: not over yet, whatever the clock says.
     expect(overrunLabel({ ...done, tookSec: 15 * 60, inProgress: true })).toBeNull();
     // A shift's break keeps the server's figure.
-    expect(overrunLabel({ kind: "LUNCH", overrunSec: 240, tookSec: 0 })).toBe("4 min over");
+    expect(overrunLabel({ kind: "LUNCH", overrunSec: 240, tookSec: 0 })).toBe("Ran 4 min over");
   });
 
   it("heads the list by what is in it", () => {
@@ -52,10 +52,10 @@ describe("quick breaks (4.0, GET /breaks/team unscheduled)", () => {
 
 describe("timingLabel", () => {
   it.each([
-    [{ timing: "ON_TIME", minutesOff: 0 }, "On time"],
-    [{ timing: "EARLY", minutesOff: 18 }, "18 min early"],
-    [{ timing: "LATE", minutesOff: 42 }, "42 min late"],
-    [{ timing: "LATE", minutesOff: 0 }, "1 min late"],
+    [{ timing: "ON_TIME", minutesOff: 0 }, "Started on time"],
+    [{ timing: "EARLY", minutesOff: 18 }, "Started 18 min early"],
+    [{ timing: "LATE", minutesOff: 42 }, "Started 42 min late"],
+    [{ timing: "LATE", minutesOff: 0 }, "Started 1 min late"],
     [{ timing: "OUTSIDE_WINDOW", minutesOff: 95 }, "Outside window"],
     [{ timing: "UNSCHEDULED", minutesOff: 0 }, "Unscheduled"],
   ] as const)("%p", (record, text) => {
@@ -84,23 +84,23 @@ describe("took and overrun", () => {
 
   it("only mentions an overrun when there is one", () => {
     expect(overrunLabel({ overrunSec: 0 })).toBeNull();
-    expect(overrunLabel({ overrunSec: 4 * 60 })).toBe("4 min over");
-    expect(overrunLabel({ overrunSec: 20 })).toBe("under 1 min over");
+    expect(overrunLabel({ overrunSec: 4 * 60 })).toBe("Ran 4 min over");
+    expect(overrunLabel({ overrunSec: 20 })).toBe("Ran under 1 min over");
   });
 
   it("keeps the time taken and the overrun consistent, to the nearest minute", () => {
     // 2 min 20 s on a 2 min break: "Took 2 min of 2", "under 1 min over".
     expect(tookLabel({ tookSec: 140, durationMin: 2, inProgress: false })).toBe("Took 2 min of 2");
-    expect(overrunLabel({ overrunSec: 20 })).toBe("under 1 min over");
+    expect(overrunLabel({ overrunSec: 20 })).toBe("Ran under 1 min over");
     // 2 min 30 s on 2: "Took 3 min of 2", "1 min over".
     expect(tookLabel({ tookSec: 150, durationMin: 2, inProgress: false })).toBe("Took 3 min of 2");
-    expect(overrunLabel({ overrunSec: 30 })).toBe("1 min over");
+    expect(overrunLabel({ overrunSec: 30 })).toBe("Ran 1 min over");
     // 29 min 50 s on 15 (a 14m 50s overrun): "Took 30 min of 15", "15 min over",
     // as the API's "+15 min if approved" beside it.
     expect(tookLabel({ tookSec: 29 * 60 + 50, durationMin: 15, inProgress: false })).toBe(
       "Took 30 min of 15",
     );
-    expect(overrunLabel({ overrunSec: 890 })).toBe("15 min over");
+    expect(overrunLabel({ overrunSec: 890 })).toBe("Ran 15 min over");
   });
 });
 

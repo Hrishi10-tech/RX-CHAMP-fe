@@ -85,7 +85,7 @@ describe("effectChip", () => {
   it("uses the server's text, with a true minus sign", () => {
     expect(effectChip(item("MINUS", "PENDING", "-15 min if rejected"))).toEqual({
       text: "−15 min if rejected",
-      tone: "danger",
+      tone: "warning",
     });
     expect(effectChip(item("PLUS", "PENDING", "+15 min if approved"))).toEqual({
       text: "+15 min if approved",

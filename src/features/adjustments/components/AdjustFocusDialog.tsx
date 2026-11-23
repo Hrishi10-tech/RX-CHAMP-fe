@@ -1,5 +1,6 @@
 "use client";
 
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Loader2, Minus, Plus, SlidersHorizontal, UserRound } from "lucide-react";
 import { toast } from "sonner";
@@ -7,16 +8,7 @@ import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Select } from "@/components/ui/Select";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-  labelBase,
-  textareaBase,
-} from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
 import type { SelectOption } from "@/components/ui/types";
 import { errorCode, errorDetails, errorMessage } from "@/lib/api";
 import { addDaysToKey, formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
@@ -34,6 +26,8 @@ import { seesEveryOrg } from "@/constants/roles";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useReportPeople } from "@/features/reports/hooks/useReports";
 import { useSelectedOrg } from "@/lib/org/selection";
+import { FieldError, Hint, Input, Label, Textarea } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 export interface AdjustTarget {
   id: string;
@@ -165,22 +159,20 @@ export function AdjustFocusDialog({
     >
       <form onSubmit={submit} noValidate className="space-y-5 px-5 py-5 sm:px-6">
         {person ? (
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[rgb(34_34_204)] shadow-sm">
+          <div className="flex items-center gap-3 rounded-xl border border-card bg-fill px-3.5 py-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-card text-brand shadow-sm">
               <UserRound className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-900">{person.name}</p>
+              <p className="truncate text-sm font-semibold text-primary">{person.name}</p>
               {person.companyName && (
-                <p className="truncate text-xs text-slate-500">{person.companyName}</p>
+                <p className="truncate text-xs text-quiet">{person.companyName}</p>
               )}
             </div>
           </div>
         ) : (
           <div>
-            <label htmlFor="adjust-person" className={labelBase}>
-              Person
-            </label>
+            <Label htmlFor="adjust-person">Person</Label>
             <Select
               id="adjust-person"
               value={userId}
@@ -199,15 +191,15 @@ export function AdjustFocusDialog({
               aria-label="Person"
               disabled={people.isLoading || needsOrg}
             />
-            {touched && personMissing && !needsOrg && <p className={errorText}>Pick a person.</p>}
+            {touched && personMissing && !needsOrg && <FieldError>Pick a person.</FieldError>}
             {needsOrg ? (
-              <p className={hintBase}>
+              <Hint>
                 Choose the organisation with the switch in the header, then pick the person.
-              </p>
+              </Hint>
             ) : (
-              selectedOrg && <p className={hintBase}>People in {selectedOrg.name}.</p>
+              selectedOrg && <Hint>People in {selectedOrg.name}.</Hint>
             )}
-            {people.isError && <p className={errorText}>{errorMessage(people.error)}</p>}
+            {people.isError && <FieldError>{errorMessage(people.error)}</FieldError>}
           </div>
         )}
 
@@ -228,10 +220,8 @@ export function AdjustFocusDialog({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="adjust-minutes" className={labelBase}>
-              Minutes
-            </label>
-            <input
+            <Label htmlFor="adjust-minutes">Minutes</Label>
+            <Input
               id="adjust-minutes"
               type="number"
               inputMode="numeric"
@@ -240,66 +230,60 @@ export function AdjustFocusDialog({
               step={1}
               value={draft.minutes}
               onChange={(e) => update("minutes", e.target.value)}
-              className={`mt-1.5 ${inputBase} ${show("minutes") ? inputInvalid : ""}`}
+              invalid={!!show("minutes")}
+              className="mt-1.5"
               placeholder="30"
               data-autofocus
             />
             <div className="mt-2 flex flex-wrap gap-1.5">
               {QUICK_MINUTES.map((m) => (
-                <button
+                <ChoiceChip
+                  on={draft.minutes === String(m)}
                   key={m}
-                  type="button"
                   onClick={() => update("minutes", String(m))}
-                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
-                    draft.minutes === String(m)
-                      ? "border-[rgb(34_34_204)] bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]"
-                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
                 >
                   {m < 60 ? `${m} min` : `${m / 60} h`}
-                </button>
+                </ChoiceChip>
               ))}
             </div>
-            {show("minutes") && <p className={errorText}>{show("minutes")}</p>}
+            {show("minutes") && <FieldError>{show("minutes")}</FieldError>}
           </div>
           <div>
-            <label htmlFor="adjust-date" className={labelBase}>
-              Day
-            </label>
-            <input
+            <Label htmlFor="adjust-date">Day</Label>
+            <Input
               id="adjust-date"
               type="date"
               value={draft.date}
               min={earliest}
               max={today}
               onChange={(e) => update("date", e.target.value)}
-              className={`mt-1.5 ${inputBase} ${show("date") ? inputInvalid : ""}`}
+              invalid={!!show("date")}
+              className="mt-1.5"
             />
             {show("date") ? (
-              <p className={errorText}>{show("date")}</p>
+              <FieldError>{show("date")}</FieldError>
             ) : (
-              <p className={hintBase}>Today or up to {ADJUSTMENT_MAX_AGE_DAYS} days back.</p>
+              <Hint>Today or up to {ADJUSTMENT_MAX_AGE_DAYS} days back.</Hint>
             )}
           </div>
         </div>
 
         <div>
-          <label htmlFor="adjust-reason" className={labelBase}>
-            Reason
-          </label>
-          <textarea
+          <Label htmlFor="adjust-reason">Reason</Label>
+          <Textarea
             id="adjust-reason"
             rows={2}
             maxLength={ADJUSTMENT_REASON_MAX_CHARS + 50}
             value={draft.reason}
             onChange={(e) => update("reason", e.target.value)}
-            className={`mt-1.5 ${textareaBase} ${show("reason") ? inputInvalid : ""}`}
+            invalid={!!show("reason")}
+            className="mt-1.5"
             placeholder="Agent missed Start Day until 10:00; worked from 09:30"
           />
           {show("reason") ? (
-            <p className={errorText}>{show("reason")}</p>
+            <FieldError>{show("reason")}</FieldError>
           ) : (
-            <p className={hintBase}>The person reads this in their notification.</p>
+            <Hint>The person reads this in their notification.</Hint>
           )}
         </div>
 
@@ -307,10 +291,10 @@ export function AdjustFocusDialog({
           aria-live="polite"
           className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm ${
             delta === 0
-              ? "border-slate-200 bg-slate-50 text-slate-500"
+              ? "border-card bg-fill text-quiet"
               : delta > 0
-                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                : "border-rose-200 bg-rose-50 text-rose-900"
+                ? "border-working-edge bg-working-wash text-working-ink"
+                : "border-attention-edge bg-attention-wash text-attention-ink"
           }`}
         >
           {delta > 0 ? (
@@ -328,17 +312,17 @@ export function AdjustFocusDialog({
         </div>
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onClose} className={btnSecondary} data-modal-close>
+          <Button variant="secondary" type="button" onClick={onClose} data-modal-close>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={create.isPending}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={create.isPending}>
             {create.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <SlidersHorizontal className="h-4 w-4" aria-hidden />
             )}
             {delta < 0 ? "Take the minutes off" : "Add the minutes"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

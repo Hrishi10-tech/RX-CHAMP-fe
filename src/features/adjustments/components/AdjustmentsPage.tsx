@@ -5,7 +5,6 @@ import { Info, Plus, SlidersHorizontal } from "lucide-react";
 
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, inputBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { useSelectedOrg } from "@/lib/org/selection";
 import { addMonths, formatMonth, monthOfDate } from "@/lib/time/months";
@@ -17,6 +16,8 @@ import { AdjustFocusDialog } from "@/features/adjustments/components/AdjustFocus
 import { AdjustmentsList } from "@/features/adjustments/components/AdjustmentsList";
 import { useAdjustments } from "@/features/adjustments/hooks/useAdjustments";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Field";
 
 type Shown = "live" | "all";
 
@@ -63,15 +64,15 @@ export function AdjustmentsPage() {
         }
         actions={
           canAdjust ? (
-            <button
+            <Button
+              variant="primary"
               type="button"
               onClick={() => setOpen(true)}
-              className={btnPrimary}
               disabled={!enabled}
             >
               <Plus className="h-4 w-4" aria-hidden />
               Adjust focus time
-            </button>
+            </Button>
           ) : undefined
         }
       />
@@ -79,7 +80,7 @@ export function AdjustmentsPage() {
       {!enabled && (
         <div
           role="note"
-          className="flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          className="flex items-start gap-2.5 rounded-2xl border border-attention-edge bg-attention-wash px-4 py-3 text-sm text-attention-ink"
         >
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <p>
@@ -94,15 +95,15 @@ export function AdjustmentsPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm">
+          <label className="flex h-11 items-center gap-2 rounded-lg border border-card bg-card px-3 text-sm font-semibold text-soft shadow-sm">
             <span className="sr-only">Month</span>
-            <input
+            <Input
               type="month"
               value={month}
               max={thisMonth}
               min={addMonths(thisMonth, -3)}
               onChange={(e) => setMonth(e.target.value || thisMonth)}
-              className={`${inputBase} !h-8 !border-0 !px-0 !shadow-none`}
+              className="!h-8 !border-0 !px-0 !shadow-none"
             />
           </label>
           <SegmentedTabs
@@ -116,9 +117,9 @@ export function AdjustmentsPage() {
             ]}
           />
         </div>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-soft">
           {formatMonth(month)}: {live.length} in force,{" "}
-          <span className={`font-semibold ${liveMin < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+          <span className={`font-semibold ${liveMin < 0 ? "text-attention" : "text-working"}`}>
             {liveMin === 0 ? "0 min" : `${liveMin < 0 ? "−" : "+"}${Math.abs(liveMin)} min`}
           </span>{" "}
           net
@@ -148,8 +149,8 @@ export function AdjustmentsPage() {
         />
       )}
 
-      <div className="flex items-start gap-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-        <SlidersHorizontal className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(34_34_204)]" aria-hidden />
+      <div className="flex items-start gap-2.5 rounded-2xl border border-card bg-card px-4 py-3 text-sm text-soft">
+        <SlidersHorizontal className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
         <p>
           An adjustment enters the day&apos;s focus time, paid time and every report at once, and
           the person is told with the reason. Up to 12 hours either way per adjustment, within the

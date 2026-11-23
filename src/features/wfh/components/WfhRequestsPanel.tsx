@@ -6,7 +6,6 @@ import { Home } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { addDaysToKey, todayKey } from "@/lib/time/businessTime";
 import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
@@ -18,6 +17,7 @@ import type { WfhRequestView } from "@/features/wfh/types";
 
 import { PhoneChip, WfhRequestRow } from "./WfhBits";
 import { WfhDecideDialog } from "./WfhDecideDialog";
+import { Card } from "@/components/ui/Card";
 
 type View = "needs" | "pending" | "decided" | "all";
 
@@ -64,9 +64,9 @@ export function WfhRequestsPanel() {
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <section className={cardBase} aria-labelledby="wfh-requests">
-        <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
-          <h2 id="wfh-requests" className="text-sm font-bold text-slate-900">
+      <Card as="section" aria-labelledby="wfh-requests">
+        <div className="flex flex-col gap-3 border-b border-divider px-4 py-3 sm:px-5">
+          <h2 id="wfh-requests" className="text-sm font-bold text-primary">
             Requests
           </h2>
           <SegmentedTabs
@@ -95,7 +95,7 @@ export function WfhRequestsPanel() {
         ) : list.isError ? (
           <ErrorState message={errorMessage(list.error)} onRetry={() => void list.refetch()} />
         ) : items.length ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-divider">
             {items.map((r) => (
               <WfhRequestRow
                 key={r.id}
@@ -107,27 +107,27 @@ export function WfhRequestsPanel() {
             ))}
           </ul>
         ) : (
-          <p className="px-4 py-10 text-center text-sm text-slate-500">
+          <p className="px-4 py-10 text-center text-sm text-quiet">
             {view === "needs" ? "Nothing waits on you." : "No requests here."}
           </p>
         )}
-      </section>
+      </Card>
 
-      <section className={`${cardBase} self-start`} aria-labelledby="wfh-home">
+      <Card as="section" className="self-start" aria-labelledby="wfh-home">
         <h2
           id="wfh-home"
-          className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900"
+          className="flex items-center gap-2 border-b border-divider px-4 py-3 text-sm font-bold text-primary"
         >
-          <Home className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+          <Home className="h-4 w-4 text-brand" aria-hidden />
           At home in the next two weeks
         </h2>
         {home.isLoading ? (
           <LoadingState label="Loading…" />
         ) : homeSorted.length ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-divider">
             {homeSorted.map((r) => (
               <li key={r.id} className="px-4 py-3">
-                <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+                <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-primary">
                   <PersonAvatar
                     name={r.userName}
                     avatarId={r.avatarId}
@@ -137,7 +137,7 @@ export function WfhRequestsPanel() {
                   <span className="truncate">{r.userName}</span>
                   <OrgChip name={r.companyName} show={mixed} />
                 </p>
-                <p className="mt-0.5 text-sm text-slate-600">
+                <p className="mt-0.5 text-sm text-soft">
                   {r.span}
                   {r.kind !== "FULL_DAY" ? `, ${r.kindLabel.toLowerCase()}` : ""}
                 </p>
@@ -149,14 +149,14 @@ export function WfhRequestsPanel() {
             ))}
           </ul>
         ) : (
-          <p className="px-4 py-6 text-center text-sm text-slate-500">
+          <p className="px-4 py-6 text-center text-sm text-quiet">
             Nobody asked to work from home.
           </p>
         )}
-        <p className="border-t border-slate-100 px-4 py-2.5 text-xs text-slate-500">
+        <p className="border-t border-divider px-4 py-2.5 text-xs text-quiet">
           Scheduled days are on the Schedules tab.
         </p>
-      </section>
+      </Card>
 
       <WfhDecideDialog
         request={deciding?.r ?? null}

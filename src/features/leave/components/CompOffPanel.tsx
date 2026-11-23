@@ -10,7 +10,10 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Select } from "@/components/ui/Select";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, btnSecondary, btnSmall, cardBase, hintBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Hint } from "@/components/ui/Field";
+import { IconButton } from "@/components/ui/IconButton";
 import { errorMessage } from "@/lib/api";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { isApprover } from "@/constants/roles";
@@ -34,6 +37,7 @@ import {
   GrantCompOffDialog,
   useCompOffPeople,
 } from "./CompOffDialogs";
+import { WaitingFor } from "./WaitingFor";
 
 /** The comp off balance in one card: what can be taken, what waits, what lapses next. */
 export function CompOffBalanceCard({
@@ -44,45 +48,43 @@ export function CompOffBalanceCard({
   compact?: boolean;
 }) {
   return (
-    <section className={`${cardBase} flex flex-col p-4 sm:p-5`} aria-label="Comp off balance">
+    <Card as="section" className="flex flex-col p-4 sm:p-5" aria-label="Comp off balance">
       <div className="flex items-center justify-between gap-2">
         <Chip tone="success" icon={Award}>
           Comp off
         </Chip>
         {b.nextExpiry && (
           <span
-            className="text-[11px] font-semibold text-amber-700"
+            className="text-[0.6875rem] font-semibold text-attention"
             title="The next credit to lapse"
           >
             {daysText(b.nextExpiry.days)} by {b.nextExpiry.label}
           </span>
         )}
       </div>
-      <p className="mt-3 text-sm font-semibold text-slate-600">
-        Compensatory off for extra days worked
-      </p>
+      <p className="mt-3 text-sm font-semibold text-soft">Compensatory off for extra days worked</p>
       <p className="mt-1 flex items-baseline gap-1.5">
-        <span className="text-3xl font-bold tabular-nums tracking-tight text-slate-900">
+        <span className="text-3xl font-bold tabular-nums tracking-tight text-primary">
           {daysNumber(b.availableDays)}
         </span>
-        <span className="text-sm font-semibold text-slate-500">
+        <span className="text-sm font-semibold text-quiet">
           {b.availableDays !== 0 && b.availableDays <= 1 ? "day to take" : "days to take"}
         </span>
       </p>
       {!compact && (
-        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-500">
+        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-quiet">
           <dt>Earned</dt>
-          <dd className="text-right font-semibold tabular-nums text-slate-700">
+          <dd className="text-right font-semibold tabular-nums text-body">
             {daysText(b.earnedDays)}
           </dd>
           <dt>Taken</dt>
-          <dd className="text-right font-semibold tabular-nums text-slate-700">
+          <dd className="text-right font-semibold tabular-nums text-body">
             {daysText(b.takenDays)}
           </dd>
           {b.pendingDays > 0 && (
             <>
               <dt>Leave waiting for approval</dt>
-              <dd className="text-right font-semibold tabular-nums text-amber-700">
+              <dd className="text-right font-semibold tabular-nums text-attention">
                 {daysText(b.pendingDays)}
               </dd>
             </>
@@ -90,7 +92,7 @@ export function CompOffBalanceCard({
           {b.claimsWaitingDays > 0 && (
             <>
               <dt>Claims waiting</dt>
-              <dd className="text-right font-semibold tabular-nums text-amber-700">
+              <dd className="text-right font-semibold tabular-nums text-attention">
                 {daysText(b.claimsWaitingDays)}
               </dd>
             </>
@@ -98,14 +100,14 @@ export function CompOffBalanceCard({
           {b.lapsedDays > 0 && (
             <>
               <dt>Lapsed</dt>
-              <dd className="text-right font-semibold tabular-nums text-slate-500">
+              <dd className="text-right font-semibold tabular-nums text-quiet">
                 {daysText(b.lapsedDays)}
               </dd>
             </>
           )}
         </dl>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -114,20 +116,20 @@ function ExtraDayRow({ d, onClaim }: { d: ExtraDayView; onClaim?: (d: ExtraDayVi
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-slate-900">
-          {d.label} <span className="font-normal text-slate-500">· {d.dayLabel}</span>
+        <p className="text-sm font-semibold text-primary">
+          {d.label} <span className="font-normal text-quiet">· {d.dayLabel}</span>
         </p>
-        <p className="text-xs text-slate-600">
+        <p className="text-xs text-soft">
           Worked {d.workedLabel}
           {d.earnsDays > 0 ? ` · earns ${daysText(d.earnsDays)}` : ""}
         </p>
-        {d.why && <p className="mt-0.5 text-xs text-slate-500">{d.why}</p>}
+        {d.why && <p className="mt-0.5 text-xs text-quiet">{d.why}</p>}
       </div>
       {d.claimable && onClaim ? (
-        <button type="button" className={btnSmall} onClick={() => onClaim(d)}>
+        <Button variant="small" type="button" onClick={() => onClaim(d)}>
           <Award className="h-3.5 w-3.5" aria-hidden />
           Claim
-        </button>
+        </Button>
       ) : d.claimed ? (
         <Chip tone={d.why === "Credited" ? "success" : "warning"}>
           {d.why === "Credited" ? "Credited" : "Claimed"}
@@ -182,12 +184,12 @@ export function CreditRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {approver && (
-            <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+            <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-primary">
               <PersonAvatar name={c.userName} avatarId={c.avatarId} userId={c.userId} size={22} />
               {onPerson ? (
                 <button
                   type="button"
-                  className="truncate rounded text-left hover:text-[rgb(34_34_204)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+                  className="truncate rounded text-left hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
                   onClick={() => onPerson(c)}
                   title={`Open ${c.userName}'s comp off`}
                 >
@@ -198,7 +200,7 @@ export function CreditRow({
               )}
               <OrgChip name={c.companyName} show={showOrg} />
               {c.department && (
-                <span className="text-xs font-normal text-slate-400">{c.department}</span>
+                <span className="text-xs font-normal text-quiet">{c.department}</span>
               )}
             </p>
           )}
@@ -212,11 +214,10 @@ export function CreditRow({
               </Chip>
             )}
           </p>
-          <p className="mt-1.5 text-[15px] font-semibold text-slate-900">
-            {c.workedLabel}{" "}
-            <span className="text-sm font-normal text-slate-500">· {c.dayLabel}</span>
+          <p className="mt-1.5 text-[0.9375rem] font-semibold text-primary">
+            {c.workedLabel} <span className="text-sm font-normal text-quiet">· {c.dayLabel}</span>
           </p>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-soft">
             {c.source === "GRANT" && c.workedSec === 0
               ? "Credited by hand, no tracked time that day"
               : `Worked ${c.workedTime}`}
@@ -224,18 +225,18 @@ export function CreditRow({
               ? ` · asked for ${daysText(c.askedDays)}`
               : ""}
           </p>
-          <p className="mt-1 text-sm text-slate-500">&ldquo;{c.reason}&rdquo;</p>
-          {c.status === "PENDING" && (
-            <p className="mt-1 text-xs text-amber-700">
-              Claimed {whenText(c.createdAt)}
-              {c.waitingFor ? `, waiting for ${c.waitingFor}` : ""}
-            </p>
-          )}
+          <p className="mt-1 text-sm text-quiet">&ldquo;{c.reason}&rdquo;</p>
+          {c.status === "PENDING" &&
+            (c.waitingFor ? (
+              <WaitingFor name={c.waitingFor} lead={`Claimed ${whenText(c.createdAt)}`} />
+            ) : (
+              <p className="mt-1 text-xs text-attention">Claimed {whenText(c.createdAt)}</p>
+            ))}
           {c.status === "APPROVED" && (
-            <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-quiet">
               {decided && <span>{decided}</span>}
               {c.expiresLabel && (
-                <span className={c.lapsedDays > 0 ? "text-slate-500" : "text-emerald-700"}>
+                <span className={c.lapsedDays > 0 ? "text-quiet" : "text-working"}>
                   {c.lapsedDays > 0 ? `Lapsed ${c.expiresLabel}` : `Take by ${c.expiresLabel}`}
                 </span>
               )}
@@ -243,23 +244,23 @@ export function CreditRow({
               {c.heldDays > 0 && <span>{daysText(c.heldDays)} held by leave waiting</span>}
               {c.lapsedDays > 0 && <span>{daysText(c.lapsedDays)} lapsed</span>}
               {c.leftDays > 0 && (
-                <span className="font-semibold text-slate-700">{daysText(c.leftDays)} left</span>
+                <span className="font-semibold text-body">{daysText(c.leftDays)} left</span>
               )}
             </p>
           )}
           {(c.status === "REJECTED" || c.status === "REVOKED") && (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-quiet">
               {decided}
               {c.decisionNote ? `: ${c.decisionNote}` : ""}
             </p>
           )}
           {c.status === "APPROVED" && c.decisionNote && (
-            <p className="mt-1 text-xs text-slate-500">Note: {c.decisionNote}</p>
+            <p className="mt-1 text-xs text-quiet">Note: {c.decisionNote}</p>
           )}
         </div>
         <span className="shrink-0 text-right">
-          <span className="block text-lg font-bold tabular-nums text-slate-900">{c.days}</span>
-          <span className="block text-[11px] text-slate-400">
+          <span className="block text-lg font-bold tabular-nums text-primary">{c.days}</span>
+          <span className="block text-[0.6875rem] text-quiet">
             {c.days === 1 || c.days < 1 ? "day" : "days"}
           </span>
         </span>
@@ -268,42 +269,44 @@ export function CreditRow({
         <div className="mt-3 flex flex-wrap gap-2">
           {c.can.decide && onDecide && (
             <>
-              <button
+              <Button
+                variant="small"
                 type="button"
-                className={`${btnSmall} border-emerald-200 text-emerald-700 hover:bg-emerald-50`}
+                className="border-working-edge text-working hover:bg-working-wash"
                 onClick={() => onDecide(c, "approve")}
                 disabled={busy}
               >
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 Approve
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="small"
                 type="button"
-                className={`${btnSmall} border-rose-200 text-rose-600 hover:bg-rose-50`}
+                className="border-attention-edge text-attention hover:bg-attention-wash"
                 onClick={() => onDecide(c, "reject")}
                 disabled={busy}
               >
                 <X className="h-3.5 w-3.5" aria-hidden />
                 Reject
-              </button>
+              </Button>
             </>
           )}
           {c.can.revoke && onDecide && (
-            <button
+            <Button
+              variant="small"
               type="button"
-              className={btnSmall}
               onClick={() => onDecide(c, "revoke")}
               disabled={busy}
             >
               <Undo2 className="h-3.5 w-3.5" aria-hidden />
               Take back
-            </button>
+            </Button>
           )}
           {c.can.cancel && onCancel && (
-            <button type="button" className={btnSmall} onClick={() => onCancel(c)} disabled={busy}>
+            <Button variant="small" type="button" onClick={() => onCancel(c)} disabled={busy}>
               <X className="h-3.5 w-3.5" aria-hidden />
               Cancel claim
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -344,61 +347,61 @@ export function MyCompOffPanel({ compact = false }: { compact?: boolean }) {
     <div className="space-y-5">
       <div className="grid gap-3 min-[640px]:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <CompOffBalanceCard b={d.balance} compact={compact} />
-        <section className={`${cardBase} p-4 sm:p-5`} aria-label="How comp off works">
-          <p className="flex items-center gap-2 text-sm font-bold text-slate-900">
-            <Hourglass className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+        <Card as="section" className="p-4 sm:p-5" aria-label="How comp off works">
+          <p className="flex items-center gap-2 text-sm font-bold text-primary">
+            <Hourglass className="h-4 w-4 text-brand" aria-hidden />
             How it works
           </p>
-          <p className="mt-1.5 text-sm text-slate-600">{d.rules.rule}</p>
-          <p className="mt-1.5 text-xs text-slate-500">
+          <p className="mt-1.5 text-sm text-soft">{d.rules.rule}</p>
+          <p className="mt-1.5 text-xs text-quiet">
             {d.enabled
               ? d.waitingFor
                 ? `Claims go to ${d.waitingFor}. Take comp off with Apply for leave, type Comp off.`
                 : "Your claims need nobody's approval. Take comp off with Apply for leave, type Comp off."
               : "Comp off is switched off for now; what you have stays readable."}
           </p>
-        </section>
+        </Card>
       </div>
 
-      <section className={cardBase} aria-labelledby="compoff-extra">
+      <Card as="section" aria-labelledby="compoff-extra">
         <h3
           id="compoff-extra"
-          className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5"
+          className="border-b border-divider px-4 py-3 text-sm font-bold text-primary sm:px-5"
         >
           Extra days you worked
         </h3>
         {d.extraDays.length ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-divider">
             {d.extraDays.map((x) => (
               <ExtraDayRow key={x.date} d={x} onClaim={d.enabled ? setClaiming : undefined} />
             ))}
           </ul>
         ) : (
-          <p className="px-4 py-6 text-center text-sm text-slate-500">
+          <p className="px-4 py-6 text-center text-sm text-quiet">
             No weekly day off, holiday{d.rules.countLeaveDays ? " or day of leave" : ""} worked in
             the last {Math.max(d.rules.claimWithinDays, 31)} days.
           </p>
         )}
-      </section>
+      </Card>
 
       {!compact && (
-        <section className={cardBase} aria-labelledby="compoff-credits">
+        <Card as="section" aria-labelledby="compoff-credits">
           <h3
             id="compoff-credits"
-            className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5"
+            className="border-b border-divider px-4 py-3 text-sm font-bold text-primary sm:px-5"
           >
             Claims and credits
           </h3>
           {d.credits.length ? (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-divider">
               {d.credits.map((c) => (
                 <CreditRow key={c.id} c={c} onCancel={setCancelling} busy={cancel.isPending} />
               ))}
             </ul>
           ) : (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">Nothing claimed yet.</p>
+            <p className="px-4 py-6 text-center text-sm text-quiet">Nothing claimed yet.</p>
           )}
-        </section>
+        </Card>
       )}
 
       <ClaimCompOffDialog day={claiming} onClose={() => setClaiming(null)} />
@@ -444,23 +447,18 @@ export function PersonCompOff({
   const q = usePersonCompOff(userId);
   const d = q.data;
   return (
-    <section className={cardBase} aria-labelledby="compoff-person">
-      <div className="flex items-start justify-between gap-2 border-b border-slate-100 px-4 py-3">
+    <Card as="section" aria-labelledby="compoff-person">
+      <div className="flex items-start justify-between gap-2 border-b border-divider px-4 py-3">
         <h3
           id="compoff-person"
-          className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-bold text-slate-900"
+          className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-bold text-primary"
         >
           <span className="truncate">{d?.userName ?? "Comp off"}</span>
           <OrgChip name={orgName ?? d?.credits[0]?.companyName} show={showOrg} />
         </h3>
-        <button
-          type="button"
-          className={btnSmall}
-          onClick={onClose}
-          aria-label="Close this person's comp off"
-        >
-          <X className="h-3.5 w-3.5" aria-hidden />
-        </button>
+        <IconButton label="Close this person's comp off" variant="boxed" onClick={onClose}>
+          <X className="h-4 w-4" aria-hidden />
+        </IconButton>
       </div>
       {q.isLoading ? (
         <LoadingState label="Loading their comp off…" />
@@ -470,48 +468,46 @@ export function PersonCompOff({
         <div className="space-y-3 p-3">
           <CompOffBalanceCard b={d.balance} />
           {d.canGrant && (
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} w-full`}
+              className="w-full"
               onClick={() => onGrant({ id: d.userId, name: d.userName })}
             >
               <Gift className="h-4 w-4" aria-hidden />
               Credit comp off to {d.userName.split(" ")[0] || d.userName}
-            </button>
+            </Button>
           )}
-          <div className="rounded-2xl border border-slate-200">
-            <h4 className="border-b border-slate-100 px-4 py-2.5 text-sm font-bold text-slate-900">
+          <div className="rounded-2xl border border-card">
+            <h4 className="border-b border-divider px-4 py-2.5 text-sm font-bold text-primary">
               Extra days worked
             </h4>
             {d.extraDays.length ? (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-divider">
                 {d.extraDays.map((x) => (
                   <ExtraDayRow key={x.date} d={x} />
                 ))}
               </ul>
             ) : (
-              <p className="px-4 py-4 text-center text-sm text-slate-500">
-                No day off worked lately.
-              </p>
+              <p className="px-4 py-4 text-center text-sm text-quiet">No day off worked lately.</p>
             )}
           </div>
-          <div className="rounded-2xl border border-slate-200">
-            <h4 className="border-b border-slate-100 px-4 py-2.5 text-sm font-bold text-slate-900">
+          <div className="rounded-2xl border border-card">
+            <h4 className="border-b border-divider px-4 py-2.5 text-sm font-bold text-primary">
               Claims and credits
             </h4>
             {d.credits.length ? (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-divider">
                 {d.credits.map((c) => (
                   <CreditRow key={c.id} c={c} onDecide={onDecide} />
                 ))}
               </ul>
             ) : (
-              <p className="px-4 py-4 text-center text-sm text-slate-500">Nothing claimed yet.</p>
+              <p className="px-4 py-4 text-center text-sm text-quiet">Nothing claimed yet.</p>
             )}
           </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -553,23 +549,23 @@ export function CompOffClaimsPanel() {
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <section className={cardBase} aria-labelledby="compoff-claims">
-        <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
+      <Card as="section" aria-labelledby="compoff-claims">
+        <div className="flex flex-col gap-3 border-b border-divider px-4 py-3 sm:px-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 id="compoff-claims" className="text-sm font-bold text-slate-900">
+              <h2 id="compoff-claims" className="text-sm font-bold text-primary">
                 Claims
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-quiet">
                 A claim waits on the department&apos;s managers, or on the organisation admin when
                 the department has none.
               </p>
             </div>
             {mayCredit && (
-              <button type="button" className={btnPrimary} onClick={() => setGranting({})}>
+              <Button variant="primary" type="button" onClick={() => setGranting({})}>
                 <Gift className="h-4 w-4" aria-hidden />
                 Credit comp off
-              </button>
+              </Button>
             )}
           </div>
           <SegmentedTabs
@@ -598,7 +594,7 @@ export function CompOffClaimsPanel() {
         ) : list.isError ? (
           <ErrorState message={errorMessage(list.error)} onRetry={() => void list.refetch()} />
         ) : items.length ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-divider">
             {items.map((c) => (
               <CreditRow
                 key={c.id}
@@ -611,19 +607,19 @@ export function CompOffClaimsPanel() {
             ))}
           </ul>
         ) : (
-          <p className="px-4 py-10 text-center text-sm text-slate-500">
+          <p className="px-4 py-10 text-center text-sm text-quiet">
             {view === "needs" ? "Nothing waits on you." : "No claims here."}
           </p>
         )}
-      </section>
+      </Card>
 
       <div className="space-y-3 self-start">
-        <section className={`${cardBase} p-4`} aria-labelledby="compoff-lookup">
+        <Card as="section" className="p-4" aria-labelledby="compoff-lookup">
           <h2
             id="compoff-lookup"
-            className="flex items-center gap-2 text-sm font-bold text-slate-900"
+            className="flex items-center gap-2 text-sm font-bold text-primary"
           >
-            <UserRound className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+            <UserRound className="h-4 w-4 text-brand" aria-hidden />
             <span>A person&apos;s comp off</span>
           </h2>
           <div className="mt-2">
@@ -638,8 +634,8 @@ export function CompOffClaimsPanel() {
               aria-label="Whose comp off"
             />
           </div>
-          <p className={hintBase}>Or pick a name on a claim.</p>
-        </section>
+          <Hint>Or pick a name on a claim.</Hint>
+        </Card>
         {person && (
           <PersonCompOff
             userId={person.id}
@@ -682,29 +678,29 @@ export function CompOffPanel() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <button
+        <Button
+          variant={part === "mine" ? "primary" : "secondary"}
           type="button"
-          className={part === "mine" ? btnPrimary : btnSecondary}
           onClick={() => setPicked("mine")}
           aria-pressed={part === "mine"}
         >
           My comp off
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={part === "claims" ? "primary" : "secondary"}
           type="button"
-          className={part === "claims" ? btnPrimary : btnSecondary}
           onClick={() => setPicked("claims")}
           aria-pressed={part === "claims"}
         >
           Claims
           {waiting > 0 && (
             <span
-              className={`ml-1 rounded-full px-1.5 text-[11px] font-bold ${part === "claims" ? "bg-white/90 text-[rgb(34_34_204)]" : "bg-[rgb(34_34_204)] text-white"}`}
+              className={`ml-1 rounded-full px-1.5 text-[0.6875rem] font-bold ${part === "claims" ? "bg-card/90 text-brand" : "bg-brand text-on-brand"}`}
             >
               {waiting}
             </span>
           )}
-        </button>
+        </Button>
       </div>
       {part === "mine" ? <MyCompOffPanel /> : <CompOffClaimsPanel />}
     </div>

@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { useCancelLeave, useMyLeave } from "@/features/leave/hooks/useLeave";
 import type { LeaveRequestView } from "@/features/leave/types";
@@ -16,6 +15,8 @@ import { ApplyLeaveDialog } from "./ApplyLeaveDialog";
 import { CompOffBalanceCard } from "./CompOffPanel";
 import { BalanceCard, LedgerList } from "./LeaveBits";
 import { RequestRow } from "./RequestRow";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 /**
  * The person's own leave (3.4): both balances, what is coming up, every request
@@ -60,8 +61,8 @@ export function MyLeavePanel({ compact = false }: { compact?: boolean }) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-bold tracking-tight text-slate-900">Leave balance</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-bold tracking-tight text-primary">Leave balance</h2>
+          <p className="text-sm text-quiet">
             {d.policy.enabled
               ? d.waitingFor
                 ? `Your requests go to ${d.waitingFor}.`
@@ -69,15 +70,15 @@ export function MyLeavePanel({ compact = false }: { compact?: boolean }) {
               : "Leave requests are switched off for now."}
           </p>
         </div>
-        <button
+        <Button
+          variant="primary"
           type="button"
-          className={btnPrimary}
           onClick={() => setApplying(true)}
           disabled={!d.policy.enabled}
         >
           <CalendarPlus className="h-4 w-4" aria-hidden />
           Apply for leave
-        </button>
+        </Button>
       </div>
 
       <div
@@ -89,7 +90,7 @@ export function MyLeavePanel({ compact = false }: { compact?: boolean }) {
         {d.compOff?.enabled && (
           <Link
             href="/dashboard/leave?tab=compoff"
-            className="rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+            className="rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
             aria-label="Comp off: open the Comp off tab"
           >
             <CompOffBalanceCard b={d.compOff} compact />
@@ -97,8 +98,8 @@ export function MyLeavePanel({ compact = false }: { compact?: boolean }) {
         )}
       </div>
       {d.nextYear && (
-        <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-          <span className="font-semibold text-slate-900">{d.nextYear.year}:</span>{" "}
+        <p className="rounded-xl border border-card bg-card px-4 py-3 text-sm text-soft">
+          <span className="font-semibold text-primary">{d.nextYear.year}:</span>{" "}
           {d.nextYear.balances
             .map(
               (b) =>
@@ -109,64 +110,64 @@ export function MyLeavePanel({ compact = false }: { compact?: boolean }) {
         </p>
       )}
 
-      <section className={cardBase} aria-labelledby="leave-upcoming">
+      <Card as="section" aria-labelledby="leave-upcoming">
         <h3
           id="leave-upcoming"
-          className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5"
+          className="border-b border-divider px-4 py-3 text-sm font-bold text-primary sm:px-5"
         >
           Coming up
         </h3>
         {d.upcoming.length ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-divider">
             {d.upcoming.map((r) => (
               <RequestRow key={r.id} r={r} onCancel={setCancelling} busy={cancel.isPending} />
             ))}
           </ul>
         ) : (
-          <p className="px-4 py-6 text-center text-sm text-slate-500">No leave coming up.</p>
+          <p className="px-4 py-6 text-center text-sm text-quiet">No leave coming up.</p>
         )}
-      </section>
+      </Card>
 
       {!compact && (
-        <section className={cardBase} aria-labelledby="leave-history">
+        <Card as="section" aria-labelledby="leave-history">
           <h3
             id="leave-history"
-            className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5"
+            className="border-b border-divider px-4 py-3 text-sm font-bold text-primary sm:px-5"
           >
             This year
           </h3>
           {past.length ? (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-divider">
               {past.map((r) => (
                 <RequestRow key={r.id} r={r} onCancel={setCancelling} busy={cancel.isPending} />
               ))}
             </ul>
           ) : (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">Nothing else this year.</p>
+            <p className="px-4 py-6 text-center text-sm text-quiet">Nothing else this year.</p>
           )}
-        </section>
+        </Card>
       )}
 
       {!compact && (
-        <section className={cardBase}>
+        <Card as="section">
           <button
             type="button"
             onClick={() => setShowLedger((v) => !v)}
             aria-expanded={showLedger}
-            className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-slate-900 sm:px-5"
+            className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-primary sm:px-5"
           >
             How the balance adds up
             <ChevronDown
-              className={`h-4 w-4 text-slate-400 transition-transform ${showLedger ? "rotate-180" : ""}`}
+              className={`h-4 w-4 text-quiet transition-transform ${showLedger ? "rotate-180" : ""}`}
               aria-hidden
             />
           </button>
           {showLedger && (
-            <div className="border-t border-slate-100">
+            <div className="border-t border-divider">
               <LedgerList lines={d.ledger} />
             </div>
           )}
-        </section>
+        </Card>
       )}
 
       <ApplyLeaveDialog open={applying} onClose={() => setApplying(false)} />

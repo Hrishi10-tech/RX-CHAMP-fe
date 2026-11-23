@@ -66,8 +66,8 @@ export function LeavePage() {
   return (
     <div className="space-y-5">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Leave</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-primary">Leave</h1>
+        <p className="text-sm text-quiet">
           CL/SL (casual or sick), EL/PL (earned or privilege) and comp off for extra days worked, in
           full, half and quarter days.
         </p>
