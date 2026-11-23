@@ -18,7 +18,8 @@ import { toast } from "sonner";
 
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Modal } from "@/components/ui/Modal";
-import { btnPrimary, btnSecondary, errorText } from "@/components/ui/classes";
+import { FieldError } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 import { errorMessage } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { useOrgScope } from "@/lib/org/selection";
@@ -58,10 +59,10 @@ function PeoplePicker({ value, onChange }: { value: string[]; onChange: (ids: st
   const rows = people.data?.users ?? [];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200">
-      <div className="relative border-b border-slate-100">
+    <div className="overflow-hidden rounded-xl border border-card">
+      <div className="relative border-b border-divider">
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral"
           aria-hidden
         />
         <input
@@ -74,7 +75,7 @@ function PeoplePicker({ value, onChange }: { value: string[]; onChange: (ids: st
         />
       </div>
       <div role="group" aria-label="People" className="max-h-56 overflow-y-auto p-1.5">
-        {people.isPending && <p className="px-3 py-3 text-sm text-slate-500">Loading…</p>}
+        {people.isPending && <p className="px-3 py-3 text-sm text-quiet">Loading…</p>}
         {rows.map((u) => {
           const name =
             u.name || `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email || u.id;
@@ -87,17 +88,15 @@ function PeoplePicker({ value, onChange }: { value: string[]; onChange: (ids: st
               aria-checked={checked}
               onClick={() => onChange(checked ? value.filter((v) => v !== u.id) : [...value, u.id])}
               className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition ${
-                checked ? "bg-[rgba(34,34,204,0.06)]" : "hover:bg-slate-50"
+                checked ? "bg-brand/6" : "hover:bg-fill"
               }`}
             >
               <PersonAvatar name={name} avatarId={u.avatarId} userId={u.id} size={28} />
-              <span className="min-w-0 flex-1 truncate font-semibold text-slate-800">{name}</span>
+              <span className="min-w-0 flex-1 truncate font-semibold text-strong">{name}</span>
               <span
                 aria-hidden
                 className={`flex h-5 w-5 items-center justify-center rounded-md border ${
-                  checked
-                    ? "border-[rgb(34_34_204)] bg-[rgb(34_34_204)] text-white"
-                    : "border-slate-300"
+                  checked ? "border-brand bg-brand text-on-brand" : "border-edge-strong"
                 }`}
               >
                 {checked && <Check className="h-3.5 w-3.5" />}
@@ -106,7 +105,7 @@ function PeoplePicker({ value, onChange }: { value: string[]; onChange: (ids: st
           );
         })}
         {people.isSuccess && rows.length === 0 && (
-          <p className="px-3 py-3 text-sm text-slate-500">Nobody matches.</p>
+          <p className="px-3 py-3 text-sm text-quiet">Nobody matches.</p>
         )}
       </div>
     </div>
@@ -129,34 +128,34 @@ function PhraseReveal({ created }: { created: CreatedSignOutKey }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.04)] p-4 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+      <div className="rounded-2xl border border-brand/25 bg-brand/4 p-4 text-center">
+        <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
           Sign-out key
         </p>
         <p
           data-testid="signout-phrase"
-          className="mt-2 select-all break-words font-mono text-xl font-bold tracking-wide text-slate-900"
+          className="mt-2 select-all break-words font-mono text-xl font-bold tracking-wide text-primary"
         >
           {created.phrase}
         </p>
-        <button type="button" onClick={copy} className={`${btnSecondary} mt-3`}>
+        <Button type="button" onClick={copy} className="mt-3">
           {copied ? (
-            <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+            <Check className="h-4 w-4 text-working" aria-hidden />
           ) : (
             <Copy className="h-4 w-4" aria-hidden />
           )}
           {copied ? "Copied" : "Copy"}
-        </button>
+        </Button>
       </div>
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-soft">
         Valid until{" "}
-        <span className="font-semibold text-slate-900">
+        <span className="font-semibold text-primary">
           {whenText(created.expiresAt) || "24 hours from now"}
         </span>
         . Give it to the person who needs to sign out; they type it into the RX Vision app.
       </p>
-      <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+      <p className="flex items-start gap-2 rounded-lg border border-attention-edge bg-attention-wash px-3 py-2 text-sm text-attention-ink">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-attention" aria-hidden />
         This is the only time the key is shown. Only a fingerprint of it is stored.
       </p>
     </div>
@@ -242,16 +241,16 @@ export function CreateKeyDialog({ open, onClose }: { open: boolean; onClose: () 
                     }}
                     className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-center transition ${
                       selected
-                        ? "border-[rgb(34_34_204)] bg-[rgba(34,34,204,0.05)] ring-1 ring-[rgb(34_34_204)]"
-                        : "border-slate-200 hover:bg-slate-50"
+                        ? "border-brand bg-brand/5 ring-1 ring-brand"
+                        : "border-card hover:bg-fill"
                     }`}
                   >
                     <Icon
-                      className={`h-5 w-5 ${selected ? "text-[rgb(34_34_204)]" : "text-slate-400"}`}
+                      className={`h-5 w-5 ${selected ? "text-brand" : "text-quiet"}`}
                       aria-hidden
                     />
-                    <span className="text-sm font-semibold text-slate-800">{label}</span>
-                    <span className="text-[11px] text-slate-500">{detail}</span>
+                    <span className="text-sm font-semibold text-strong">{label}</span>
+                    <span className="text-[0.6875rem] text-quiet">{detail}</span>
                   </button>
                 );
               })}
@@ -268,33 +267,33 @@ export function CreateKeyDialog({ open, onClose }: { open: boolean; onClose: () 
               />
             )}
             {scope === "ORG" && (
-              <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+              <p className="flex items-start gap-2 rounded-lg border border-attention-edge bg-attention-wash px-3 py-2 text-sm text-attention-ink">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-attention" aria-hidden />
                 Anyone in the organisation who has the key can sign out of the app for 24 hours.
               </p>
             )}
-            {error && <p className={errorText}>{error}</p>}
+            {error && <FieldError>{error}</FieldError>}
           </>
         )}
       </div>
-      <div className="flex flex-col-reverse gap-2 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-2 border-t border-divider px-6 py-4 sm:flex-row sm:justify-end">
         {created ? (
-          <button type="button" className={btnPrimary} onClick={onClose}>
+          <Button type="button" variant="primary" onClick={onClose}>
             Done
-          </button>
+          </Button>
         ) : (
           <>
-            <button type="button" className={btnSecondary} onClick={onClose} disabled={saving}>
+            <Button type="button" onClick={onClose} disabled={saving}>
               Cancel
-            </button>
-            <button type="button" className={btnPrimary} onClick={create} disabled={saving}>
+            </Button>
+            <Button type="button" variant="primary" onClick={create} disabled={saving}>
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
                 <KeyRound className="h-4 w-4" aria-hidden />
               )}
               Create key
-            </button>
+            </Button>
           </>
         )}
       </div>

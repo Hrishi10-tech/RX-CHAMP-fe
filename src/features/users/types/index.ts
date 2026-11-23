@@ -77,8 +77,31 @@ export interface MemberStatusTarget {
 /** A pending screenshots on/off change awaiting confirmation. */
 export interface MemberScreenshotsTarget {
   member: TeamMember;
-  /** The value being moved to — true = about to be switched on. */
+  /** The value being moved to, true = about to be switched on. */
   enable: boolean;
+}
+
+export interface MembersSectionProps {
+  /** Scopes the list to one manager's reports. Omit to list across the company. */
+  managerId?: string;
+  /** Role queried when no Role filter is applied. */
+  defaultRole?: UserRoleFilter;
+  /** True while the caller is still resolving session data, keeps the loader up. */
+  pending?: boolean;
+  /** False when the caller knows there is nothing to fetch (e.g. wrong role). */
+  enabled?: boolean;
+  addMemberHref: string;
+  /** Shown above the table, with the total appended. */
+  tableTitle?: string;
+  emptyMessage?: string;
+  /**
+   * The Company filter needs the companies endpoint, which is admin-only, leave
+   * this off for manager-scoped views.
+   */
+  showCompanyFilter?: boolean;
+  /** 3.3: the organisation in view (header switch); a Company filter set here wins. */
+  companyId?: string;
+  onRowClick?: (member: TeamMember) => void;
 }
 
 export type MemberChange = "updated" | "deleted";
@@ -91,9 +114,9 @@ export interface UseMemberActionsOptions {
 }
 
 export interface UseMemberActionsResult {
-  /** The row's button group — render inside the Actions column. */
+  /** The row's button group, render inside the Actions column. */
   renderActions: (member: TeamMember) => ReactNode;
-  /** Confirm dialogs — render once, outside the table. */
+  /** Edit modal and confirm dialogs, render once, outside the table. */
   dialogs: ReactNode;
 }
 
@@ -111,7 +134,7 @@ export interface GetUsersParams {
   gender?: GenderFilter;
 }
 
-/** Sort tokens accepted by GET /users?sort= — also identifies the popover row. */
+/** Sort tokens accepted by GET /users?sort=, also identifies the popover row. */
 export type MemberSortKey =
   | "name_asc"
   | "name_desc"

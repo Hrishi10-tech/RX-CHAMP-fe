@@ -28,7 +28,7 @@ export function DepartmentIcon({
       role={title ? "img" : undefined}
       aria-label={title}
       aria-hidden={title ? undefined : true}
-      className={`inline-flex shrink-0 items-center justify-center bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)] ring-1 ring-inset ring-[rgba(34,34,204,0.12)] ${s.box} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center bg-brand/8 text-brand ring-1 ring-inset ring-brand/12 ${s.box} ${className}`}
     >
       <Icon className={s.icon} strokeWidth={1.75} />
     </span>
@@ -45,11 +45,11 @@ export function DepartmentLabel({
   icon?: string | null;
   empty?: string;
 }) {
-  if (!name) return <span className="text-sm text-slate-400">{empty}</span>;
+  if (!name) return <span className="text-sm text-quiet">{empty}</span>;
   return (
     <span className="inline-flex min-w-0 items-center gap-2">
       <DepartmentIcon icon={icon} size="xs" />
-      <span className="truncate text-sm font-medium text-slate-700">{name}</span>
+      <span className="truncate text-sm font-medium text-body">{name}</span>
     </span>
   );
 }

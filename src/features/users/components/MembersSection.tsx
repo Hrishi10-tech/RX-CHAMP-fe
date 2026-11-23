@@ -7,7 +7,9 @@ import { Crown, Layers, Plus, Search, UserRound, UsersRound } from "lucide-react
 import { DataTable } from "@/components/ui/DataTable";
 import { Select } from "@/components/ui/Select";
 import { ErrorState } from "@/components/ui/StatePanel";
-import { btnPrimary, cardBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Field";
 import type { Column, SelectOption } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
@@ -56,12 +58,12 @@ function Stat({
 }) {
   return (
     <div className="flex items-center gap-3 px-5 py-3.5">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
-      <div>
-        <p className="text-xl font-bold leading-tight text-slate-900">{value}</p>
-        <p className="text-[13px] font-medium text-slate-500">{label}</p>
+      <div className="min-w-0">
+        <p className="text-xl font-bold leading-tight text-primary">{value}</p>
+        <p className="text-[0.8125rem] font-medium text-soft">{label}</p>
       </div>
     </div>
   );
@@ -99,7 +101,7 @@ function useRoleTotal(
 function pickOrgHint(m: TeamMember) {
   return (
     <span
-      className="text-xs text-slate-400"
+      className="text-xs text-quiet"
       title={`Pick ${m.companyName || "their organisation"} in the header to change this person.`}
     >
       Pick organisation to change
@@ -222,10 +224,10 @@ export function MembersSection() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative sm:w-80">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral"
             aria-hidden
           />
-          <input
+          <Input
             type="search"
             value={query}
             onChange={(e) => {
@@ -234,22 +236,22 @@ export function MembersSection() {
             }}
             placeholder="Search name or email"
             aria-label="Search members"
-            className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgb(34_34_204)]"
+            className="pl-9 font-normal"
           />
         </div>
-        <button
+        <Button
           type="button"
-          className={btnPrimary}
+          variant="primary"
           disabled={!canAdd}
           title={canAdd ? undefined : "Choose an organisation to add Staff to it."}
           onClick={() => setForm({ open: true, member: null })}
         >
           <Plus className="h-4 w-4" aria-hidden />
           {role === "SUPER_ADMIN" && combined ? "Add Super Manager" : "Add member"}
-        </button>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-divider rounded-2xl border border-card bg-card shadow-sm sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <Stat
           icon={UsersRound}
           value={total}
@@ -268,13 +270,13 @@ export function MembersSection() {
       </div>
 
       {list.isError && !list.data ? (
-        <div className={cardBase}>
+        <Card>
           <ErrorState
             message={errorMessage(list.error)}
             onRetry={() => void list.refetch()}
             retrying={list.isFetching}
           />
-        </div>
+        </Card>
       ) : (
         <DataTable
           data={members}

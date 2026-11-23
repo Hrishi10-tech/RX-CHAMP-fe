@@ -8,16 +8,6 @@ import { toast } from "sonner";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
 import { ReasonPresetsEditor } from "@/features/settings/components/ReasonPresetsEditor";
-import {
-  btnPrimary,
-  btnSecondary,
-  cardBase,
-  checkboxBase,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-} from "@/components/ui/classes";
 import { errorCode, errorDetails, errorMessage } from "@/lib/api";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
 import { useAppSettings, useUpdateSettings } from "@/features/settings/hooks/useSettings";
@@ -37,6 +27,10 @@ import type {
   BooleanSettingKey,
   NumericSettingKey,
 } from "@/features/settings/types";
+import { Checkbox, FieldError, Hint, Input } from "@/components/ui/Field";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Page } from "@/components/layout/Page";
 
 const GROUPS: {
   title: string;
@@ -107,18 +101,18 @@ function NumberRow({
 }) {
   const id = `setting-${meta.key}`;
   return (
-    <div className="grid gap-2 border-t border-slate-100 py-4 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_14rem] sm:gap-6">
+    <div className="grid gap-2 border-t border-divider py-4 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_14rem] sm:gap-6">
       <div className="min-w-0">
-        <label htmlFor={id} className="text-sm font-semibold text-slate-800">
+        <label htmlFor={id} className="text-sm font-semibold text-strong">
           {meta.label}
         </label>
-        <p id={`${id}-help`} className="mt-0.5 text-sm text-slate-500">
+        <p id={`${id}-help`} className="mt-0.5 text-sm text-quiet">
           {meta.help}
         </p>
       </div>
       <div>
         <div className="flex items-center gap-2">
-          <input
+          <Input
             id={id}
             type="number"
             inputMode="numeric"
@@ -130,17 +124,18 @@ function NumberRow({
             onChange={(e) => onChange(e.target.value)}
             aria-invalid={error ? true : undefined}
             aria-describedby={`${id}-help ${id}-bounds${error ? ` ${id}-error` : ""}`}
-            className={`${inputBase} w-28 tabular-nums ${error ? inputInvalid : ""}`}
+            invalid={Boolean(error)}
+            className="w-28 tabular-nums"
           />
-          <span className="whitespace-nowrap text-sm font-medium text-slate-500">{meta.unit}</span>
+          <span className="whitespace-nowrap text-sm font-medium text-quiet">{meta.unit}</span>
         </div>
-        <p id={`${id}-bounds`} className={hintBase}>
+        <Hint id={`${id}-bounds`}>
           {meta.min} to {meta.max} · default {meta.default}
-        </p>
+        </Hint>
         {error && (
-          <p id={`${id}-error`} className={errorText} role="alert">
+          <FieldError id={`${id}-error`} role="alert">
             {error}
-          </p>
+          </FieldError>
         )}
       </div>
     </div>
@@ -218,15 +213,16 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
       {GROUPS.map((group) => (
-        <section
+        <Card
+          as="section"
           key={group.title}
           aria-labelledby={`group-${group.title}`}
-          className={`${cardBase} px-4 py-4 sm:px-6`}
+          className="px-4 py-4 sm:px-6"
         >
-          <h2 id={`group-${group.title}`} className="text-base font-bold text-slate-900">
+          <h2 id={`group-${group.title}`} className="text-base font-bold text-primary">
             {group.title}
           </h2>
-          <p className="mt-0.5 text-sm text-slate-500">{group.description}</p>
+          <p className="mt-0.5 text-sm text-quiet">{group.description}</p>
           <div className="mt-2">
             {group.keys.map((key) => {
               const meta = META.get(key);
@@ -245,19 +241,18 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
               const meta = BOOL_META.get(key);
               if (!meta) return null;
               return (
-                <div key={key} className="border-t border-slate-100 py-4">
+                <div key={key} className="border-t border-divider py-4">
                   <label className="flex cursor-pointer items-start gap-3 text-sm">
-                    <input
-                      type="checkbox"
-                      className={`${checkboxBase} mt-0.5`}
+                    <Checkbox
+                      className="mt-0.5"
                       checked={draft[key]}
                       disabled={pending}
                       onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.checked }))}
                       aria-describedby={`${key}-help`}
                     />
                     <span>
-                      <span className="font-semibold text-slate-800">{meta.label}</span>
-                      <span id={`${key}-help`} className="mt-0.5 block text-slate-500">
+                      <span className="font-semibold text-strong">{meta.label}</span>
+                      <span id={`${key}-help`} className="mt-0.5 block text-quiet">
                         {meta.help}
                       </span>
                     </span>
@@ -266,11 +261,10 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
               );
             })}
             {group.withBlock && (
-              <div className="border-t border-slate-100 py-4">
+              <div className="border-t border-divider py-4">
                 <label className="flex cursor-pointer items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className={`${checkboxBase} mt-0.5`}
+                  <Checkbox
+                    className="mt-0.5"
                     checked={draft.blockManagerEndDayWhenOverdue}
                     disabled={pending}
                     onChange={(e) =>
@@ -279,28 +273,25 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
                     aria-describedby="block-help"
                   />
                   <span>
-                    <span className="font-semibold text-slate-800">
+                    <span className="font-semibold text-strong">
                       Stop managers ending their day while an approval is overdue
                     </span>
-                    <span id="block-help" className="mt-0.5 block text-slate-500">
+                    <span id="block-help" className="mt-0.5 block text-quiet">
                       The desktop app asks them to decide it first. Admins are never stopped.
                       Default on.
                     </span>
                   </span>
                 </label>
                 {errors.blockManagerEndDayWhenOverdue && (
-                  <p className={errorText} role="alert">
-                    {errors.blockManagerEndDayWhenOverdue}
-                  </p>
+                  <FieldError role="alert">{errors.blockManagerEndDayWhenOverdue}</FieldError>
                 )}
               </div>
             )}
             {group.withAdjustments && (
-              <div className="border-t border-slate-100 py-4 first:border-t-0">
+              <div className="border-t border-divider py-4 first:border-t-0">
                 <label className="flex cursor-pointer items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className={`${checkboxBase} mt-0.5`}
+                  <Checkbox
+                    className="mt-0.5"
                     checked={draft.focusAdjustmentsEnabled}
                     disabled={pending}
                     onChange={(e) =>
@@ -309,10 +300,10 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
                     aria-describedby="adjustments-help"
                   />
                   <span>
-                    <span className="font-semibold text-slate-800">
+                    <span className="font-semibold text-strong">
                       Manual focus adjustments by the Super Manager
                     </span>
-                    <span id="adjustments-help" className="mt-0.5 block text-slate-500">
+                    <span id="adjustments-help" className="mt-0.5 block text-quiet">
                       While on, the Super Manager can add minutes to or take minutes off a
                       person&apos;s day in this organisation, with a reason the person sees. Meant
                       for a rollout&apos;s first weeks; switch it off once the agents are settled.
@@ -321,29 +312,28 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
                   </span>
                 </label>
                 {errors.focusAdjustmentsEnabled && (
-                  <p className={errorText} role="alert">
-                    {errors.focusAdjustmentsEnabled}
-                  </p>
+                  <FieldError role="alert">{errors.focusAdjustmentsEnabled}</FieldError>
                 )}
               </div>
             )}
           </div>
-        </section>
+        </Card>
       ))}
 
-      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:border sm:shadow-sm">
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t border-card bg-card/95 px-4 py-3 backdrop-blur sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:border sm:shadow-sm">
         <p className="flex items-center gap-2 text-sm" aria-live="polite">
           {dirty ? (
-            <span className="font-semibold text-amber-700">Unsaved changes</span>
+            <span className="font-semibold text-attention">Unsaved changes</span>
           ) : (
             <>
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden />
-              <span className="text-slate-600">Saved</span>
+              <CheckCircle2 className="h-4 w-4 text-working" aria-hidden />
+              <span className="text-soft">Saved</span>
             </>
           )}
         </p>
         <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button
+          <Button
+            variant="secondary"
             type="button"
             onClick={() => {
               setDraft(original);
@@ -351,19 +341,18 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
               setSubmitted(false);
             }}
             disabled={!dirty || pending}
-            className={btnSecondary}
           >
             <RotateCcw className="h-4 w-4" aria-hidden />
             Undo changes
-          </button>
-          <button type="submit" disabled={!dirty || pending} className={btnPrimary}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={!dirty || pending}>
             {pending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <Save className="h-4 w-4" aria-hidden />
             )}
             {pending ? "Saving…" : "Save settings"}
-          </button>
+          </Button>
         </div>
       </div>
     </form>
@@ -387,7 +376,7 @@ export function SettingsView() {
   const asked = searchParams.get("tab");
   const tab: SettingsTab = TABS.some((t) => t.value === asked) ? (asked as SettingsTab) : "rules";
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
+    <Page width="form" className="space-y-5">
       <PageHeader
         title="Settings"
         subtitle="Rules for approvals, attendance, activity and pay; the quick answers offered in every comment box; holidays and working days. They apply to everyone."
@@ -405,22 +394,22 @@ export function SettingsView() {
         {tab === "answers" ? (
           <ReasonPresetsEditor />
         ) : query.isLoading ? (
-          <div className={cardBase}>
+          <Card>
             <LoadingState label="Loading settings…" />
-          </div>
+          </Card>
         ) : query.isError || !query.data ? (
-          <div className={cardBase}>
+          <Card>
             <ErrorState
               title="Couldn't load the settings"
               message={errorMessage(query.error)}
               onRetry={() => query.refetch()}
               retrying={query.isFetching}
             />
-          </div>
+          </Card>
         ) : (
           <SettingsForm settings={query.data} />
         )}
       </div>
-    </div>
+    </Page>
   );
 }

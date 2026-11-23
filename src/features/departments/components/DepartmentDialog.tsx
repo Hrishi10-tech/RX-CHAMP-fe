@@ -5,14 +5,9 @@ import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  inputBase,
-  inputInvalid,
-  labelBase,
-} from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
+import { Checkbox, FieldError, Label, Input } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 import { errorCode, errorMessage } from "@/lib/api";
 import { DepartmentIcon } from "@/features/departments/components/DepartmentIcon";
 import { DepartmentIconPicker } from "@/features/departments/components/DepartmentIconPicker";
@@ -117,10 +112,8 @@ export function DepartmentDialog({
         <div className="flex items-start gap-4">
           <DepartmentIcon icon={icon} size="lg" />
           <div className="min-w-0 flex-1">
-            <label htmlFor={nameId} className={labelBase}>
-              Name
-            </label>
-            <input
+            <Label htmlFor={nameId}>Name</Label>
+            <Input
               id={nameId}
               data-autofocus
               value={name}
@@ -129,20 +122,17 @@ export function DepartmentDialog({
               placeholder="e.g. Hardware"
               aria-invalid={Boolean(error)}
               aria-describedby={error ? `${nameId}-error` : undefined}
-              className={`${inputBase} mt-1.5 ${error ? inputInvalid : ""}`}
+              invalid={Boolean(error)}
+              className="mt-1.5"
             />
-            {error && (
-              <p id={`${nameId}-error`} className={errorText}>
-                {error}
-              </p>
-            )}
+            {error && <FieldError id={`${nameId}-error`}>{error}</FieldError>}
           </div>
         </div>
 
         {suggestions.length > 0 && (
           <div>
-            <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-              <Sparkles className="h-3.5 w-3.5 text-[rgb(34_34_204)]" aria-hidden />
+            <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-quiet">
+              <Sparkles className="h-3.5 w-3.5 text-brand" aria-hidden />
               Suggestions
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -156,7 +146,7 @@ export function DepartmentDialog({
                     setIconChosen(true);
                     setError(null);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3 text-xs font-semibold text-slate-700 transition hover:border-[rgba(34,34,204,0.4)] hover:bg-[rgba(34,34,204,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-card bg-card py-1 pl-1 pr-3 text-xs font-semibold text-body transition hover:border-brand/40 hover:bg-brand/4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
                 >
                   <DepartmentIcon icon={s.icon} size="xs" />
                   {s.name}
@@ -168,7 +158,7 @@ export function DepartmentDialog({
 
         <div>
           <p className={labelBase}>Icon</p>
-          <div className="mt-2 max-h-[46vh] overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/60 p-3 sm:max-h-none">
+          <div className="mt-2 max-h-[46vh] overflow-y-auto rounded-xl border border-divider bg-fill/60 p-3 sm:max-h-none">
             <DepartmentIconPicker
               value={icon}
               onChange={(key) => {
@@ -180,16 +170,15 @@ export function DepartmentDialog({
           </div>
         </div>
 
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
-          <input
-            type="checkbox"
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-card bg-card p-3">
+          <Checkbox
             checked={sharedComputer}
             onChange={(e) => setSharedComputer(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[rgb(34_34_204)]"
+            className="mt-0.5"
           />
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-slate-800">Shared computer</span>
-            <span className="mt-0.5 block text-xs text-slate-500">
+            <span className="block text-sm font-semibold text-strong">Shared computer</span>
+            <span className="mt-0.5 block text-xs text-quiet">
               People here share one computer between shifts. Near the end of their shift the app
               asks whether they are taking the next shift; if not, it ends their day and signs them
               out at the shift end, so the next person can sign in.
@@ -197,19 +186,14 @@ export function DepartmentDialog({
           </span>
         </label>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={save.isPending}
-          >
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" onClick={onClose} disabled={save.isPending}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={save.isPending}>
+          </Button>
+          <Button type="submit" variant="primary" disabled={save.isPending}>
             {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {department ? "Save" : "Add department"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

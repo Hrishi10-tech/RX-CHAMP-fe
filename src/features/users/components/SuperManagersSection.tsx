@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorState } from "@/components/ui/StatePanel";
-import { cardBase } from "@/components/ui/classes";
+import { Card } from "@/components/ui/Card";
 import type { Column } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
 import { getSuperManagers } from "@/features/users/api/superManagers";
@@ -54,13 +54,13 @@ export function SuperManagersSection() {
   return (
     <section aria-label="Super Managers" className="space-y-3">
       {list.isError && !list.data ? (
-        <div className={cardBase}>
+        <Card>
           <ErrorState
             message={errorMessage(list.error)}
             onRetry={() => void list.refetch()}
             retrying={list.isFetching}
           />
-        </div>
+        </Card>
       ) : (
         <DataTable
           data={members}

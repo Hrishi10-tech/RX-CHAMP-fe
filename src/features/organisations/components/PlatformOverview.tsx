@@ -16,7 +16,8 @@ import {
 
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, btnSecondary, btnSmall, cardBase } from "@/components/ui/classes";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { errorMessage } from "@/lib/api";
 import { selectOrg } from "@/lib/org/selection";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
@@ -36,27 +37,25 @@ function Tile({
   tone?: "brand" | "success" | "warning" | "neutral";
 }) {
   const tones = {
-    brand: "bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]",
-    success: "bg-emerald-50 text-emerald-600",
-    warning: "bg-amber-50 text-amber-600",
-    neutral: "bg-slate-100 text-slate-500",
+    brand: "bg-brand/8 text-brand",
+    success: "bg-working-wash text-working",
+    warning: "bg-attention-wash text-attention",
+    neutral: "bg-panel text-quiet",
   } as const;
   return (
-    <div
-      className={`${cardBase} flex flex-col items-start gap-2 p-4 sm:flex-row sm:items-center sm:gap-3`}
-    >
+    <Card className="flex flex-col items-start gap-2 p-4 sm:flex-row sm:items-center sm:gap-3">
       <span
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}
       >
         <Icon className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0">
-        <p className="text-2xl font-bold tabular-nums text-slate-900">{value}</p>
-        <p className="text-xs font-semibold uppercase leading-snug tracking-wide text-slate-500">
+        <p className="text-2xl font-bold tabular-nums text-primary">{value}</p>
+        <p className="text-xs font-semibold uppercase leading-snug tracking-wide text-quiet">
           {label}
         </p>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -75,21 +74,21 @@ function TodayBar({ org }: { org: OrganisationView }) {
   );
   return (
     <div>
-      <div className="flex h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden>
-        <span className="bg-emerald-500" style={{ width: `${working}%` }} />
-        <span className="bg-amber-400" style={{ width: `${onBreak}%` }} />
-        <span className="bg-sky-300" style={{ width: `${other}%` }} />
+      <div className="flex h-2 overflow-hidden rounded-full bg-panel" aria-hidden>
+        <span className="bg-working" style={{ width: `${working}%` }} />
+        <span className="bg-attention" style={{ width: `${onBreak}%` }} />
+        <span className="bg-brand-edge-strong" style={{ width: `${other}%` }} />
       </div>
       <dl className="mt-2 grid grid-cols-4 gap-1 text-center">
         {[
-          ["Started", org.today.started, "text-slate-900"],
-          ["Working", org.today.working, "text-emerald-700"],
-          ["On break", org.today.onBreak, "text-amber-700"],
-          ["Not started", org.today.notStarted, "text-slate-500"],
+          ["Started", org.today.started, "text-primary"],
+          ["Working", org.today.working, "text-working"],
+          ["On break", org.today.onBreak, "text-attention"],
+          ["Not started", org.today.notStarted, "text-quiet"],
         ].map(([label, value, tone]) => (
           <div key={label as string} className="min-w-0">
             <dd className={`text-base font-bold tabular-nums ${tone}`}>{value}</dd>
-            <dt className="truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            <dt className="truncate text-[0.625rem] font-semibold uppercase tracking-wide text-quiet">
               {label}
             </dt>
           </div>
@@ -109,15 +108,15 @@ function OrgCard({
   onCreateAdmin: () => void;
 }) {
   return (
-    <article className={`${cardBase} flex flex-col gap-4 p-5`}>
+    <Card as="article" className="flex flex-col gap-4 p-5">
       <div className="flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[rgb(74_74_230)] to-[rgb(34_34_204)] text-white shadow-sm">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand text-on-brand shadow-sm">
           <Building2 className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-base font-bold text-slate-900">{org.name}</h2>
+          <h2 className="truncate text-base font-bold text-primary">{org.name}</h2>
           {org.admin ? (
-            <p className="flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
+            <p className="flex min-w-0 items-center gap-1.5 text-sm text-quiet">
               Admin
               <PersonAvatar
                 name={org.admin.name}
@@ -125,10 +124,10 @@ function OrgCard({
                 userId={org.admin.id}
                 size={20}
               />
-              <span className="truncate font-semibold text-slate-700">{org.admin.name}</span>
+              <span className="truncate font-semibold text-body">{org.admin.name}</span>
             </p>
           ) : (
-            <p className="inline-flex items-center gap-1 text-sm font-semibold text-amber-700">
+            <p className="inline-flex items-center gap-1 text-sm font-semibold text-attention">
               <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
               No admin yet
             </p>
@@ -136,7 +135,7 @@ function OrgCard({
         </div>
       </div>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-soft">
         {org.counts.staff} staff · {org.counts.managers}{" "}
         {org.counts.managers === 1 ? "manager" : "managers"} · {org.counts.departments}{" "}
         {org.counts.departments === 1 ? "department" : "departments"}
@@ -144,19 +143,19 @@ function OrgCard({
 
       <TodayBar org={org} />
 
-      <div className="mt-auto flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-        <button type="button" className={btnSmall} onClick={onOpen}>
+      <div className="mt-auto flex flex-wrap gap-2 border-t border-divider pt-3">
+        <Button type="button" variant="small" onClick={onOpen}>
           Open
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-        </button>
+        </Button>
         {!org.admin && (
-          <button type="button" className={btnSmall} onClick={onCreateAdmin}>
-            <ShieldPlus className="h-3.5 w-3.5 text-[rgb(34_34_204)]" aria-hidden />
+          <Button type="button" variant="small" onClick={onCreateAdmin}>
+            <ShieldPlus className="h-3.5 w-3.5 text-brand" aria-hidden />
             Create admin
-          </button>
+          </Button>
         )}
       </div>
-    </article>
+    </Card>
   );
 }
 
@@ -195,18 +194,14 @@ export function PlatformOverview() {
         subtitle="Every organisation at a glance. Pick one to work inside it."
         actions={
           <>
-            <button
-              type="button"
-              className={btnSecondary}
-              onClick={() => router.push("/dashboard/organisations")}
-            >
+            <Button type="button" onClick={() => router.push("/dashboard/organisations")}>
               <Building2 className="h-4 w-4" aria-hidden />
               Manage
-            </button>
-            <button type="button" className={btnPrimary} onClick={() => setAdding(true)}>
+            </Button>
+            <Button type="button" variant="primary" onClick={() => setAdding(true)}>
               <Plus className="h-4 w-4" aria-hidden />
               Add organisation
-            </button>
+            </Button>
           </>
         }
       />
@@ -216,16 +211,16 @@ export function PlatformOverview() {
           {noAdmin.length > 0 && (
             <div
               role="status"
-              className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+              className="flex items-start gap-3 rounded-2xl border border-attention-edge bg-attention-wash p-4 text-sm text-attention-ink"
             >
-              <ShieldPlus className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
+              <ShieldPlus className="mt-0.5 h-5 w-5 shrink-0 text-attention" aria-hidden />
               <div>
                 <p className="font-semibold">
                   {noAdmin.length === 1
                     ? `${noAdmin[0].name} has no admin yet`
                     : `${noAdmin.length} organisations have no admin yet`}
                 </p>
-                <p className="mt-0.5 text-amber-800">
+                <p className="mt-0.5 text-attention-ink">
                   Create one so someone can run its people, settings and approvals.
                 </p>
               </div>
@@ -234,14 +229,14 @@ export function PlatformOverview() {
           {unassigned > 0 && (
             <div
               role="status"
-              className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"
+              className="flex items-start gap-3 rounded-2xl border border-attention-edge bg-attention-wash p-4 text-sm text-attention-ink"
             >
-              <UserRoundX className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" aria-hidden />
+              <UserRoundX className="mt-0.5 h-5 w-5 shrink-0 text-attention" aria-hidden />
               <div>
                 <p className="font-semibold">
                   {unassigned} {unassigned === 1 ? "person needs" : "people need"} an organisation
                 </p>
-                <p className="mt-0.5 text-rose-800">
+                <p className="mt-0.5 text-attention-ink">
                   They were left without one when organisations arrived. Add them to one to track
                   their days.
                 </p>
@@ -259,31 +254,31 @@ export function PlatformOverview() {
       </div>
 
       {overview.isPending ? (
-        <div className={cardBase}>
+        <Card>
           <LoadingState label="Loading organisations…" />
-        </div>
+        </Card>
       ) : overview.isError ? (
-        <div className={cardBase}>
+        <Card>
           <ErrorState
             message={errorMessage(overview.error)}
             onRetry={() => void overview.refetch()}
             retrying={overview.isFetching}
           />
-        </div>
+        </Card>
       ) : orgs.length === 0 ? (
-        <div className={cardBase}>
+        <Card>
           <EmptyState
             icon={Building2}
             title="No organisations yet"
             message="Add the first organisation, then create its Admin."
             action={
-              <button type="button" className={btnPrimary} onClick={() => setAdding(true)}>
+              <Button type="button" variant="primary" onClick={() => setAdding(true)}>
                 <Plus className="h-4 w-4" aria-hidden />
                 Add organisation
-              </button>
+              </Button>
             }
           />
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {orgs.map((o) => (

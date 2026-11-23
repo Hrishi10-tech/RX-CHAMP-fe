@@ -6,12 +6,13 @@ import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
-import { btnPrimary, btnSecondary } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { downloadAgentForUser, downloadAgentInstaller } from "@/features/agent/api/downloadAgent";
 import { useAgentVersion, useSetupCode } from "@/features/agent/hooks/useAgent";
 import { agentDownloadName, formatBytes } from "@/features/agent/lib/fileName";
 import type { AgentPlatform, AgentVersionInfo } from "@/features/agent/types";
+import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Field";
 
 const PLATFORMS: { value: AgentPlatform; label: string }[] = [
   { value: "windows", label: "Windows" },
@@ -30,7 +31,7 @@ function VersionLine({
 }) {
   if (loading) {
     return (
-      <p className="flex items-center gap-2 text-sm text-slate-500">
+      <p className="flex items-center gap-2 text-sm text-quiet">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
         Checking the latest version…
       </p>
@@ -38,12 +39,12 @@ function VersionLine({
   }
   if (failed || !info) {
     return (
-      <p className="text-sm text-rose-600">Couldn&apos;t check this download. Try again later.</p>
+      <p className="text-sm text-attention">Couldn&apos;t check this download. Try again later.</p>
     );
   }
   if (!info.available) {
     return (
-      <p className="text-sm font-medium text-amber-700">This build isn&apos;t on the server yet.</p>
+      <p className="text-sm font-medium text-attention">This build isn&apos;t on the server yet.</p>
     );
   }
   const parts = [
@@ -52,7 +53,7 @@ function VersionLine({
   ]
     .filter(Boolean)
     .join(" · ");
-  return <p className="text-sm text-slate-500">{parts || "Ready to download."}</p>;
+  return <p className="text-sm text-quiet">{parts || "Ready to download."}</p>;
 }
 
 function SetupCode({ userId, userName }: { userId: string; userName: string }) {
@@ -79,32 +80,33 @@ function SetupCode({ userId, userName }: { userId: string; userName: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+    <div className="rounded-xl border border-card bg-fill/70 p-3.5">
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor="agent-setup-code" className="text-sm font-semibold text-slate-700">
+        <label htmlFor="agent-setup-code" className="text-sm font-semibold text-body">
           Setup code
         </label>
-        <button
+        <Button
+          variant="secondary"
           type="button"
           onClick={copy}
           disabled={!data}
-          className={`${btnSecondary} px-3 py-1.5 text-[13px]`}
+          className="px-3 py-1.5 text-[0.8125rem]"
         >
           {copied ? (
-            <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+            <Check className="h-4 w-4 text-working" aria-hidden />
           ) : (
             <Copy className="h-4 w-4" aria-hidden />
           )}
           {copied ? "Copied" : "Copy"}
-        </button>
+        </Button>
       </div>
       {isLoading ? (
-        <p className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+        <p className="mt-2 flex items-center gap-2 text-sm text-quiet">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           Getting a code…
         </p>
       ) : isError ? (
-        <div className="mt-2 text-sm text-rose-600">
+        <div className="mt-2 text-sm text-attention">
           {errorMessage(error) ?? "Couldn't get a setup code."}{" "}
           <button
             type="button"
@@ -116,18 +118,18 @@ function SetupCode({ userId, userName }: { userId: string; userName: string }) {
           </button>
         </div>
       ) : (
-        <textarea
+        <Textarea
           id="agent-setup-code"
           ref={textRef}
           readOnly
           rows={3}
           value={data?.code ?? ""}
           onFocus={(e) => e.currentTarget.select()}
-          className="mt-2 w-full resize-none break-all rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-700 outline-none focus:border-[rgb(34_34_204)] focus:ring-2 focus:ring-[rgba(34,34,204,0.15)]"
+          className="mt-2 resize-none break-all py-2 font-mono text-xs text-body"
         />
       )}
-      <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-500">
-        <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden />
+      <p className="mt-2 flex items-start gap-1.5 text-xs text-quiet">
+        <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-attention" aria-hidden />
         Anyone with this code can sign the app in as {userName}. Share it only with them.
       </p>
     </div>
@@ -208,7 +210,7 @@ export function DownloadAgentDialog({
           className="space-y-4"
         >
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
               {isMac ? (
                 <Laptop className="h-5 w-5" aria-hidden />
               ) : (
@@ -216,7 +218,7 @@ export function DownloadAgentDialog({
               )}
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-semibold text-primary">
                 {isMac
                   ? `RX Vision for ${platform === "mac" ? "Apple Silicon Macs (M1 and later)" : "Intel Macs"}`
                   : "RX Vision for Windows"}
@@ -231,7 +233,7 @@ export function DownloadAgentDialog({
 
           {isMac ? (
             <>
-              <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-slate-600 marker:font-semibold marker:text-slate-400">
+              <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-soft marker:font-semibold marker:text-neutral">
                 <li>Download the app, open the zip and move RX Vision to Applications.</li>
                 <li>
                   First launch: right-click RX Vision and choose Open. If macOS still blocks it,
@@ -247,30 +249,30 @@ export function DownloadAgentDialog({
               {!self && <SetupCode userId={userId} userName={userName} />}
             </>
           ) : self ? (
-            <p className="text-sm leading-relaxed text-slate-600">
+            <p className="text-sm leading-relaxed text-soft">
               This installer opens the RX Vision sign-in screen. Sign in with your email and
               password.
             </p>
           ) : (
-            <p className="text-sm leading-relaxed text-slate-600">
+            <p className="text-sm leading-relaxed text-soft">
               This installer signs in as {userName} by itself. Send it to them and they run it. No
               password needed.
             </p>
           )}
         </div>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onClose} disabled={downloading} className={btnSecondary}>
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button variant="secondary" type="button" onClick={onClose} disabled={downloading}>
             Done
-          </button>
-          <button type="button" onClick={download} disabled={!canDownload} className={btnPrimary}>
+          </Button>
+          <Button variant="primary" type="button" onClick={download} disabled={!canDownload}>
             {downloading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <Download className="h-4 w-4" aria-hidden />
             )}
             {downloading ? "Downloading…" : isMac ? "Download for Mac" : "Download installer"}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

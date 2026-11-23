@@ -73,9 +73,7 @@ function ScreenshotsMemberButton({
       aria-label={`${enabled ? "Turn off" : "Turn on"} automatic screenshots for ${member.name}`}
       aria-pressed={enabled}
       className={`${rowActionButtonClass} ${
-        enabled
-          ? "border-[rgba(34,34,204,0.35)] bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)] hover:bg-[rgba(34,34,204,0.14)]"
-          : rowActionHover.primary
+        enabled ? "border-brand/35 bg-brand/8 text-brand hover:bg-brand/14" : rowActionHover.primary
       }`}
     >
       <Icon className="h-4 w-4" />
@@ -119,10 +117,10 @@ function IdleMemberButton({
           aria-label={`Input tracking for ${member.name}: ${look.label}`}
           className={`${rowActionButtonClass} ${
             state === true
-              ? "border-[rgba(34,34,204,0.35)] bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)] hover:bg-[rgba(34,34,204,0.14)]"
+              ? "border-brand/35 bg-brand/8 text-brand hover:bg-brand/14"
               : state === false
-                ? "text-rose-500 hover:text-rose-600"
-                : `text-slate-400 ${rowActionHover.primary}`
+                ? "text-attention hover:text-attention"
+                : `text-quiet ${rowActionHover.primary}`
           }`}
         >
           <Icon className="h-4 w-4" />
@@ -133,9 +131,9 @@ function IdleMemberButton({
           align="end"
           sideOffset={6}
           onClick={(e) => e.stopPropagation()}
-          className="z-50 min-w-[14rem] rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"
+          className="z-50 min-w-[14rem] rounded-xl border border-card bg-card p-1.5 shadow-xl"
         >
-          <Dropdown.Label className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+          <Dropdown.Label className="px-2.5 pb-1 pt-1.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
             Input tracking
           </Dropdown.Label>
           {options.map((o) => {
@@ -144,13 +142,11 @@ function IdleMemberButton({
               <Dropdown.Item
                 key={String(o.value)}
                 onSelect={() => onSet(member, o.value)}
-                className="flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-slate-600 outline-none data-[highlighted]:bg-slate-50 data-[highlighted]:text-slate-900"
+                className="flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-soft outline-none data-[highlighted]:bg-fill data-[highlighted]:text-primary"
               >
                 <ItemIcon className="h-4 w-4" aria-hidden />
                 <span className="flex-1">{o.label}</span>
-                {state === o.value && (
-                  <Check className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
-                )}
+                {state === o.value && <Check className="h-4 w-4 text-brand" aria-hidden />}
               </Dropdown.Item>
             );
           })}
@@ -303,7 +299,7 @@ export function useMemberActions({
               <DownloadAgentRowButton userId={String(m.id)} userName={m.name} self />
             ) : (
               <span
-                className="text-xs text-slate-400"
+                className="text-xs text-quiet"
                 title={readOnlyReason(viewerRole, myId, m) ?? undefined}
               >
                 {viewerIsSuperManager ? "Read-only" : "No changes here"}
@@ -339,7 +335,7 @@ export function useMemberActions({
           {/* Rarer actions live in the menu so the row fits a laptop screen. */}
           <ActionMenu
             label={`More actions for ${m.name}`}
-            triggerClassName={`${rowActionButtonClass} ${rowActionHover.primary} data-[state=open]:bg-slate-50`}
+            triggerClassName={`${rowActionButtonClass} ${rowActionHover.primary} data-[state=open]:bg-fill`}
             items={[
               ...(admin || superManagerAccount
                 ? []
@@ -437,7 +433,7 @@ export function useMemberActions({
         description={
           screenshotsTarget ? (
             <>
-              <span className="font-semibold text-slate-700">{screenshotsTarget.member.name}</span>{" "}
+              <span className="font-semibold text-body">{screenshotsTarget.member.name}</span>{" "}
               {screenshotsTarget.enable
                 ? "will be screenshotted automatically again, about every 5 minutes."
                 : "will stop being screenshotted automatically. Activity tracking and manual capture are unaffected, and you can turn this back on at any time."}
@@ -453,6 +449,7 @@ export function useMemberActions({
         }}
         onConfirm={handleConfirmStatus}
         loading={statusSaving}
+        destructive={statusTarget?.block ?? false}
         title="Are you sure?"
         confirmLabel={
           statusSaving
@@ -466,7 +463,7 @@ export function useMemberActions({
         description={
           statusTarget ? (
             <>
-              <span className="font-semibold text-slate-700">{statusTarget.member.name}</span>{" "}
+              <span className="font-semibold text-body">{statusTarget.member.name}</span>{" "}
               {statusTarget.block
                 ? "will be signed out and blocked from signing in. You can unblock them at any time."
                 : "will be able to sign in again."}
@@ -487,8 +484,8 @@ export function useMemberActions({
         description={
           avatarTarget ? (
             <>
-              <span className="font-semibold text-slate-700">{avatarTarget.name}</span> goes back to
-              the default avatar for their gender. They can choose another one at any time.
+              <span className="font-semibold text-body">{avatarTarget.name}</span> goes back to the
+              default avatar for their gender. They can choose another one at any time.
             </>
           ) : null
         }
@@ -507,7 +504,7 @@ export function useMemberActions({
         description={
           deleteTarget ? (
             <>
-              <span className="font-semibold text-slate-700">{deleteTarget.name}</span> will be
+              <span className="font-semibold text-body">{deleteTarget.name}</span> will be
               permanently removed. This can&apos;t be undone.
             </>
           ) : null

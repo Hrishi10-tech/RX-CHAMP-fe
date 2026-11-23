@@ -33,7 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { cardBase } from "@/components/ui/classes";
+import { Card } from "@/components/ui/Card";
 import { ROLE_LABEL, hasAnyGrant, isOrgAdmin, type Grants, type Role } from "@/constants/roles";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
@@ -49,15 +49,13 @@ export function StepFlow({ steps }: { steps: Step[] }) {
     <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-2" aria-label="Steps">
       {steps.map((s, i) => (
         <li key={s.label} className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-2.5 text-xs font-semibold text-slate-700 shadow-sm">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-card bg-card py-1 pl-1 pr-2.5 text-xs font-semibold text-body shadow-sm">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand/10 text-brand">
               <s.icon className="h-3 w-3" aria-hidden />
             </span>
             {s.label}
           </span>
-          {i < steps.length - 1 && (
-            <ArrowRight className="h-3.5 w-3.5 text-slate-300" aria-hidden />
-          )}
+          {i < steps.length - 1 && <ArrowRight className="h-3.5 w-3.5 text-neutral" aria-hidden />}
         </li>
       ))}
     </ol>
@@ -208,20 +206,20 @@ const GUIDES: Guide[] = [
 
 function GuideCard({ guide }: { guide: Guide }) {
   return (
-    <article className={`${cardBase} flex flex-col gap-3 p-5`}>
+    <Card as="article" className="flex flex-col gap-3 p-5">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/8 text-brand">
           <guide.icon className="h-5 w-5" aria-hidden />
         </span>
-        <h2 className="text-base font-bold text-slate-900">{guide.title}</h2>
+        <h2 className="text-base font-bold text-primary">{guide.title}</h2>
       </div>
-      <p className="text-sm leading-relaxed text-slate-600">{guide.text}</p>
+      <p className="text-sm leading-relaxed text-soft">{guide.text}</p>
       {guide.steps && (
-        <div className="mt-auto rounded-xl bg-slate-50 p-3">
+        <div className="mt-auto rounded-xl bg-fill p-3">
           <StepFlow steps={guide.steps} />
         </div>
       )}
-    </article>
+    </Card>
   );
 }
 
@@ -232,55 +230,55 @@ function AppMock() {
       icon: Coffee,
       title: "Quick break",
       sub: "Any time · 5, 10 or 15 min",
-      tone: "bg-amber-50 text-amber-700",
+      tone: "bg-attention-wash text-attention",
     },
     {
       icon: Timer,
       title: "Next break",
       sub: "Lunch at 1:00 PM",
-      tone: "bg-emerald-50 text-emerald-700",
+      tone: "bg-working-wash text-working",
     },
     {
       icon: Play,
       title: "Focus work",
       sub: "4h 12m today",
-      tone: "bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]",
+      tone: "bg-brand/8 text-brand",
     },
     {
       icon: Video,
       title: "Meeting",
       sub: "Start now or log earlier",
-      tone: "bg-sky-50 text-sky-700",
+      tone: "bg-brand-wash text-brand",
     },
   ];
   return (
     <div
-      className="mx-auto w-full max-w-sm rounded-[1.75rem] border-[6px] border-slate-800 bg-slate-50 p-3 shadow-xl"
+      className="mx-auto w-full max-w-sm rounded-[1.75rem] border-[6px] border-strong bg-fill p-3 shadow-xl"
       aria-hidden
     >
-      <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm">
-        <span className="text-xs font-bold text-slate-900">RX Vision</span>
-        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Working since 9:05 AM
+      <div className="flex items-center justify-between rounded-xl bg-card px-3 py-2 shadow-sm">
+        <span className="text-xs font-bold text-primary">RX Vision</span>
+        <span className="flex items-center gap-1 text-[0.625rem] font-semibold text-working">
+          <span className="h-1.5 w-1.5 rounded-full bg-working" /> Working since 9:05 AM
         </span>
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2">
         {tiles.map((t) => (
-          <div key={t.title} className="rounded-xl bg-white p-2.5 shadow-sm">
+          <div key={t.title} className="rounded-xl bg-card p-2.5 shadow-sm">
             <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${t.tone}`}>
               <t.icon className="h-3.5 w-3.5" />
             </span>
-            <p className="mt-1.5 text-[11px] font-bold text-slate-800">{t.title}</p>
-            <p className="text-[9px] text-slate-500">{t.sub}</p>
+            <p className="mt-1.5 text-[0.6875rem] font-bold text-strong">{t.title}</p>
+            <p className="text-[0.5625rem] text-quiet">{t.sub}</p>
           </div>
         ))}
       </div>
-      <div className="mt-2 rounded-xl bg-white p-2.5 shadow-sm">
-        <p className="text-[10px] font-semibold text-slate-500">
+      <div className="mt-2 rounded-xl bg-card p-2.5 shadow-sm">
+        <p className="text-[0.625rem] font-semibold text-quiet">
           Paid breaks 1h 05m of 1h 30m · unpaid 0m
         </p>
-        <div className="mt-1 h-1.5 rounded-full bg-slate-100">
-          <div className="h-full w-3/4 rounded-full bg-[rgb(34_34_204)]" />
+        <div className="mt-1 h-1.5 rounded-full bg-panel">
+          <div className="h-full w-3/4 rounded-full bg-brand" />
         </div>
       </div>
     </div>
@@ -290,19 +288,17 @@ function AppMock() {
 function AwayMock() {
   return (
     <div
-      className="mx-auto w-full max-w-xs rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+      className="mx-auto w-full max-w-xs rounded-2xl border border-card bg-card p-4 shadow-xl"
       aria-hidden
     >
-      <p className="text-xs font-bold text-slate-900">Away since 2:05 PM · 23 min</p>
-      <p className="mt-0.5 text-[11px] text-slate-500">What were you doing?</p>
+      <p className="text-xs font-bold text-primary">Away since 2:05 PM · 23 min</p>
+      <p className="mt-0.5 text-[0.6875rem] text-quiet">What were you doing?</p>
       <div className="mt-3 grid grid-cols-2 gap-1.5">
         {["Took a break", "Thinking", "Short meeting", "Other work"].map((r, i) => (
           <span
             key={r}
-            className={`rounded-lg border px-2 py-1.5 text-center text-[10px] font-semibold ${
-              i === 2
-                ? "border-[rgb(34_34_204)] bg-[rgba(34,34,204,0.06)] text-[rgb(34_34_204)]"
-                : "border-slate-200 text-slate-600"
+            className={`rounded-lg border px-2 py-1.5 text-center text-[0.625rem] font-semibold ${
+              i === 2 ? "border-brand bg-brand/6 text-brand" : "border-card text-soft"
             }`}
           >
             {r}
@@ -310,14 +306,14 @@ function AwayMock() {
         ))}
       </div>
       <div className="mt-3 space-y-1.5">
-        <div className="h-6 rounded-md border border-slate-200 px-2 text-[10px] leading-6 text-slate-400">
+        <div className="h-6 rounded-md border border-card px-2 text-[0.625rem] leading-6 text-quiet">
           Participants
         </div>
-        <div className="h-6 rounded-md border border-slate-200 px-2 text-[10px] leading-6 text-slate-400">
+        <div className="h-6 rounded-md border border-card px-2 text-[0.625rem] leading-6 text-quiet">
           Who will mail the minutes
         </div>
       </div>
-      <div className="mt-3 rounded-lg bg-[rgb(34_34_204)] py-1.5 text-center text-[11px] font-bold text-white">
+      <div className="mt-3 rounded-lg bg-brand py-1.5 text-center text-[0.6875rem] font-bold text-on-brand">
         Submit
       </div>
     </div>
@@ -394,12 +390,12 @@ export function InstructionsView() {
         ))}
       </div>
 
-      <section className={`${cardBase} overflow-hidden`} aria-labelledby="staff-heading">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h2 id="staff-heading" className="text-lg font-bold text-slate-900">
+      <Card as="section" className="overflow-hidden" aria-labelledby="staff-heading">
+        <div className="border-b border-divider px-5 py-4">
+          <h2 id="staff-heading" className="text-lg font-bold text-primary">
             What staff see in the app
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-quiet">
             Staff never use this portal. Their day, breaks, meetings and history live in the RX
             Vision app on their computer.
           </p>
@@ -408,32 +404,32 @@ export function InstructionsView() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
             <figure>
               <AppMock />
-              <figcaption className="mt-2 text-center text-xs text-slate-500">
+              <figcaption className="mt-2 text-center text-xs text-quiet">
                 The four tiles
               </figcaption>
             </figure>
             <figure>
               <AwayMock />
-              <figcaption className="mt-2 text-center text-xs text-slate-500">
+              <figcaption className="mt-2 text-center text-xs text-quiet">
                 The away pop-up
               </figcaption>
             </figure>
           </div>
           <ul className="grid content-start gap-3 sm:grid-cols-2">
             {STAFF_POINTS.map((p) => (
-              <li key={p.title} className="flex gap-3 rounded-xl border border-slate-100 p-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+              <li key={p.title} className="flex gap-3 rounded-xl border border-divider p-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-panel text-soft">
                   <p.icon className="h-4 w-4" aria-hidden />
                 </span>
                 <span>
-                  <span className="block text-sm font-semibold text-slate-800">{p.title}</span>
-                  <span className="block text-xs leading-relaxed text-slate-500">{p.text}</span>
+                  <span className="block text-sm font-semibold text-strong">{p.title}</span>
+                  <span className="block text-xs leading-relaxed text-quiet">{p.text}</span>
                 </span>
               </li>
             ))}
           </ul>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

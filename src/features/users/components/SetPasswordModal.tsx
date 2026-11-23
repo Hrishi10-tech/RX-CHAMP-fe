@@ -7,17 +7,11 @@ import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
 import { PasswordField } from "@/components/ui/PasswordField";
-import {
-  btnPrimary,
-  btnSecondary,
-  checkboxBase,
-  errorText,
-  hintBase,
-  labelBase,
-} from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { PASSWORD_RULE, newPasswordProblem } from "@/features/auth/lib/passwordRules";
 import { setUserPassword } from "@/features/users/api/setUserPassword";
+import { Checkbox, Hint, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 export interface SetPasswordTarget {
   id: string;
@@ -94,9 +88,7 @@ export function SetPasswordModal({
     >
       <form onSubmit={submit} noValidate className="space-y-4 px-6 py-5">
         <div>
-          <label htmlFor="sp-password" className={labelBase}>
-            New password
-          </label>
+          <Label htmlFor="sp-password">New password</Label>
           <PasswordField
             id="sp-password"
             data-autofocus
@@ -107,39 +99,38 @@ export function SetPasswordModal({
             onChange={(e) => setPassword(e.target.value)}
             disabled={pending}
           />
-          <p id="sp-password-hint" className={error ? errorText : hintBase}>
+          <Hint id="sp-password-hint" error={error}>
             {error ?? PASSWORD_RULE}
-          </p>
+          </Hint>
         </div>
 
-        <label className="flex cursor-pointer items-start gap-2.5 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            className={`${checkboxBase} mt-0.5`}
+        <label className="flex cursor-pointer items-start gap-2.5 text-sm text-body">
+          <Checkbox
+            className="mt-0.5"
             checked={signOutEverywhere}
             onChange={(e) => setSignOutEverywhere(e.target.checked)}
             disabled={pending}
           />
           <span>
             Sign them out everywhere
-            <span className="block text-xs text-slate-500">
+            <span className="block text-xs text-quiet">
               Use this if the account may be compromised. Their desktop app signs out too.
             </span>
           </span>
         </label>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button type="button" onClick={close} disabled={pending} className={btnSecondary}>
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button variant="secondary" type="button" onClick={close} disabled={pending}>
             Cancel
-          </button>
-          <button type="submit" disabled={pending} className={btnPrimary}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={pending}>
             {pending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <KeyRound className="h-4 w-4" aria-hidden />
             )}
             {pending ? "Setting…" : "Set password"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

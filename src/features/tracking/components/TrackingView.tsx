@@ -7,16 +7,11 @@ import { toast } from "sonner";
 
 import { Select } from "@/components/ui/Select";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnGhost,
-  btnPrimary,
-  btnSecondary,
-  btnSmall,
-  cardBase,
-  errorText,
-  inputBase,
-  inputInvalid,
-} from "@/components/ui/classes";
+import { Card } from "@/components/ui/Card";
+import { FieldError, Input } from "@/components/ui/Field";
+import { IconButton } from "@/components/ui/IconButton";
+import { ChoiceChip } from "@/components/ui/ChoiceChip";
+import { Button } from "@/components/ui/Button";
 import { errorMessage } from "@/lib/api";
 import { useOrgScope } from "@/lib/org/selection";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
@@ -60,12 +55,12 @@ function Switch({
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
-        checked ? "bg-[rgb(34_34_204)]" : "bg-slate-200"
+      className={`relative h-7 w-12 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 ${
+        checked ? "bg-brand" : "bg-edge"
       }`}
     >
       <span
-        className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${
+        className={`absolute top-1 h-5 w-5 rounded-full bg-card shadow transition-all ${
           checked ? "left-6" : "left-1"
         }`}
       />
@@ -132,55 +127,55 @@ function DefaultsCard({ settings }: { settings: IdleSettings }) {
   }
 
   return (
-    <section className={`${cardBase} overflow-hidden`}>
+    <Card as="section" className="overflow-hidden">
       <div className="grid gap-5 p-5 md:grid-cols-2">
         <div className="flex items-start gap-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/8 text-brand">
             <MousePointerClick className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-bold text-slate-900">Ask why when someone is away</h2>
+              <h2 className="text-sm font-bold text-primary">Ask why when someone is away</h2>
               <Switch
                 checked={enabled}
                 onChange={setEnabled}
                 label="Input tracking for the organisation"
               />
             </div>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-quiet">
               The organisation&apos;s default. With no keyboard or mouse input for the minutes
               below, the app asks the person why. Departments and people can differ.
             </p>
           </div>
         </div>
         <div>
-          <label htmlFor="idle-minutes" className="text-sm font-semibold text-slate-700">
+          <label htmlFor="idle-minutes" className="text-sm font-semibold text-body">
             Away after
           </label>
           <div className="mt-1.5 flex items-center gap-2">
             <div className="w-24 shrink-0">
-              <input
+              <Input
                 id="idle-minutes"
                 inputMode="numeric"
                 value={minutes}
                 onChange={(e) => setMinutes(e.target.value)}
                 aria-invalid={minutesValue === null}
-                className={`${inputBase} ${minutesValue === null ? inputInvalid : ""}`}
+                invalid={minutesValue === null}
               />
             </div>
-            <span className="text-sm text-slate-500">minutes without input</span>
+            <span className="text-sm text-quiet">minutes without input</span>
           </div>
           {minutesValue === null && (
-            <p className={errorText}>
+            <FieldError>
               Use a whole number from {IDLE_MINUTES.min} to {IDLE_MINUTES.max}.
-            </p>
+            </FieldError>
           )}
         </div>
       </div>
 
-      <div className="border-t border-slate-100 p-5">
-        <h2 className="text-sm font-bold text-slate-900">Reasons people can give</h2>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="border-t border-divider p-5">
+        <h2 className="text-sm font-bold text-primary">Reasons people can give</h2>
+        <p className="mt-1 text-sm text-quiet">
           Rename the built-in reasons or add your own. Anything but a break needs approval to count
           as focus.
         </p>
@@ -188,10 +183,10 @@ function DefaultsCard({ settings }: { settings: IdleSettings }) {
           {reasons.map((r) => (
             <li
               key={r.key}
-              className="grid gap-2 rounded-xl border border-slate-100 p-3 sm:grid-cols-[minmax(0,16rem)_1fr_auto] sm:items-center"
+              className="grid gap-2 rounded-xl border border-divider p-3 sm:grid-cols-[minmax(0,16rem)_1fr_auto] sm:items-center"
             >
               <div>
-                <input
+                <Input
                   value={r.label}
                   aria-label={`Label for ${r.builtIn ? r.kind : "custom reason"}`}
                   onChange={(e) =>
@@ -200,12 +195,12 @@ function DefaultsCard({ settings }: { settings: IdleSettings }) {
                     )
                   }
                   aria-invalid={Boolean(problems[r.key])}
-                  className={`${inputBase} ${problems[r.key] ? inputInvalid : ""}`}
+                  invalid={Boolean(problems[r.key])}
                 />
-                {problems[r.key] && <p className={errorText}>{problems[r.key]}</p>}
+                {problems[r.key] && <FieldError>{problems[r.key]}</FieldError>}
               </div>
-              <p className="text-xs text-slate-500">
-                <span className="mr-1.5 inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+              <p className="text-xs text-quiet">
+                <span className="mr-1.5 inline-flex rounded-md bg-panel px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-quiet">
                   {r.builtIn ? "Built-in" : "Custom"}
                 </span>
                 {REASON_ASKS[r.builtIn ? String(r.kind) : "CUSTOM"] ?? REASON_ASKS.CUSTOM}
@@ -213,21 +208,21 @@ function DefaultsCard({ settings }: { settings: IdleSettings }) {
               {r.builtIn ? (
                 <span className="hidden w-9 sm:block" />
               ) : (
-                <button
-                  type="button"
+                <IconButton
+                  variant="boxed"
                   onClick={() => setReasons((rs) => rs.filter((x) => x.key !== r.key))}
-                  aria-label={`Remove ${r.label || "this reason"}`}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600"
+                  label={`Remove ${r.label || "this reason"}`}
+                  className="hover:text-attention"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </IconButton>
               )}
             </li>
           ))}
         </ul>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start">
           <div className="sm:w-72">
-            <input
+            <Input
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               onKeyDown={(e) => {
@@ -238,27 +233,22 @@ function DefaultsCard({ settings }: { settings: IdleSettings }) {
               }}
               placeholder="New reason, e.g. Site visit"
               aria-label="New reason"
-              className={`${inputBase} ${newProblem ? inputInvalid : ""}`}
+              invalid={Boolean(newProblem)}
             />
-            {newProblem && <p className={errorText}>{newProblem}</p>}
+            {newProblem && <FieldError>{newProblem}</FieldError>}
           </div>
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={addReason}
-            disabled={!newLabel.trim()}
-          >
+          <Button type="button" onClick={addReason} disabled={!newLabel.trim()}>
             <Plus className="h-4 w-4" aria-hidden />
             Add reason
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col-reverse gap-2 border-t border-divider bg-fill/60 px-5 py-3 sm:flex-row sm:items-center sm:justify-end">
         {dirty && (
-          <button
+          <Button
             type="button"
-            className={btnGhost}
+            variant="ghost"
             onClick={() => {
               setEnabled(settings.defaultEnabled);
               setMinutes(String(settings.defaultMinutes));
@@ -267,11 +257,11 @@ function DefaultsCard({ settings }: { settings: IdleSettings }) {
           >
             <RotateCcw className="h-4 w-4" aria-hidden />
             Undo changes
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           type="button"
-          className={btnPrimary}
+          variant="primary"
           disabled={
             !dirty || save.isPending || minutesValue === null || Object.keys(problems).length > 0
           }
@@ -286,9 +276,9 @@ function DefaultsCard({ settings }: { settings: IdleSettings }) {
             <Save className="h-4 w-4" aria-hidden />
           )}
           Save
-        </button>
+        </Button>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -355,7 +345,7 @@ function DepartmentRow({
     <li className="grid gap-3 p-4 lg:grid-cols-[minmax(10rem,14rem)_11rem_7rem_minmax(0,1fr)_auto] lg:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <DepartmentIcon icon={department.icon} size="sm" />
-        <span className="truncate text-sm font-semibold text-slate-800">{department.name}</span>
+        <span className="truncate text-sm font-semibold text-strong">{department.name}</span>
       </div>
       <div className="[&>button]:mt-0 [&>button]:py-2">
         <Select
@@ -370,14 +360,15 @@ function DepartmentRow({
         />
       </div>
       <div>
-        <input
+        <Input
           inputMode="numeric"
           value={minutes}
           onChange={(e) => setMinutes(e.target.value)}
           placeholder={`${settings.defaultMinutes} min`}
           aria-label={`Minutes for ${department.name}`}
           aria-invalid={minutesBad}
-          className={`${inputBase} h-10 ${minutesBad ? inputInvalid : ""}`}
+          invalid={minutesBad}
+          className="h-10"
         />
       </div>
       <div
@@ -388,35 +379,26 @@ function DepartmentRow({
         {settings.reasons.map((r) => {
           const on = shownKeys.includes(r.key);
           return (
-            <button
-              key={r.key}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggleKey(r.key)}
-              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
-                on
-                  ? "border-[rgba(34,34,204,0.35)] bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]"
-                  : "border-slate-200 bg-white text-slate-400 hover:text-slate-600"
-              }`}
-            >
+            <ChoiceChip key={r.key} on={on} onClick={() => toggleKey(r.key)} className="gap-1">
               {on && <Check className="h-3 w-3" aria-hidden />}
               {r.label}
-            </button>
+            </ChoiceChip>
           );
         })}
         {keys !== null && (
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={() => setKeys(null)}
-            className="text-xs font-semibold text-slate-500 underline-offset-2 hover:underline"
+            className="px-2 py-1 text-xs"
           >
             Use default set
-          </button>
+          </Button>
         )}
       </div>
-      <button
+      <Button
         type="button"
-        className={btnSmall}
+        variant="small"
         disabled={!dirty || minutesBad || save.isPending}
         onClick={() => save.mutate()}
       >
@@ -426,7 +408,7 @@ function DepartmentRow({
           <Save className="h-3.5 w-3.5" aria-hidden />
         )}
         Save
-      </button>
+      </Button>
     </li>
   );
 }
@@ -454,24 +436,24 @@ export function TrackingView() {
         subtitle="When someone is away from their keyboard and mouse, the RX Vision app asks why. Set who it asks, when, and which answers it offers."
       />
       {settings.isPending ? (
-        <div className={cardBase}>
+        <Card>
           <LoadingState label="Loading input tracking…" />
-        </div>
+        </Card>
       ) : settings.isError ? (
-        <div className={cardBase}>
+        <Card>
           <ErrorState
             message={errorMessage(settings.error)}
             onRetry={() => void settings.refetch()}
             retrying={settings.isFetching}
           />
-        </div>
+        </Card>
       ) : (
         <>
           <DefaultsCard settings={settings.data} />
-          <section className={`${cardBase} overflow-hidden`}>
-            <div className="border-b border-slate-100 px-5 py-4">
-              <h2 className="text-sm font-bold text-slate-900">Departments</h2>
-              <p className="mt-0.5 text-sm text-slate-500">
+          <Card as="section" className="overflow-hidden">
+            <div className="border-b border-divider px-5 py-4">
+              <h2 className="text-sm font-bold text-primary">Departments</h2>
+              <p className="mt-0.5 text-sm text-quiet">
                 Empty means the organisation default. Working on hardware is offered only where you
                 add it.
               </p>
@@ -479,9 +461,9 @@ export function TrackingView() {
             {departments.isPending ? (
               <LoadingState label="Loading departments…" />
             ) : (departments.data ?? []).length === 0 ? (
-              <p className="px-5 py-8 text-center text-sm text-slate-500">No departments yet.</p>
+              <p className="px-5 py-8 text-center text-sm text-quiet">No departments yet.</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-divider">
                 {(departments.data ?? []).map((d) => (
                   <DepartmentRow
                     key={d.id}
@@ -499,7 +481,7 @@ export function TrackingView() {
                 ))}
               </ul>
             )}
-          </section>
+          </Card>
         </>
       )}
     </div>

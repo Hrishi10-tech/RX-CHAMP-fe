@@ -25,8 +25,8 @@ const ROW = "flex min-h-[3.25rem] items-center justify-between gap-4 px-5 py-3 t
 function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className={ROW}>
-      <span className="text-slate-400">{label}</span>
-      <span className="min-w-0 truncate text-right font-medium text-slate-100">
+      <span className="text-quiet">{label}</span>
+      <span className="min-w-0 truncate text-right font-medium text-primary">
         {value || "Not set"}
       </span>
     </div>
@@ -65,7 +65,7 @@ export function ProfileSettings() {
 
       <section
         aria-label="Your profile"
-        className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#1A2130] text-slate-100 shadow-sm"
+        className="overflow-hidden rounded-2xl border border-card bg-card text-primary shadow-sm"
       >
         <div className="flex flex-col items-center px-5 pb-6 pt-7 text-center">
           <FloatingIcon
@@ -76,24 +76,24 @@ export function ProfileSettings() {
             size={96}
           />
           <p className="mt-4 text-lg font-semibold">{name}</p>
-          {department && <p className="text-sm text-slate-400">{department}</p>}
-          <p className="mt-2 min-h-4 text-xs text-slate-300">
+          {department && <p className="text-sm text-quiet">{department}</p>}
+          <p className="mt-2 min-h-4 text-xs text-quiet">
             {progress
               ? dayLabel(progress.status, progress.workedSec, progress.targetSec, progress.date)
               : day.isError && DAY_NOT_LOADED}
           </p>
-          {over && <p className="mt-0.5 text-xs font-semibold text-[#34D27A]">{over}</p>}
+          {over && <p className="mt-0.5 text-xs font-semibold text-working">{over}</p>}
         </div>
 
-        <div className="divide-y divide-white/[0.07] border-t border-white/[0.07]">
+        <div className="divide-y divide-card border-t border-card">
           <Link
             href={AVATAR_ROUTE}
-            className={`${ROW} font-semibold transition-colors hover:bg-white/[0.04] focus-visible:bg-white/[0.04] focus-visible:outline-none`}
+            className={`${ROW} font-semibold transition-colors hover:bg-fill focus-visible:bg-fill focus-visible:outline-none`}
           >
             <span>Avatar</span>
             <span className="flex items-center gap-2.5">
               <PersonAvatar name={name} avatarId={avatarId} userId={user?.id} size={28} />
-              <ChevronRight className="h-4 w-4 text-slate-500" aria-hidden />
+              <ChevronRight className="h-4 w-4 text-quiet" aria-hidden />
             </span>
           </Link>
           <DetailRow label="Email" value={user?.email} />

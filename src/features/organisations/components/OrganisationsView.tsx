@@ -10,7 +10,8 @@ import { ActionMenu } from "@/components/ui/ActionMenu";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, cardBase } from "@/components/ui/classes";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { rowActionButtonClass, rowActionHover } from "@/components/ui/rowAction";
 import type { Column } from "@/components/ui/types";
 import { errorCode, errorMessage } from "@/lib/api";
@@ -71,19 +72,19 @@ export function OrganisationsView() {
         header: "Organisation",
         render: (o) => (
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/8 text-brand">
               <Building2 className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0">
-              <p className="truncate font-semibold text-slate-900">
+              <p className="truncate font-semibold text-primary">
                 {o.name}
                 {selected?.id === o.id && (
-                  <span className="ml-2 rounded-full bg-[rgba(34,34,204,0.08)] px-2 py-0.5 text-[10px] font-bold uppercase text-[rgb(34_34_204)]">
+                  <span className="ml-2 rounded-full bg-brand/8 px-2 py-0.5 text-[0.625rem] font-bold uppercase text-brand">
                     Selected
                   </span>
                 )}
               </p>
-              <p className="text-xs text-slate-400">Created {created(o.createdAt) || "—"}</p>
+              <p className="text-xs text-quiet">Created {created(o.createdAt) || "–"}</p>
             </div>
           </div>
         ),
@@ -101,12 +102,12 @@ export function OrganisationsView() {
                 size={28}
               />
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-800">{o.admin.name}</p>
-                <p className="truncate text-xs text-slate-400">{o.admin.email}</p>
+                <p className="truncate text-sm font-medium text-strong">{o.admin.name}</p>
+                <p className="truncate text-xs text-quiet">{o.admin.email}</p>
               </div>
             </div>
           ) : (
-            <span className="text-sm font-semibold text-amber-700">No admin yet</span>
+            <span className="text-sm font-semibold text-attention">No admin yet</span>
           ),
       },
       { key: "staff", header: "Staff", align: "right", render: (o) => o.counts.staff },
@@ -177,25 +178,25 @@ export function OrganisationsView() {
         title="Organisations"
         subtitle="Each organisation is a hard boundary: its own Admin, people, shifts and settings. Click one to see its departments and people."
         actions={
-          <button type="button" className={btnPrimary} onClick={() => setAdding(true)}>
+          <Button type="button" variant="primary" onClick={() => setAdding(true)}>
             <Plus className="h-4 w-4" aria-hidden />
             Add organisation
-          </button>
+          </Button>
         }
       />
 
       {list.isPending ? (
-        <div className={cardBase}>
+        <Card>
           <LoadingState label="Loading organisations…" />
-        </div>
+        </Card>
       ) : list.isError ? (
-        <div className={cardBase}>
+        <Card>
           <ErrorState
             message={errorMessage(list.error)}
             onRetry={() => void list.refetch()}
             retrying={list.isFetching}
           />
-        </div>
+        </Card>
       ) : (
         <DataTable
           title={`Organisations (${list.data.length})`}
@@ -240,8 +241,8 @@ export function OrganisationsView() {
         description={
           deleting ? (
             <>
-              <span className="font-semibold text-slate-700">{deleting.name}</span> will be removed.
-              An organisation with active people can&apos;t be deleted.
+              <span className="font-semibold text-body">{deleting.name}</span> will be removed. An
+              organisation with active people can&apos;t be deleted.
             </>
           ) : null
         }

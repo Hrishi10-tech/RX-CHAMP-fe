@@ -32,6 +32,8 @@ import { updateUser } from "@/features/users/api/updateUser";
 import { GenderField } from "@/features/users/components/GenderField";
 import { errorMessage } from "@/lib/api";
 import { initialsOf } from "@/lib/text/initials";
+import { Button } from "@/components/ui/Button";
+import { Page } from "@/components/layout/Page";
 
 const PREVIEW_TABS: SegmentedTab<FloatingIconStatus>[] = [
   { value: "WORKING", label: "Working" },
@@ -40,9 +42,8 @@ const PREVIEW_TABS: SegmentedTab<FloatingIconStatus>[] = [
   { value: "ENDED", label: "Ended" },
 ];
 
-const CARD =
-  "rounded-2xl border border-white/[0.07] bg-[#1A2130] p-5 text-slate-100 shadow-sm sm:p-6";
-const TEAL_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6FC9B6]/60";
+const CARD = "rounded-2xl border border-card bg-card p-5 text-primary shadow-sm sm:p-6";
+const TEAL_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60";
 
 function AvatarTile({
   avatar,
@@ -63,7 +64,7 @@ function AvatarTile({
         aria-pressed={selected}
         aria-label={`Avatar ${avatar.id}${isDefault ? ", your default" : ""}`}
         className={`relative rounded-full p-[3px] transition ${TEAL_RING} ${
-          selected ? "ring-2 ring-[#6FC9B6]" : "hover:ring-1 hover:ring-white/25"
+          selected ? "ring-2 ring-brand" : "hover:ring-1 hover:ring-edge-strong"
         }`}
       >
         <Image
@@ -73,16 +74,16 @@ function AvatarTile({
           width={60}
           height={60}
           draggable={false}
-          className="h-[52px] w-[52px] max-w-none rounded-full bg-[#2A303B] object-cover sm:h-[60px] sm:w-[60px]"
+          className="h-[52px] w-[52px] max-w-none rounded-full bg-fill object-cover sm:h-[60px] sm:w-[60px]"
         />
         {selected && (
-          <span className="absolute bottom-0 right-0 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#6FC9B6] text-[#10202A] ring-2 ring-[#1A2130]">
+          <span className="absolute bottom-0 right-0 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-brand text-on-brand ring-2 ring-card">
             <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
           </span>
         )}
       </button>
       {isDefault && (
-        <span className="absolute -bottom-3.5 text-[11px] leading-none text-slate-400">
+        <span className="absolute -bottom-3.5 text-[0.6875rem] leading-none text-quiet">
           Default
         </span>
       )}
@@ -117,7 +118,7 @@ function OwnGender({ userId }: { userId: string }) {
 
   return (
     <div className="mt-2 space-y-3">
-      <span id="own-gender-label" className="text-sm font-semibold text-slate-200">
+      <span id="own-gender-label" className="text-sm font-semibold text-primary">
         Gender
       </span>
       <GenderField
@@ -127,19 +128,20 @@ function OwnGender({ userId }: { userId: string }) {
         disabled={saving}
       />
       {failure && (
-        <p role="alert" className="text-sm text-amber-300">
+        <p role="alert" className="text-sm text-attention-edge-strong">
           {failure}
         </p>
       )}
-      <button
+      <Button
+        variant="primary"
         type="button"
         onClick={() => void save()}
         disabled={!gender || saving}
-        className={`inline-flex items-center justify-center gap-2 rounded-lg bg-[#6FC9B6] px-5 py-2.5 text-sm font-semibold text-[#10202A] transition hover:bg-[#82D3C2] disabled:cursor-not-allowed disabled:opacity-50 ${TEAL_RING}`}
+        className="px-5"
       >
         {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
         {saving ? "Saving…" : "Save gender"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -247,8 +249,8 @@ export function AvatarSettings() {
     );
   } else if (!library) {
     chooser = (
-      <div className="flex flex-col items-start gap-2 text-sm text-slate-300">
-        <p className="text-base font-semibold text-slate-100">Choose an avatar</p>
+      <div className="flex flex-col items-start gap-2 text-sm text-quiet">
+        <p className="text-base font-semibold text-primary">Choose an avatar</p>
         {role === "SUPER_ADMIN" && user ? (
           <>
             <p>Set your gender first. It decides which avatars you can choose from.</p>
@@ -264,7 +266,7 @@ export function AvatarSettings() {
       <>
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-semibold">Choose an avatar</h2>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-quiet">
             {own.length} {library} avatars
           </span>
         </div>
@@ -292,28 +294,28 @@ export function AvatarSettings() {
             ))}
         </div>
         {failure && (
-          <p role="alert" className="mt-4 text-sm text-amber-300">
+          <p role="alert" className="mt-4 text-sm text-attention-edge-strong">
             {failure}
           </p>
         )}
         <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
+          <Button
             type="button"
             onClick={onReset}
             disabled={busy || (!pending && !mine.data?.chosenAvatarId)}
-            className={`rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50 ${TEAL_RING}`}
           >
             {reset.isPending ? "Resetting…" : "Reset to default"}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             type="button"
             onClick={onSave}
             disabled={busy || !dirty}
-            className={`inline-flex items-center justify-center gap-2 rounded-lg bg-[#6FC9B6] px-5 py-2.5 text-sm font-semibold text-[#10202A] transition hover:bg-[#82D3C2] disabled:cursor-not-allowed disabled:opacity-50 ${TEAL_RING}`}
+            className="px-5"
           >
             {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {save.isPending ? "Saving…" : "Save changes"}
-          </button>
+          </Button>
         </div>
       </>
     );
@@ -330,7 +332,7 @@ export function AvatarSettings() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <Page width="form" className="space-y-5">
       <ProfileTrail title="Avatar" parent="Profile" />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
@@ -350,22 +352,22 @@ export function AvatarSettings() {
           </div>
           <div className="mt-6 flex flex-col items-center text-center">
             {preview(160, largeUrl)}
-            <p className="mt-4 min-h-5 text-sm text-slate-300" aria-live="polite">
+            <p className="mt-4 min-h-5 text-sm text-quiet" aria-live="polite">
               {label}
             </p>
-            {over && <p className="mt-1 text-xs font-semibold text-[#34D27A]">{over}</p>}
+            {over && <p className="mt-1 text-xs font-semibold text-working">{over}</p>}
           </div>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <span className="text-xs text-slate-400">Real size</span>
+            <span className="text-xs text-quiet">Real size</span>
             <span
               data-tile="dark"
-              className="flex h-[76px] w-[100px] items-center justify-center rounded-xl bg-[#131823]"
+              className="flex h-[76px] w-[100px] items-center justify-center rounded-xl bg-field"
             >
               {preview(56, realSizeUrl)}
             </span>
             <span
               data-tile="light"
-              className="flex h-[76px] w-[100px] items-center justify-center rounded-xl bg-[#EEF0F4]"
+              className="flex h-[76px] w-[100px] items-center justify-center rounded-xl bg-paper"
             >
               {preview(56, realSizeUrl)}
             </span>
@@ -376,6 +378,6 @@ export function AvatarSettings() {
           {chooser}
         </section>
       </div>
-    </div>
+    </Page>
   );
 }

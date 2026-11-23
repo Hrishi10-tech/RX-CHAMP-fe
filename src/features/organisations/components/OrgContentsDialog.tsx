@@ -7,7 +7,8 @@ import { ArrowRight, Network, Search, Users } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Modal } from "@/components/ui/Modal";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, btnSecondary } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Field";
 import { errorMessage } from "@/lib/api";
 import { DepartmentIcon } from "@/features/departments/components/DepartmentIcon";
 import { getOrgDepartments, getOrgPeople } from "@/features/organisations/api/orgContents";
@@ -74,7 +75,7 @@ export function OrgContentsDialog({
       aria-selected={tab === value}
       onClick={() => setTab(value)}
       className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition sm:flex-none ${
-        tab === value ? "bg-[rgb(34_34_204)] text-white" : "text-slate-600 hover:bg-slate-100"
+        tab === value ? "bg-fill text-primary" : "text-soft hover:bg-panel"
       }`}
     >
       {label} <span className="tabular-nums opacity-80">{count}</span>
@@ -97,7 +98,7 @@ export function OrgContentsDialog({
         <div
           role="tablist"
           aria-label="Inside this organisation"
-          className="flex gap-1 rounded-xl border border-slate-200 p-1"
+          className="flex gap-1 rounded-xl border border-card p-1"
         >
           {tabBtn("departments", "Departments", organisation.counts.departments)}
           {tabBtn(
@@ -117,24 +118,24 @@ export function OrgContentsDialog({
               retrying={departments.isFetching}
             />
           ) : departments.data.length === 0 ? (
-            <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+            <p className="rounded-xl bg-fill px-4 py-6 text-center text-sm text-quiet">
               No departments yet.
             </p>
           ) : (
-            <ul className="max-h-[50vh] divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200">
+            <ul className="max-h-[50vh] divide-y divide-divider overflow-y-auto rounded-xl border border-card">
               {departments.data.map((d) => (
                 <li key={d.id} className="flex items-start gap-3 px-3 py-2.5">
                   <DepartmentIcon icon={d.icon} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900">{d.name}</p>
-                    <p className="truncate text-xs text-slate-500">
+                    <p className="truncate text-sm font-semibold text-primary">{d.name}</p>
+                    <p className="truncate text-xs text-quiet">
                       {d.managers.length
                         ? `Managers: ${d.managers.map((m) => m.name).join(", ")}`
                         : "No manager"}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs font-semibold text-slate-600">
-                    <Users className="mr-1 inline h-3.5 w-3.5 text-slate-400" aria-hidden />
+                  <span className="shrink-0 text-xs font-semibold text-soft">
+                    <Users className="mr-1 inline h-3.5 w-3.5 text-neutral" aria-hidden />
                     {d.staffCount} staff
                   </span>
                 </li>
@@ -154,27 +155,27 @@ export function OrgContentsDialog({
             <label className="relative block">
               <span className="sr-only">Search people</span>
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral"
                 aria-hidden
               />
-              <input
+              <Input
                 type="search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search name, email or department"
-                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-[rgb(34_34_204)]"
+                className="h-10 pl-9 font-normal"
               />
             </label>
-            <ul className="max-h-[50vh] divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200">
+            <ul className="max-h-[50vh] divide-y divide-divider overflow-y-auto rounded-xl border border-card">
               {members.length === 0 ? (
-                <li className="px-3 py-6 text-center text-sm text-slate-500">Nobody matches.</li>
+                <li className="px-3 py-6 text-center text-sm text-quiet">Nobody matches.</li>
               ) : (
                 members.map((m) => (
                   <li key={m.id} className="flex items-center gap-3 px-3 py-2.5">
                     <PersonAvatar name={m.name} avatarId={m.avatarId} userId={m.id} size={32} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900">{m.name}</p>
-                      <p className="truncate text-xs text-slate-500">
+                      <p className="truncate text-sm font-semibold text-primary">{m.name}</p>
+                      <p className="truncate text-xs text-quiet">
                         {m.email}
                         {m.departments.length
                           ? ` · ${m.departments.map((d) => d.name).join(", ")}`
@@ -188,42 +189,36 @@ export function OrgContentsDialog({
               )}
             </ul>
             {(people.data?.totalPages ?? 1) > 1 && (
-              <div className="flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center justify-between text-xs text-quiet">
                 <span>
                   Page {page} of {people.data?.totalPages} · {people.data?.total} people
                 </span>
                 <span className="flex gap-2">
-                  <button
-                    type="button"
-                    className={btnSecondary}
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => p - 1)}
-                  >
+                  <Button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                     Previous
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className={btnSecondary}
                     disabled={page >= (people.data?.totalPages ?? 1)}
                     onClick={() => setPage((p) => p + 1)}
                   >
                     Next
-                  </button>
+                  </Button>
                 </span>
               </div>
             )}
           </div>
         )}
 
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button type="button" className={btnSecondary} onClick={onClose}>
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" onClick={onClose}>
             Close
-          </button>
-          <button type="button" className={btnPrimary} onClick={() => onOpen(organisation)}>
+          </Button>
+          <Button type="button" variant="primary" onClick={() => onOpen(organisation)}>
             <Network className="h-4 w-4" aria-hidden />
             Work in {organisation.name}
             <ArrowRight className="h-4 w-4" aria-hidden />
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

@@ -7,15 +7,9 @@ import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { Select } from "@/components/ui/Select";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-  labelBase,
-} from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
+import { FieldError, Hint, Label, Input } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 import type { SelectOption } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
 import { PASSWORD_RULE } from "@/features/auth/lib/passwordRules";
@@ -98,8 +92,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   return (
     <section className="space-y-3">
       <div>
-        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
-        {hint && <p className="text-xs text-slate-500">{hint}</p>}
+        <h3 className="text-sm font-bold text-primary">{title}</h3>
+        {hint && <p className="text-xs text-quiet">{hint}</p>}
       </div>
       {children}
     </section>
@@ -251,19 +245,18 @@ export function MemberFormDialog({
     type = "text",
   ) => (
     <div>
-      <label htmlFor={`${uid}-${key}`} className={labelBase}>
-        {label}
-      </label>
-      <input
+      <Label htmlFor={`${uid}-${key}`}>{label}</Label>
+      <Input
         id={`${uid}-${key}`}
         type={type}
         value={draft[key]}
         onChange={(e) => set(key, e.target.value)}
         aria-invalid={Boolean(errors[key])}
-        className={`${inputBase} mt-1.5 ${errors[key] ? inputInvalid : ""}`}
+        invalid={Boolean(errors[key])}
+        className="mt-1.5"
         autoComplete="off"
       />
-      {errors[key] && <p className={errorText}>{errors[key]}</p>}
+      {errors[key] && <FieldError>{errors[key]}</FieldError>}
     </div>
   );
 
@@ -287,7 +280,7 @@ export function MemberFormDialog({
         {formError && (
           <p
             role="alert"
-            className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+            className="rounded-lg border border-attention-edge bg-attention-wash px-3 py-2 text-sm text-attention"
           >
             {formError}
           </p>
@@ -314,11 +307,9 @@ export function MemberFormDialog({
                 firstOptionRef={genderRef}
               />
               {errors.gender ? (
-                <p className={errorText}>{errors.gender}</p>
+                <FieldError>{errors.gender}</FieldError>
               ) : isEdit ? (
-                <p className={hintBase}>
-                  {genderHint(draft.gender || null, initialGender, nextDefault)}
-                </p>
+                <Hint>{genderHint(draft.gender || null, initialGender, nextDefault)}</Hint>
               ) : null}
               {!isEdit && draft.gender && (
                 <DefaultAvatarCard
@@ -331,9 +322,7 @@ export function MemberFormDialog({
           )}
           {!isEdit && (
             <div>
-              <label htmlFor={`${uid}-password`} className={labelBase}>
-                Password
-              </label>
+              <Label htmlFor={`${uid}-password`}>Password</Label>
               <PasswordField
                 id={`${uid}-password`}
                 value={draft.password}
@@ -342,16 +331,16 @@ export function MemberFormDialog({
                 invalid={Boolean(errors.password)}
               />
               {errors.password ? (
-                <p className={errorText}>{errors.password}</p>
+                <FieldError>{errors.password}</FieldError>
               ) : (
-                <p className={hintBase}>{PASSWORD_RULE} They use it to sign in to the app.</p>
+                <Hint>{PASSWORD_RULE} They use it to sign in to the app.</Hint>
               )}
             </div>
           )}
         </Section>
 
         {fixedRole ? (
-          <p className="flex items-center gap-2 rounded-xl bg-violet-50 px-3 py-2.5 text-sm text-violet-800">
+          <p className="flex items-center gap-2 rounded-xl bg-meeting-wash px-3 py-2.5 text-sm text-meeting-ink">
             <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
             {superManagerAccount
               ? "This is a Super Manager. They belong to no organisation; their role does not change here."
@@ -376,24 +365,22 @@ export function MemberFormDialog({
                       role="radio"
                       aria-checked={selected}
                       onClick={() => setRole(value)}
-                      className={`flex items-start gap-3 rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
+                      className={`flex items-start gap-3 rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 ${
                         selected
-                          ? "border-[rgb(34_34_204)] bg-[rgba(34,34,204,0.05)] ring-1 ring-[rgb(34_34_204)]"
-                          : "border-slate-200 hover:bg-slate-50"
+                          ? "border-brand bg-brand/5 ring-1 ring-brand"
+                          : "border-card hover:bg-fill"
                       }`}
                     >
                       <span
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                          selected
-                            ? "bg-[rgb(34_34_204)] text-white"
-                            : "bg-slate-100 text-slate-500"
+                          selected ? "bg-brand text-on-brand" : "bg-panel text-quiet"
                         }`}
                       >
                         <Icon className="h-4 w-4" aria-hidden />
                       </span>
                       <span>
-                        <span className="block text-sm font-semibold text-slate-900">{label}</span>
-                        <span className="block text-xs text-slate-500">{detail}</span>
+                        <span className="block text-sm font-semibold text-primary">{label}</span>
+                        <span className="block text-xs text-quiet">{detail}</span>
                       </span>
                     </button>
                   );
@@ -418,7 +405,7 @@ export function MemberFormDialog({
                   label={draft.role === "MANAGER" ? "Departments" : "Department"}
                   invalid={Boolean(errors.departmentIds)}
                 />
-                {errors.departmentIds && <p className={errorText}>{errors.departmentIds}</p>}
+                {errors.departmentIds && <FieldError>{errors.departmentIds}</FieldError>}
               </Section>
             )}
 
@@ -444,14 +431,14 @@ export function MemberFormDialog({
           </Section>
         )}
 
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button type="button" className={btnSecondary} onClick={onClose} disabled={saving}>
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" onClick={onClose} disabled={saving}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={saving}>
+          </Button>
+          <Button type="submit" variant="primary" disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {isEdit ? "Save changes" : "Add member"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

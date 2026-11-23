@@ -9,7 +9,6 @@ import { Chip } from "@/components/ui/Chip";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Select } from "@/components/ui/Select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { cardBase, inputBase, thBase } from "@/components/ui/classes";
 import type { SelectOption } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
 import { formatTime12 } from "@/lib/time/format";
@@ -29,6 +28,9 @@ import {
   sortRows,
 } from "@/features/agentHealth/lib/labels";
 import type { AgentHealthRow, AgentHealthSummary } from "@/features/agentHealth/types";
+import { Input } from "@/components/ui/Field";
+import { Card } from "@/components/ui/Card";
+import { Th } from "@/components/ui/Table";
 
 const EVERYONE = "__everyone__";
 const HREF = "/dashboard/agent-health";
@@ -72,44 +74,42 @@ function Tiles({
       label: "Day not started",
       value: String(s.notStarted),
       sub: `${s.ended} ended the day`,
-      tone: s.notStarted ? "text-amber-700" : undefined,
+      tone: s.notStarted ? "text-attention" : undefined,
     },
     {
       label: "Agent offline",
       value: String(s.offline),
       sub: "Day open, agent quiet 5 min+",
-      tone: s.offline ? "text-rose-600" : undefined,
+      tone: s.offline ? "text-attention" : undefined,
     },
     {
       label: "Screenshots missing",
       value: String(s.noScreenshots),
       sub: `${s.screenshotsOff} switched off`,
-      tone: s.noScreenshots ? "text-rose-600" : undefined,
+      tone: s.noScreenshots ? "text-attention" : undefined,
     },
     {
       label: "Uploads refused",
       value: String(s.refused),
       sub: problemsOnly ? "Showing problems only" : "Tap to show problems only",
-      tone: s.refused ? "text-rose-600" : undefined,
+      tone: s.refused ? "text-attention" : undefined,
       action: true,
     },
   ];
   return (
     <dl
       aria-label="Agent health totals"
-      className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-3 xl:grid-cols-5"
+      className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-card bg-edge shadow-sm sm:grid-cols-3 xl:grid-cols-5"
     >
       {tiles.map((t) => (
-        <div key={t.label} className="min-w-0 bg-white px-4 py-3">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {t.label}
-          </dt>
-          <dd className={`mt-0.5 text-xl font-bold tabular-nums ${t.tone ?? "text-slate-900"}`}>
+        <div key={t.label} className="min-w-0 bg-card px-4 py-3 last:col-span-2 xl:last:col-span-1">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-quiet">{t.label}</dt>
+          <dd className={`mt-0.5 text-xl font-bold tabular-nums ${t.tone ?? "text-primary"}`}>
             {t.action ? (
               <button
                 type="button"
                 onClick={onProblems}
-                className="rounded underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+                className="rounded underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
               >
                 {t.value}
               </button>
@@ -117,7 +117,7 @@ function Tiles({
               t.value
             )}
           </dd>
-          <dd className="truncate text-xs text-slate-500">{t.sub}</dd>
+          <dd className="line-clamp-2 text-xs text-quiet">{t.sub}</dd>
         </div>
       ))}
     </dl>
@@ -168,7 +168,7 @@ function AgentCell({ row, now }: { row: AgentHealthRow; now: number }) {
       <Chip tone={s.tone} dot pulse={row.agent.status === "ACTIVE"}>
         {s.label}
       </Chip>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-quiet">
         {row.agent.version ? `v${row.agent.version}` : "no version"} · last call{" "}
         {agoText(seen, now)}
         {!row.agent.signedIn ? " · signed out" : ""}
@@ -180,8 +180,8 @@ function AgentCell({ row, now }: { row: AgentHealthRow; now: number }) {
 function DayCell({ row }: { row: AgentHealthRow }) {
   return (
     <div className="space-y-0.5">
-      <p className="text-sm font-semibold text-slate-800">{DAY_COPY[row.day.state]}</p>
-      <p className="text-xs text-slate-500">
+      <p className="text-sm font-semibold text-strong">{DAY_COPY[row.day.state]}</p>
+      <p className="text-xs text-quiet">
         {row.day.state === "NOT_STARTED"
           ? row.day.workday
             ? row.day.shiftStart
@@ -198,14 +198,14 @@ function ShotsCell({ row, now }: { row: AgentHealthRow; now: number }) {
   const s = row.screenshots;
   return (
     <div className="space-y-1">
-      <p className="text-sm font-semibold text-slate-800">
+      <p className="text-sm font-semibold text-strong">
         {s.enabled ? `${s.today} today` : "Off"}
         {s.enabled && s.lastAt ? (
-          <span className="font-normal text-slate-500"> · last {agoText(s.lastAt, now)}</span>
+          <span className="font-normal text-quiet"> · last {agoText(s.lastAt, now)}</span>
         ) : null}
       </p>
       {s.lastRefusal && (
-        <p className="text-xs text-rose-700" title={s.lastRefusal.reason}>
+        <p className="text-xs text-attention" title={s.lastRefusal.reason}>
           Refused {agoText(s.lastRefusal.at, now)}: {refusalText(s.lastRefusal)}
         </p>
       )}
@@ -277,8 +277,8 @@ export function AgentHealthView() {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <header>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Agent health</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-primary">Agent health</h1>
+          <p className="mt-1 text-sm text-quiet">
             Is each person&apos;s agent calling in, is their day running, are screenshots arriving.{" "}
             {scopeLabel}
             {data ? `Updated ${formatTime12(data.asOf)}.` : ""}
@@ -301,15 +301,15 @@ export function AgentHealthView() {
           <label className="relative block sm:w-64">
             <span className="sr-only">Search people</span>
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet"
               aria-hidden
             />
-            <input
+            <Input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search people…"
-              className={`${inputBase} pl-9`}
+              className="pl-9"
             />
           </label>
         </div>
@@ -334,7 +334,7 @@ export function AgentHealthView() {
             { value: "problems", label: "Problems only" },
           ]}
         />
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-quiet">
           {rows.length} {rows.length === 1 ? "person" : "people"}
           {problemsOnly ? " with something to look at" : ""}
         </p>
@@ -350,7 +350,7 @@ export function AgentHealthView() {
           retrying={query.isFetching}
         />
       ) : rows.length === 0 ? (
-        <div className={cardBase}>
+        <Card>
           <EmptyState
             icon={HeartPulse}
             title={problemsOnly ? "Nothing to look at" : "Nobody here"}
@@ -360,11 +360,11 @@ export function AgentHealthView() {
                 : "No people in this scope."
             }
           />
-        </div>
+        </Card>
       ) : (
         <>
           {/* Phone: cards. */}
-          <ul className={`${cardBase} divide-y divide-slate-100 overflow-hidden lg:hidden`}>
+          <Card as="ul" className="divide-y divide-divider overflow-hidden lg:hidden">
             {rows.map((r) => (
               <li key={r.userId} className="space-y-3 px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
@@ -373,11 +373,11 @@ export function AgentHealthView() {
                     <div className="min-w-0">
                       <Link
                         href={personHref(r)}
-                        className="block truncate font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                        className="block truncate font-semibold text-brand underline-offset-2 hover:underline"
                       >
                         {r.name}
                       </Link>
-                      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+                      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-quiet">
                         <span>{[r.department, roleLabel(r.role)].filter(Boolean).join(" · ")}</span>
                         <OrgChip name={r.companyName} show={mixed} />
                       </p>
@@ -392,29 +392,29 @@ export function AgentHealthView() {
                 </div>
               </li>
             ))}
-          </ul>
+          </Card>
 
           {/* Wider screens: a table. */}
-          <div className={`${cardBase} hidden overflow-x-auto lg:block`}>
+          <Card className="hidden overflow-x-auto lg:block">
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead className="bg-fill">
                 <tr>
-                  <th className={thBase}>Person</th>
-                  {mixed && <th className={thBase}>Organisation</th>}
-                  <th className={thBase}>Agent</th>
-                  <th className={thBase}>Day</th>
-                  <th className={thBase}>
+                  <Th>Person</Th>
+                  {mixed && <Th>Organisation</Th>}
+                  <Th>Agent</Th>
+                  <Th>Day</Th>
+                  <Th>
                     <span className="inline-flex items-center gap-1">
                       <Camera className="h-3.5 w-3.5" aria-hidden />
                       Screenshots
                     </span>
-                  </th>
-                  <th className={thBase}>Status</th>
+                  </Th>
+                  <Th>Status</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-divider">
                 {rows.map((r) => (
-                  <tr key={r.userId} className="align-top hover:bg-slate-50/70">
+                  <tr key={r.userId} className="align-top hover:bg-fill/70">
                     <td className="px-4 py-3">
                       <div className="flex items-start gap-3">
                         <PersonAvatar
@@ -426,11 +426,11 @@ export function AgentHealthView() {
                         <div className="min-w-0">
                           <Link
                             href={personHref(r)}
-                            className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                            className="font-semibold text-brand underline-offset-2 hover:underline"
                           >
                             {r.name}
                           </Link>
-                          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+                          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-quiet">
                             <span>
                               {[r.department, roleLabel(r.role)].filter(Boolean).join(" · ")}
                             </span>
@@ -459,12 +459,12 @@ export function AgentHealthView() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
         </>
       )}
 
-      <div className="flex items-start gap-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(34_34_204)]" aria-hidden />
+      <div className="flex items-start gap-2.5 rounded-2xl border border-card bg-card px-4 py-3 text-sm text-soft">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
         <p>
           A 3.1 or newer agent tracks and captures only after Start Day, so &quot;No Start Day&quot;
           is the first thing to check when someone has no screenshots. &quot;Upload refused&quot;

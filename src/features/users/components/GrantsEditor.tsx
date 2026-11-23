@@ -51,31 +51,29 @@ export function GrantsEditor({
             aria-checked={on}
             disabled={disabled}
             onClick={() => onChange({ ...value, [key]: !on })}
-            className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] disabled:opacity-60 ${
-              on
-                ? "border-[rgba(34,34,204,0.35)] bg-[rgba(34,34,204,0.05)]"
-                : "border-slate-200 bg-white hover:bg-slate-50"
+            className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:opacity-60 ${
+              on ? "border-brand/35 bg-brand/5" : "border-card bg-card hover:bg-fill"
             }`}
           >
             <span
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                on ? "bg-[rgb(34_34_204)] text-white" : "bg-slate-100 text-slate-500"
+                on ? "bg-brand text-on-brand" : "bg-panel text-quiet"
               }`}
             >
               <Icon className="h-4 w-4" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-slate-800">{label}</span>
-              <span className="block text-xs text-slate-500">{detail}</span>
+              <span className="block text-sm font-semibold text-strong">{label}</span>
+              <span className="block text-xs text-quiet">{detail}</span>
             </span>
             <span
               aria-hidden
               className={`relative h-6 w-10 shrink-0 rounded-full transition ${
-                on ? "bg-[rgb(34_34_204)]" : "bg-slate-200"
+                on ? "bg-brand" : "bg-edge"
               }`}
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-all ${
                   on ? "left-[18px]" : "left-0.5"
                 }`}
               />

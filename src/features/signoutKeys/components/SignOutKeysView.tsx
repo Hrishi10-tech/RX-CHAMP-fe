@@ -20,7 +20,9 @@ import { Chip } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, btnSmall, cardBase } from "@/components/ui/classes";
+import { cardBase } from "@/components/ui/classes";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import type { Column } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
 import { useOrgScope } from "@/lib/org/selection";
@@ -108,20 +110,20 @@ export function SignOutKeysView() {
                       avatarId={u.avatarId}
                       userId={u.id}
                       size={28}
-                      className="ring-2 ring-white"
+                      className="ring-2 ring-card"
                     />
                   ))}
                 </span>
               ) : (
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/8 text-brand">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
               )}
               <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-slate-800">
+                <span className="block truncate text-sm font-semibold text-strong">
                   {scopeText(k)}
                 </span>
-                <span className="block text-xs text-slate-400">
+                <span className="block text-xs text-quiet">
                   {k.scope === "USERS"
                     ? "People"
                     : k.scope === "DEPARTMENTS"
@@ -149,19 +151,17 @@ export function SignOutKeysView() {
         key: "expires",
         header: "Valid until",
         render: (k) => (
-          <span className="text-sm text-slate-600">
-            {whenText(k.revokedAt ?? k.expiresAt) || "—"}
-          </span>
+          <span className="text-sm text-soft">{whenText(k.revokedAt ?? k.expiresAt) || "–"}</span>
         ),
       },
       {
         key: "created",
         header: "Created",
         render: (k) => (
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-soft">
             {whenText(k.createdAt)}
             {k.createdBy ? (
-              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5 text-xs text-quiet">
                 by
                 <PersonAvatar
                   name={k.createdBy}
@@ -187,9 +187,9 @@ export function SignOutKeysView() {
         align: "right",
         render: (k) =>
           k.active && !k.revokedAt ? (
-            <button type="button" className={btnSmall} onClick={() => setRevoking(k)}>
+            <Button type="button" variant="small" onClick={() => setRevoking(k)}>
               Revoke
-            </button>
+            </Button>
           ) : null,
       },
     ],
@@ -202,10 +202,10 @@ export function SignOutKeysView() {
         title="Sign-out keys"
         subtitle="The RX Vision app signs out only with a key from you. Each key lasts 24 hours."
         actions={
-          <button type="button" className={btnPrimary} onClick={() => setCreating(true)}>
+          <Button type="button" variant="primary" onClick={() => setCreating(true)}>
             <Plus className="h-4 w-4" aria-hidden />
             Create key
-          </button>
+          </Button>
         }
       />
 
@@ -215,18 +215,18 @@ export function SignOutKeysView() {
       >
         {STEPS.map((s, i) => (
           <li key={s.title} className="relative flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(34,34,204,0.08)] text-[rgb(34_34_204)]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/8 text-brand">
               <s.icon className="h-5 w-5" aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-semibold text-slate-800">
+              <span className="block text-sm font-semibold text-strong">
                 {i + 1}. {s.title}
               </span>
-              <span className="block text-xs text-slate-500">{s.text}</span>
+              <span className="block text-xs text-quiet">{s.text}</span>
             </span>
             {i < STEPS.length - 1 && (
               <ArrowRight
-                className="absolute -right-3 top-3 hidden h-4 w-4 text-slate-300 md:block"
+                className="absolute -right-3 top-3 hidden h-4 w-4 text-neutral md:block"
                 aria-hidden
               />
             )}
@@ -235,17 +235,17 @@ export function SignOutKeysView() {
       </ol>
 
       {keys.isPending ? (
-        <div className={cardBase}>
+        <Card>
           <LoadingState label="Loading keys…" />
-        </div>
+        </Card>
       ) : keys.isError ? (
-        <div className={cardBase}>
+        <Card>
           <ErrorState
             message={errorMessage(keys.error)}
             onRetry={() => void keys.refetch()}
             retrying={keys.isFetching}
           />
-        </div>
+        </Card>
       ) : (
         <DataTable
           title="Active and recent keys"

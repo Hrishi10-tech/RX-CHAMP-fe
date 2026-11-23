@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnPrimary, cardBase } from "@/components/ui/classes";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { rowActionButtonClass, rowActionHover } from "@/components/ui/rowAction";
 import { errorCode, errorMessage } from "@/lib/api";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
@@ -31,12 +32,12 @@ function DepartmentCard({
 }) {
   const managers = department.managers;
   return (
-    <article className={`${cardBase} flex flex-col p-5`}>
+    <Card as="article" className="flex flex-col p-5">
       <div className="flex items-start gap-3">
         <DepartmentIcon icon={department.icon} size="lg" />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-base font-bold text-slate-900">{department.name}</h2>
-          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-500">
+          <h2 className="truncate text-base font-bold text-primary">{department.name}</h2>
+          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-quiet">
             <Users className="h-3.5 w-3.5" aria-hidden />
             {plural(department.staffCount, "staff member", "staff")}
           </p>
@@ -62,8 +63,8 @@ function DepartmentCard({
           </button>
         </div>
       </div>
-      <div className="mt-4 border-t border-slate-100 pt-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+      <div className="mt-4 border-t border-divider pt-3">
+        <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
           {managers.length === 1 ? "Manager" : "Managers"}
         </p>
         {managers.length ? (
@@ -71,7 +72,7 @@ function DepartmentCard({
             {managers.map((m) => (
               <li
                 key={m.id}
-                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-full bg-panel py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-body"
               >
                 <PersonAvatar name={m.name} avatarId={m.avatarId} userId={m.id} size={20} />
                 {m.name}
@@ -79,10 +80,10 @@ function DepartmentCard({
             ))}
           </ul>
         ) : (
-          <p className="mt-1 text-sm text-amber-700">No manager yet</p>
+          <p className="mt-1 text-sm text-attention">No manager yet</p>
         )}
       </div>
-    </article>
+    </Card>
   );
 }
 
@@ -117,39 +118,39 @@ export function DepartmentsView() {
         title="Departments"
         subtitle="Staff belong to one department; managers look after one or more."
         actions={
-          <button type="button" className={btnPrimary} onClick={() => setAdding(true)}>
+          <Button type="button" variant="primary" onClick={() => setAdding(true)}>
             <Plus className="h-4 w-4" aria-hidden />
             Add department
-          </button>
+          </Button>
         }
       />
 
       {list.isPending ? (
-        <div className={cardBase}>
+        <Card>
           <LoadingState label="Loading departments…" />
-        </div>
+        </Card>
       ) : list.isError ? (
-        <div className={cardBase}>
+        <Card>
           <ErrorState
             message={errorMessage(list.error)}
             onRetry={() => void list.refetch()}
             retrying={list.isFetching}
           />
-        </div>
+        </Card>
       ) : departments.length === 0 ? (
-        <div className={cardBase}>
+        <Card>
           <EmptyState
             icon={Building2}
             title="No departments yet"
             message="Add the first one, then put people in it from Team management."
             action={
-              <button type="button" className={btnPrimary} onClick={() => setAdding(true)}>
+              <Button type="button" variant="primary" onClick={() => setAdding(true)}>
                 <Plus className="h-4 w-4" aria-hidden />
                 Add department
-              </button>
+              </Button>
             }
           />
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {departments.map((d) => (
@@ -185,8 +186,8 @@ export function DepartmentsView() {
         description={
           deleting ? (
             <>
-              <span className="font-semibold text-slate-700">{deleting.name}</span> will be removed.
-              Its managers are unassigned; a department with active staff can&apos;t be deleted.
+              <span className="font-semibold text-body">{deleting.name}</span> will be removed. Its
+              managers are unassigned; a department with active staff can&apos;t be deleted.
             </>
           ) : null
         }

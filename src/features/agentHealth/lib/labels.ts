@@ -30,7 +30,7 @@ export const FLAG_COPY: Record<AgentHealthFlag, { label: string; tone: ChipTone;
   SCREENSHOTS_OFF: {
     label: "Screenshots off",
     tone: "neutral",
-    help: "Automatic screenshots are switched off for this person (Team Management).",
+    help: "Automatic screenshots are switched off for this person (Team management).",
   },
   NO_SCREENSHOTS_TODAY: {
     label: "No screenshots today",

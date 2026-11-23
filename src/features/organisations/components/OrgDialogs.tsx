@@ -6,15 +6,8 @@ import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
 import { PasswordField } from "@/components/ui/PasswordField";
-import {
-  btnPrimary,
-  btnSecondary,
-  errorText,
-  hintBase,
-  inputBase,
-  inputInvalid,
-  labelBase,
-} from "@/components/ui/classes";
+import { FieldError, Hint, Label, Input } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 import { errorCode, errorMessage } from "@/lib/api";
 import { PASSWORD_RULE, newPasswordProblem } from "@/features/auth/lib/passwordRules";
 import {
@@ -89,10 +82,8 @@ export function OrgNameDialog({
     >
       <form onSubmit={submit} noValidate className="space-y-4 px-6 py-5">
         <div>
-          <label htmlFor={id} className={labelBase}>
-            Name
-          </label>
-          <input
+          <Label htmlFor={id}>Name</Label>
+          <Input
             id={id}
             data-autofocus
             value={name}
@@ -102,18 +93,19 @@ export function OrgNameDialog({
             }}
             placeholder="e.g. Xelements Health"
             aria-invalid={Boolean(error)}
-            className={`${inputBase} mt-1.5 ${error ? inputInvalid : ""}`}
+            invalid={Boolean(error)}
+            className="mt-1.5"
           />
-          {error && <p className={errorText}>{error}</p>}
+          {error && <FieldError>{error}</FieldError>}
         </div>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" className={btnSecondary} onClick={onClose} disabled={busy}>
+          <Button type="button" onClick={onClose} disabled={busy}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={busy}>
+          </Button>
+          <Button type="submit" variant="primary" disabled={busy}>
             {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {organisation ? "Save" : "Add organisation"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -188,19 +180,18 @@ export function CreateAdminDialog({
 
   const field = (key: keyof typeof EMPTY_ADMIN, label: string, type = "text") => (
     <div>
-      <label htmlFor={`${uid}-${key}`} className={labelBase}>
-        {label}
-      </label>
-      <input
+      <Label htmlFor={`${uid}-${key}`}>{label}</Label>
+      <Input
         id={`${uid}-${key}`}
         type={type}
         value={values[key]}
         onChange={(e) => set(key, e.target.value)}
         autoComplete="off"
         aria-invalid={Boolean(errors[key])}
-        className={`${inputBase} mt-1.5 ${errors[key] ? inputInvalid : ""}`}
+        invalid={Boolean(errors[key])}
+        className="mt-1.5"
       />
-      {errors[key] && <p className={errorText}>{errors[key]}</p>}
+      {errors[key] && <FieldError>{errors[key]}</FieldError>}
     </div>
   );
 
@@ -220,7 +211,7 @@ export function CreateAdminDialog({
         {formError && (
           <p
             role="alert"
-            className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+            className="rounded-lg border border-attention-edge bg-attention-wash px-3 py-2 text-sm text-attention"
           >
             {formError}
           </p>
@@ -231,9 +222,7 @@ export function CreateAdminDialog({
         </div>
         {field("email", "Email", "email")}
         <div>
-          <label htmlFor={`${uid}-password`} className={labelBase}>
-            Password
-          </label>
+          <Label htmlFor={`${uid}-password`}>Password</Label>
           <PasswordField
             id={`${uid}-password`}
             value={values.password}
@@ -242,24 +231,19 @@ export function CreateAdminDialog({
             invalid={Boolean(errors.password)}
           />
           {errors.password ? (
-            <p className={errorText}>{errors.password}</p>
+            <FieldError>{errors.password}</FieldError>
           ) : (
-            <p className={hintBase}>{PASSWORD_RULE} Share it with them privately.</p>
+            <Hint>{PASSWORD_RULE} Share it with them privately.</Hint>
           )}
         </div>
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            className={btnSecondary}
-            onClick={onClose}
-            disabled={create.isPending}
-          >
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" onClick={onClose} disabled={create.isPending}>
             Cancel
-          </button>
-          <button type="submit" className={btnPrimary} disabled={create.isPending}>
+          </Button>
+          <Button type="submit" variant="primary" disabled={create.isPending}>
             {create.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Create admin
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

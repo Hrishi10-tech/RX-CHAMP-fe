@@ -45,7 +45,7 @@ export function DepartmentIconPicker({
     <div role="radiogroup" aria-label={label} className="space-y-3">
       {ICON_THEMES.map((theme) => (
         <div key={theme.title}>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+          <p className="mb-1.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
             {theme.title}
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -66,10 +66,10 @@ export function DepartmentIconPicker({
                   tabIndex={key === current ? 0 : -1}
                   onClick={() => onChange(key)}
                   onKeyDown={(e) => move(e, key)}
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 ${
                     selected
-                      ? "border-[rgb(34_34_204)] bg-[rgb(34_34_204)] text-white shadow-sm shadow-[rgba(34,34,204,0.3)]"
-                      : "border-slate-200 bg-white text-[rgb(34_34_204)] hover:border-[rgba(34,34,204,0.4)] hover:bg-[rgba(34,34,204,0.06)]"
+                      ? "border-brand bg-brand text-on-brand shadow-sm shadow-brand/30"
+                      : "border-card bg-card text-brand hover:border-brand/40 hover:bg-brand/6"
                   }`}
                 >
                   <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />

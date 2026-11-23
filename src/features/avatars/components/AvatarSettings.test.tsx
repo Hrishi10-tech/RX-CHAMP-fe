@@ -166,7 +166,7 @@ describe("Settings, Profile, Avatar", () => {
       open();
       const current = await tile("M01");
       expect(current).toHaveAttribute("aria-pressed", "true");
-      expect(current.className).toContain("ring-[#6FC9B6]");
+      expect(current.className).toContain("ring-brand");
       expect(current.querySelector("svg")).not.toBeNull();
       expect(screen.getByText("Default")).toBeInTheDocument();
       fireEvent.click(await tile("M05"));
@@ -565,9 +565,9 @@ describe("Settings, Profile, Avatar", () => {
     (getAvatarManifest as jest.Mock).mockRejectedValue(new Error("Down"));
     open();
     const title = await screen.findByText("Your avatars did not load");
-    expect(title).toHaveClass("text-slate-100");
-    expect(title).not.toHaveClass("text-slate-800");
-    expect(screen.getByText("Down")).toHaveClass("text-slate-300");
+    // Agent design: the slate scale is inverted, so slate-800 is the near-white text on every card.
+    expect(title).toHaveClass("text-strong");
+    expect(screen.getByText("Down")).toHaveClass("text-quiet");
   });
 
   it("keeps the picker and the pick when a background refresh fails", async () => {

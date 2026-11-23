@@ -5,7 +5,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
-import { btnPrimary, btnSecondary, errorText } from "@/components/ui/classes";
+import { FieldError } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 import { errorMessage } from "@/lib/api";
 import { NO_GRANTS, type Grants } from "@/constants/roles";
 import { DepartmentPicker } from "@/features/departments/components/DepartmentPicker";
@@ -25,14 +26,14 @@ function Footer({
   label: string;
 }) {
   return (
-    <div className="flex flex-col-reverse gap-2 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end">
-      <button type="button" className={btnSecondary} onClick={onClose} disabled={saving}>
+    <div className="flex flex-col-reverse gap-2 border-t border-divider px-6 py-4 sm:flex-row sm:justify-end">
+      <Button type="button" onClick={onClose} disabled={saving}>
         Cancel
-      </button>
-      <button type="submit" className={btnPrimary} disabled={saving}>
+      </Button>
+      <Button type="submit" variant="primary" disabled={saving}>
         {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
         {label}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -163,7 +164,7 @@ export function MemberDepartmentDialog({
             label={manager ? "Departments" : "Department"}
             invalid={Boolean(error)}
           />
-          {error && <p className={errorText}>{error}</p>}
+          {error && <FieldError>{error}</FieldError>}
         </div>
         <Footer onClose={onClose} saving={saving} label="Save" />
       </form>

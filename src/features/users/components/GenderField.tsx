@@ -41,8 +41,8 @@ export function GenderField({
       role="radiogroup"
       aria-labelledby={labelledBy}
       aria-invalid={invalid || undefined}
-      className={`mt-1.5 grid max-w-xs grid-cols-2 gap-1 rounded-xl border bg-slate-50 p-1 ${
-        invalid ? "border-red-400" : "border-slate-200"
+      className={`mt-1.5 grid max-w-xs grid-cols-2 gap-1 rounded-xl border bg-fill p-1 ${
+        invalid ? "border-attention" : "border-card"
       }`}
     >
       {OPTIONS.map((option, index) => {
@@ -56,10 +56,10 @@ export function GenderField({
             aria-checked={selected}
             disabled={disabled}
             onClick={() => onChange(option.value)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:cursor-not-allowed disabled:opacity-60 ${
               selected
-                ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
-                : "text-slate-500 hover:text-slate-800"
+                ? "bg-card text-primary shadow-sm ring-1 ring-edge"
+                : "text-quiet hover:text-strong"
             }`}
           >
             {option.label}
@@ -99,7 +99,7 @@ export function DefaultAvatarCard({
     ? "from the agent, the mobile app or the web"
     : "from the agent or the mobile app";
   return (
-    <div className="mt-3 flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div className="mt-3 flex items-center gap-4 rounded-xl border border-card bg-fill p-4">
       <FloatingIcon
         imageUrl={url}
         initials={firstName.trim() ? initialsOf(firstName) : undefined}
@@ -108,8 +108,8 @@ export function DefaultAvatarCard({
         size={56}
       />
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-900">Default avatar{id ? `: ${id}` : ""}</p>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <p className="text-sm font-semibold text-primary">Default avatar{id ? `: ${id}` : ""}</p>
+        <p className="mt-0.5 text-sm text-quiet">
           Set from gender. {who} can switch to any of the {count > 0 ? `${count} ` : ""}
           {LIBRARY_OF[gender]} avatars {where}.
         </p>

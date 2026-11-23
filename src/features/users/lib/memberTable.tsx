@@ -1,5 +1,5 @@
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
-import { STATUS_DOT, type Status } from "@/components/ui/StatusBadge";
+import type { Status } from "@/components/ui/StatusBadge";
 import { roleLabel } from "@/constants/roles";
 import type { Column } from "@/components/ui/types";
 import { readGrants } from "@/features/auth/api/getMe";
@@ -9,6 +9,9 @@ import { formatDay, dateKeyOf } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
 import type { User, UserDepartment } from "@/features/users/types";
 import type { AgentStatus, MemberDepartment, TeamMember } from "@/types";
+
+/** An empty value in the members table (W-35: words, not an em dash). */
+export const NOT_SET = "Not set";
 
 export function toStatus(value?: string): Status {
   switch (value?.toUpperCase()) {
@@ -22,10 +25,13 @@ export function toStatus(value?: string): Status {
   }
 }
 
+/** 3.6 (W-34): "17 Nov 2026", the order every other page uses, in the business zone. */
 export function formatJoined(iso?: string): string {
-  if (!iso) return "—";
+  if (!iso) return NOT_SET;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : `${formatDay(dateKeyOf(d))} ${d.getFullYear()}`;
+  if (Number.isNaN(d.getTime())) return NOT_SET;
+  const key = dateKeyOf(d);
+  return `${formatDay(key)} ${key.slice(0, 4)}`;
 }
 
 function toDept(d: UserDepartment | null | undefined): MemberDepartment | null {
@@ -66,7 +72,7 @@ export function mapUserToMember(u: User): TeamMember {
   const departments = departmentsOf(u);
   return {
     id: u.id,
-    name: u.name || full || u.email || "—",
+    name: u.name || full || u.email || NOT_SET,
     firstName: u.firstName ?? (u.name ?? "").split(" ")[0] ?? "",
     lastName: u.lastName ?? (u.name ?? "").split(" ").slice(1).join(" "),
     email: u.email ?? "",
@@ -100,12 +106,12 @@ export function RolePill({ role }: { role: string }) {
   const manager = role === "MANAGER";
   return (
     <span
-      className={`inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+      className={`inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide ${
         admin
-          ? "border-violet-200 bg-violet-50 text-violet-700"
+          ? "border-meeting-edge bg-meeting-wash text-meeting"
           : manager
-            ? "border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.06)] text-[rgb(34_34_204)]"
-            : "border-slate-200 bg-slate-50 text-slate-600"
+            ? "border-brand/25 bg-brand/6 text-brand"
+            : "border-card bg-fill text-soft"
       }`}
     >
       {roleLabel(role)}
@@ -119,32 +125,32 @@ const AGENT_STATUS_STYLE: Record<
 > = {
   LIVE: {
     label: "Activated",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    dot: "bg-emerald-500",
+    className: "border-working-edge bg-working-wash text-working",
+    dot: "bg-working",
     hint: "Recording now",
   },
   DAY_ENDED: {
     label: "Day ended",
-    className: "border-sky-200 bg-sky-50 text-sky-700",
-    dot: "bg-sky-500",
+    className: "border-brand-edge bg-brand-wash text-brand",
+    dot: "bg-brand",
     hint: "They ended their working day. Nothing more is recorded today.",
   },
   NOT_SIGNED_IN: {
     label: "Not signed in",
-    className: "border-rose-200 bg-rose-50 text-rose-700",
-    dot: "bg-rose-500",
+    className: "border-attention-edge bg-attention-wash text-attention",
+    dot: "bg-attention",
     hint: "Signed out, or the saved session expired. They need to sign in again.",
   },
   OFFLINE: {
     label: "Offline",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-    dot: "bg-amber-500",
+    className: "border-attention-edge bg-attention-wash text-attention",
+    dot: "bg-attention",
     hint: "Signed in but not reporting. The computer may be asleep or closed, or the app stopped.",
   },
   NOT_ACTIVATED: {
     label: "Not activated",
-    className: "border-slate-200 bg-slate-50 text-slate-500",
-    dot: "bg-slate-400",
+    className: "border-card bg-fill text-quiet",
+    dot: "bg-neutral",
     hint: "The agent has never been installed for this member",
   },
 };
@@ -175,11 +181,13 @@ export function AgentStatusPill({
       ? {
           ...AGENT_STATUS_STYLE.DAY_ENDED,
           label: "Not started",
-          className: "border-slate-200 bg-white text-slate-600",
-          dot: "bg-slate-300",
+          className: "border-card bg-card text-soft",
+          dot: "bg-edge-strong",
           hint: "Signed in, but has not pressed Start Day yet. Nothing is recorded before that.",
         }
       : { ...AGENT_STATUS_STYLE.OFFLINE, label: raw || "Unknown" });
+  // The last report turns "quiet" into something you can judge, a lunch break
+  // reads very differently from five days.
   const seen =
     status === "NOT_ACTIVATED"
       ? null
@@ -190,7 +198,7 @@ export function AgentStatusPill({
   return (
     <span
       title={[hint, seen].filter(Boolean).join(" · ")}
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${className}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-0.5 text-xs font-semibold ${className}`}
     >
       <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {label}
@@ -198,16 +206,25 @@ export function AgentStatusPill({
   );
 }
 
+// 3.6 (W-13): green means online everywhere else, so an account that may sign in gets no dot.
+const STATUS_DOT: Record<Status, string | null> = {
+  Active: null,
+  Invited: "bg-attention",
+  Inactive: "bg-neutral",
+};
+
 export function MemberAvatar({ member }: { member: TeamMember }) {
   const { name, status } = member;
   return (
     <span className="relative flex shrink-0">
       <PersonAvatar name={name} avatarId={member.avatarId} userId={String(member.id)} size={36} />
-      <span
-        title={status}
-        aria-label={status}
-        className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white ${STATUS_DOT[status]}`}
-      />
+      {STATUS_DOT[status] && (
+        <span
+          title={status}
+          aria-label={status}
+          className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-card ${STATUS_DOT[status]}`}
+        />
+      )}
     </span>
   );
 }
@@ -217,8 +234,8 @@ export function MemberDepartments({ member }: { member: TeamMember }) {
   const first = member.departments[0];
   if (!first) {
     return (
-      <span className="text-sm text-slate-400">
-        {member.role === "USER" ? "No department" : "—"}
+      <span className="text-sm text-quiet">
+        {member.role === "USER" ? "No department" : NOT_SET}
       </span>
     );
   }
@@ -229,9 +246,9 @@ export function MemberDepartments({ member }: { member: TeamMember }) {
       title={member.departments.map((d) => d.name).join(", ")}
     >
       <DepartmentIcon icon={first.icon} size="xs" />
-      <span className="truncate text-sm font-medium text-slate-700">{first.name}</span>
+      <span className="truncate text-sm font-medium text-body">{first.name}</span>
       {more > 0 && (
-        <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+        <span className="shrink-0 rounded-full bg-panel px-1.5 py-0.5 text-[0.625rem] font-bold text-quiet">
           +{more}
         </span>
       )}
@@ -247,8 +264,8 @@ export const memberColumns: Column<TeamMember>[] = [
       <div className="flex items-center gap-3">
         <MemberAvatar member={m} />
         <div className="min-w-0">
-          <p className="truncate font-medium text-slate-900">{m.name}</p>
-          <p className="truncate text-xs text-slate-400">{m.designation || m.email}</p>
+          <p className="truncate font-medium text-primary">{m.name}</p>
+          <p className="truncate text-xs text-quiet">{m.designation || m.email}</p>
         </div>
       </div>
     ),
@@ -268,7 +285,7 @@ export const memberColumns: Column<TeamMember>[] = [
     header: "Status",
     render: (m) => <AgentStatusPill status={m.agentStatus} lastSeenAt={m.agentLastSeenAt} />,
   },
-  { key: "joined", header: "Joined", align: "right" },
+  { key: "joined", header: "Joined", align: "right", className: "whitespace-nowrap" },
 ];
 
 /** 3.3: the person's organisation, a column only on the combined view ("All organisations"). */
@@ -279,6 +296,6 @@ export const memberOrgColumn: Column<TeamMember> = {
     m.companyName ? (
       <OrgChip name={m.companyName} />
     ) : (
-      <span className="text-sm text-slate-400">—</span>
+      <span className="text-sm text-quiet">{NOT_SET}</span>
     ),
 };
