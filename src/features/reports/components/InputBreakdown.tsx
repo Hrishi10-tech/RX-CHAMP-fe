@@ -2,9 +2,9 @@ import { formatDuration } from "@/lib/format/duration";
 import { inputShare } from "@/features/reports/lib/dayNotes";
 
 const PARTS = [
-  { key: "active", label: "Active", bar: "bg-indigo-600", dot: "bg-indigo-600" },
-  { key: "idle", label: "Idle", bar: "bg-amber-400", dot: "bg-amber-400" },
-  { key: "noData", label: "No data", bar: "bg-slate-300", dot: "bg-slate-300" },
+  { key: "active", label: "Active", bar: "bg-brand", dot: "bg-brand" },
+  { key: "idle", label: "Idle", bar: "bg-attention", dot: "bg-attention" },
+  { key: "noData", label: "No data", bar: "bg-edge-strong", dot: "bg-edge-strong" },
 ] as const;
 
 /**
@@ -22,7 +22,7 @@ export function InputBreakdown({
 }) {
   const share = inputShare(input);
   if (!share) {
-    return <p className="text-sm text-slate-500">No working time to measure on this day.</p>;
+    return <p className="text-sm text-quiet">No working time to measure on this day.</p>;
   }
   const values = {
     active: { sec: share.activeSec, pct: share.activePct },
@@ -32,7 +32,7 @@ export function InputBreakdown({
   return (
     <div className="space-y-3">
       <div
-        className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100"
+        className="flex h-3 w-full overflow-hidden rounded-full bg-panel"
         role="img"
         aria-label={`Of ${formatDuration(share.availableSec)} available: ${share.activePct}% active, ${share.idlePct}% idle, ${share.noDataPct}% no data`}
       >
@@ -49,20 +49,20 @@ export function InputBreakdown({
       <dl className="grid grid-cols-3 gap-2 text-sm">
         {PARTS.map((p) => (
           <div key={p.key} className="min-w-0">
-            <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <dt className="flex items-center gap-1.5 text-xs font-semibold text-quiet">
               <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${p.dot}`} />
               {p.label}
             </dt>
             <dd className="mt-0.5 tabular-nums">
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-primary">
                 {formatDuration(values[p.key].sec)}
               </span>{" "}
-              <span className="text-xs text-slate-500">{values[p.key].pct}%</span>
+              <span className="text-xs text-quiet">{values[p.key].pct}%</span>
             </dd>
           </div>
         ))}
       </dl>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-quiet">
         Of {formatDuration(share.availableSec)} available (working time minus breaks and meetings).
         Idle starts after 5 minutes without input, or at once when the screen is locked. It never
         changes focus time.

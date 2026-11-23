@@ -11,6 +11,7 @@ import {
 import { reportKeys } from "@/features/reports/api/keys";
 import {
   getMonthLock,
+  getMyMonthReport,
   getPersonDayReport,
   getPersonMonthReport,
   getReportPeople,
@@ -47,6 +48,16 @@ export function usePersonMonthReport(userId: string, month: string, enabled = tr
     queryKey: reportKeys.personMonth(userId, month),
     queryFn: () => getPersonMonthReport(userId, month),
     enabled: enabled && Boolean(userId && month),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** The signed-in person's own month (History, D-86). */
+export function useMyMonthReport(month: string) {
+  return useQuery({
+    queryKey: reportKeys.myMonth(month),
+    queryFn: () => getMyMonthReport(month),
+    enabled: Boolean(month),
     placeholderData: keepPreviousData,
   });
 }

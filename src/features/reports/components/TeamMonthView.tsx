@@ -13,7 +13,6 @@ import {
   LoadingState,
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
-import { btnGhost, cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage, errorStatus } from "@/lib/api";
 import {
   formatDuration,
@@ -23,7 +22,7 @@ import {
 } from "@/lib/format/duration";
 import { withReturnTo } from "@/lib/nav/returnTo";
 import { todayKey } from "@/lib/time/businessTime";
-import { formatMonth } from "@/lib/time/months";
+import { formatMonth, monthOfDate } from "@/lib/time/months";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
 import { useDepartments } from "@/features/departments/hooks/useDepartments";
@@ -63,6 +62,10 @@ import type {
   TeamMonthParams,
 } from "@/features/reports/types";
 import { blockingApprovalsHref } from "@/features/approvals/lib/query";
+import { Button } from "@/components/ui/Button";
+import { Th } from "@/components/ui/Table";
+import { Card } from "@/components/ui/Card";
+import { monthTableTotals, totalsLabel } from "@/features/reports/lib/tableTotals";
 
 type SortKey =
   | "name"
@@ -142,7 +145,7 @@ function AttendanceMix({ totals }: { totals: MonthTotals }) {
     EXTRA: totals.extra,
   };
   const total = MIX.reduce((s, c) => s + Math.max(0, counts[c]), 0);
-  if (total === 0) return <p className="text-sm text-slate-500">No working days yet.</p>;
+  if (total === 0) return <p className="text-sm text-quiet">No working days yet.</p>;
   return (
     <div className="space-y-3">
       <div
@@ -150,7 +153,7 @@ function AttendanceMix({ totals }: { totals: MonthTotals }) {
         aria-label={MIX.map((c) => `${counts[c]} ${dayClassLook(c).label.toLowerCase()}`).join(
           ", ",
         )}
-        className="flex h-6 w-full overflow-hidden rounded-lg bg-slate-100"
+        className="flex h-6 w-full overflow-hidden rounded-lg bg-panel"
       >
         {MIX.filter((c) => counts[c] > 0).map((c) => (
           <span
@@ -160,19 +163,17 @@ function AttendanceMix({ totals }: { totals: MonthTotals }) {
           />
         ))}
       </div>
-      <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-slate-700">
+      <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-body">
         {MIX.map((c) => (
           <li key={c} className="inline-flex items-center gap-1.5">
             <span aria-hidden className={`h-2.5 w-2.5 rounded-sm ${dayClassLook(c).cell}`} />
             {dayClassLook(c).label}
-            <span className="font-semibold tabular-nums text-slate-900">{counts[c]}</span>
-            <span className="text-xs text-slate-500">
-              ({Math.round((counts[c] / total) * 100)}%)
-            </span>
+            <span className="font-semibold tabular-nums text-primary">{counts[c]}</span>
+            <span className="text-xs text-quiet">({Math.round((counts[c] / total) * 100)}%)</span>
           </li>
         ))}
       </ul>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-quiet">
         Person-days on working days, plus extra days worked on a day off.
       </p>
     </div>
@@ -189,7 +190,7 @@ function personLine(r: TeamMonthRow): string {
 function Meter({ pct }: { pct: number | null }) {
   if (pct === null) {
     return (
-      <span className="text-xs text-slate-500" title="No working days in this period">
+      <span className="text-xs text-quiet" title="No working days in this period">
         No workdays
       </span>
     );
@@ -199,10 +200,10 @@ function Meter({ pct }: { pct: number | null }) {
       <span
         aria-hidden
         data-print-hide
-        className="block h-1.5 w-12 overflow-hidden rounded-full bg-indigo-100"
+        className="block h-1.5 w-12 overflow-hidden rounded-full bg-brand-wash-strong"
       >
         <span
-          className={`block h-full rounded-full ${pct < 90 ? "bg-amber-500" : "bg-indigo-600"}`}
+          className={`block h-full rounded-full ${pct < 90 ? "bg-attention" : "bg-brand"}`}
           style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
         />
       </span>
@@ -250,7 +251,7 @@ function RankingTable({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3 sm:px-6 print:hidden">
-        <label className="flex items-center gap-2 text-sm text-slate-700 min-[1360px]:hidden">
+        <label className="flex items-center gap-2 text-sm text-body min-[1360px]:hidden">
           <span>Sort by</span>
           <select
             value={`${sort.key}:${sort.dir}`}
@@ -258,7 +259,7 @@ function RankingTable({
               const [key, dir] = e.target.value.split(":");
               setSort({ key: key as SortKey, dir: dir === "1" ? 1 : -1 });
             }}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold text-slate-900"
+            className="h-9 rounded-lg border border-card bg-field px-2 text-sm font-semibold text-primary"
           >
             <option value="pct:-1">Of expected, highest first</option>
             <option value="pct:1">Of expected, lowest first</option>
@@ -271,21 +272,21 @@ function RankingTable({
           </select>
         </label>
         {flagged.length > 0 && (
-          <button
+          <Button
+            variant="ghost"
             type="button"
             aria-pressed={lookOnly}
             onClick={() => setLookOnly((v) => !v)}
-            className={btnGhost}
           >
             <AlertTriangle className="h-4 w-4" aria-hidden />
             {lookOnly ? "Show everyone" : `Only the ${flagged.length} who need a look`}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Cards below 1360px: the ten-column table needs about 1020px, more than
           the card has beside the sidebar on a 1024 to 1359px screen. */}
-      <ul className="divide-y divide-slate-100 border-t border-slate-100 min-[1360px]:hidden print:hidden">
+      <ul className="divide-y divide-divider border-t border-divider min-[1360px]:hidden print:hidden">
         {shown.map((r) => {
           const t = r.totals;
           return (
@@ -293,26 +294,26 @@ function RankingTable({
               <div className="flex items-start justify-between gap-2">
                 <Link
                   href={personHref(r.person.id)}
-                  className="min-w-0 break-words font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                  className="min-w-0 break-words font-semibold text-brand underline-offset-2 hover:underline"
                 >
                   {r.person.name}
                 </Link>
-                <span className="shrink-0 font-bold tabular-nums text-slate-900">
+                <span className="shrink-0 font-bold tabular-nums text-primary">
                   {formatDuration(t.focusSec)}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">{personLine(r)}</p>
+              <p className="text-xs text-quiet">{personLine(r)}</p>
               {r.payroll && <PayrollStanding payroll={r.payroll} />}
               <Meter pct={pctOf(t)} />
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-soft">
                 Month target {formatDuration(t.targetSec)} · paid time{" "}
-                <span className="font-semibold text-slate-900">{formatDuration(t.paidSec)}</span>
+                <span className="font-semibold text-primary">{formatDuration(t.paidSec)}</span>
                 {unverifiedNote(t.unverifiedSec) ? ` · ${unverifiedNote(t.unverifiedSec)}` : ""} ·
                 breaks {formatDuration(t.paidBreakSec)} paid, {formatDuration(t.unpaidBreakSec)}{" "}
                 unpaid · away {formatDuration(t.awayApprovedSec)} approved
                 {t.awayPendingSec > 0 ? `, ${formatDuration(t.awayPendingSec)} pending` : ""}
               </p>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-soft">
                 {attendanceDays(t)} days: {t.full} full, {t.half} half, {t.absent} absent
                 {t.leave ? `, ${t.leave} on leave` : ""} · {t.lateStarts} late
                 {t.lateWithoutReason ? ` (${t.lateWithoutReason} no reason)` : ""} ·{" "}
@@ -339,23 +340,23 @@ function RankingTable({
       <div className="hidden overflow-x-auto min-[1360px]:block print:block">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-y border-slate-200 bg-slate-50/70">
+            <tr className="border-y border-card bg-fill/70">
               {columns.map((c, i) => {
                 const active = sort.key === c.key;
                 return (
-                  <th
+                  <Th
                     key={c.key}
                     scope="col"
                     aria-sort={active ? (sort.dir === 1 ? "ascending" : "descending") : "none"}
-                    className={`${thBase} ${i === 0 ? "pl-6" : ""} ${i === columns.length - 1 ? "pr-6" : ""} ${
+                    className={`${i === 0 ? "pl-6" : ""} ${i === columns.length - 1 ? "pr-6" : ""} ${
                       c.numeric ? "text-right" : ""
                     }`}
                   >
                     <button
                       type="button"
                       onClick={() => sortBy(c.key)}
-                      className={`inline-flex items-center gap-1 rounded uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] print:hidden ${
-                        active ? "text-slate-900" : ""
+                      className={`inline-flex items-center gap-1 rounded uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 print:hidden ${
+                        active ? "text-primary" : ""
                       }`}
                     >
                       {c.label}
@@ -371,7 +372,7 @@ function RankingTable({
                     <span aria-hidden className="hidden uppercase print:inline">
                       {c.label}
                     </span>
-                  </th>
+                  </Th>
                 );
               })}
             </tr>
@@ -380,32 +381,29 @@ function RankingTable({
             {shown.map((r) => {
               const t = r.totals;
               return (
-                <tr
-                  key={r.person.id}
-                  className="border-b border-slate-100 align-top last:border-b-0"
-                >
+                <tr key={r.person.id} className="border-b border-divider align-top last:border-b-0">
                   <th scope="row" className="py-2.5 pl-6 pr-4 text-left font-normal">
                     <Link
                       href={personHref(r.person.id)}
-                      className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                      className="font-semibold text-brand underline-offset-2 hover:underline"
                     >
                       {r.person.name}
                     </Link>
-                    <span className="block text-xs text-slate-500">{personLine(r)}</span>
+                    <span className="block text-xs text-quiet">{personLine(r)}</span>
                     {r.payroll && (
                       <span className="mt-1 block">
                         <PayrollStanding payroll={r.payroll} />
                       </span>
                     )}
                   </th>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums text-slate-900">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums text-primary">
                     {formatDuration(t.focusSec)}
-                    <span className="block text-xs font-normal text-slate-500">
+                    <span className="block text-xs font-normal text-quiet">
                       of {formatDuration(t.targetSec)}
                     </span>
                     {/* The note wraps, so the column stays narrow and the table fits. */}
                     {unverifiedNote(t.unverifiedSec) && (
-                      <span className="block min-w-[5.5rem] whitespace-normal text-xs font-normal text-slate-500">
+                      <span className="block min-w-[5.5rem] whitespace-normal text-xs font-normal text-quiet">
                         {unverifiedNote(t.unverifiedSec)}
                       </span>
                     )}
@@ -415,43 +413,43 @@ function RankingTable({
                       <Meter pct={pctOf(t)} />
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-slate-900">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-primary">
                     {formatDuration(t.paidSec)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
                     {formatDuration(t.paidBreakSec)}
-                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-quiet">
                       paid · {formatDuration(t.unpaidBreakSec)} unpaid
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
                     {formatDuration(t.awayApprovedSec)}
-                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-quiet">
                       approved
                       {t.awayPendingSec > 0 ? ` · ${formatDuration(t.awayPendingSec)} pending` : ""}
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
                     {attendanceDays(t)} days
-                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-quiet">
                       {t.full} full · {t.half} half · {t.absent} absent
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
                     {t.lateStarts} · {t.skipped + t.autoSkipped}
                     {t.lateWithoutReason ? (
-                      <span className="block text-xs font-semibold text-amber-700">
+                      <span className="block text-xs font-semibold text-attention">
                         {t.lateWithoutReason} late, no reason
                       </span>
                     ) : null}
                   </td>
                   {activity && (
                     <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
-                      <span className={t.needsALook ? "font-semibold text-amber-700" : ""}>
+                      <span className={t.needsALook ? "font-semibold text-attention" : ""}>
                         {t.quietHours}
                       </span>
                       {t.needsALook && (
-                        <span className="block text-xs font-semibold text-amber-700">
+                        <span className="block text-xs font-semibold text-attention">
                           Needs a look
                         </span>
                       )}
@@ -463,16 +461,53 @@ function RankingTable({
                         {t.pending} open
                       </Chip>
                     ) : (
-                      <span className="text-xs text-slate-400">None</span>
+                      <span className="text-xs text-quiet">None</span>
                     )}
                   </td>
                 </tr>
               );
             })}
           </tbody>
+          {/* W-23: the people shown, added up. */}
+          {shown.length > 1 &&
+            (() => {
+              const sum = monthTableTotals(shown);
+              const pct = sum.expectedSec > 0 ? (sum.focusSec / sum.expectedSec) * 100 : null;
+              return (
+                <tfoot>
+                  <tr className="border-t border-card bg-fill/70 font-semibold">
+                    <th scope="row" className="py-2.5 pl-6 pr-4 text-left text-primary">
+                      {totalsLabel(sum)}
+                    </th>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-primary">
+                      {formatDuration(sum.focusSec)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right">
+                      <span className="inline-flex justify-end">
+                        <Meter pct={pct} />
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
+                      {sum.full + sum.half / 2} days
+                      <span className="block text-xs font-normal text-quiet">
+                        {sum.full} full · {sum.half} half · {sum.absent} absent
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{sum.lateStarts}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">
+                      {sum.skipped + sum.autoSkipped}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{sum.quietHours}</td>
+                    <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums">
+                      {sum.pending > 0 ? `${sum.pending} open` : "None"}
+                    </td>
+                  </tr>
+                </tfoot>
+              );
+            })()}
         </table>
       </div>
-      <p className="space-y-1 border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:px-6">
+      <p className="space-y-1 border-t border-divider px-4 py-3 text-xs text-quiet sm:px-6">
         {activity && flagged.length === 0 && (
           <span className="block">Nobody has {flagAt} or more quiet hours this month.</span>
         )}
@@ -509,14 +544,14 @@ function TimeTable({
   const nameOf = (r: TeamMonthRow) => (
     <Link
       href={personHref(r.person.id)}
-      className="min-w-0 break-words font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+      className="min-w-0 break-words font-semibold text-brand underline-offset-2 hover:underline"
     >
       {r.person.name}
     </Link>
   );
   return (
     <>
-      <ul className="divide-y divide-slate-100 border-t border-slate-100 md:hidden print:hidden">
+      <ul className="divide-y divide-divider border-t border-divider md:hidden print:hidden">
         {sorted.map((r) => (
           <li key={r.person.id} className="space-y-1.5 px-4 py-3 sm:px-6">
             <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">{nameOf(r)}</p>
@@ -528,18 +563,18 @@ function TimeTable({
       <div className="hidden overflow-x-auto md:block print:block">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-y border-slate-200 bg-slate-50/70">
-              <th scope="col" className={`${thBase} pl-6`}>
+            <tr className="border-y border-card bg-fill/70">
+              <Th scope="col" className="pl-6">
                 Person
-              </th>
+              </Th>
               {labels.map((label, i) => (
-                <th
+                <Th
                   key={label}
                   scope="col"
-                  className={`${thBase} text-right ${i === labels.length - 1 ? "pr-6" : ""}`}
+                  className={`text-right ${i === labels.length - 1 ? "pr-6" : ""}`}
                 >
                   {label}
-                </th>
+                </Th>
               ))}
             </tr>
           </thead>
@@ -547,34 +582,31 @@ function TimeTable({
             {sorted.map((r) => {
               const t = r.totals;
               return (
-                <tr
-                  key={r.person.id}
-                  className="border-b border-slate-100 align-top last:border-b-0"
-                >
+                <tr key={r.person.id} className="border-b border-divider align-top last:border-b-0">
                   <th scope="row" className="py-2.5 pl-6 pr-4 text-left font-normal">
                     {nameOf(r)}
-                    <span className="block text-xs text-slate-500">{personLine(r)}</span>
+                    <span className="block text-xs text-quiet">{personLine(r)}</span>
                     {r.payroll && (
                       <span className="mt-1 block">
                         <PayrollStanding payroll={r.payroll} />
                       </span>
                     )}
                   </th>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                     {figureText(workingSec(t))}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold tabular-nums text-slate-900">
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold tabular-nums text-primary">
                     {formatDuration(t.focusSec)}
                   </td>
                   {activity && (
-                    <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                       {figureText(monthIdleSec(t))}
                     </td>
                   )}
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                     {formatDuration(t.breakSec ?? 0)}
                   </td>
-                  <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums text-slate-700">
+                  <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums text-body">
                     {formatDuration(t.meetingSec ?? 0)}
                   </td>
                 </tr>
@@ -583,7 +615,7 @@ function TimeTable({
           </tbody>
         </table>
       </div>
-      <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:px-6">
+      <p className="border-t border-divider px-4 py-3 text-xs text-quiet sm:px-6">
         {activity
           ? "Idle is time in the working day with nobody at the keyboard or mouse, breaks and meetings left out. No data means no agent reported that month."
           : "A meeting counts as working and focus time."}
@@ -692,9 +724,9 @@ export function TeamMonthView({
 
   if (query.isLoading) {
     return shell(
-      <div className={cardBase}>
+      <Card>
         <LoadingState label="Loading the team report…" />
-      </div>,
+      </Card>,
     );
   }
   // A failed refresh keeps the report on screen (see the notice below); only a
@@ -702,7 +734,7 @@ export function TeamMonthView({
   if (!report) {
     const status = errorStatus(query.error);
     return shell(
-      <div className={cardBase}>
+      <Card>
         {status === 404 ? (
           <EmptyState
             icon={Info}
@@ -725,7 +757,7 @@ export function TeamMonthView({
             retrying={query.isFetching}
           />
         )}
-      </div>,
+      </Card>,
     );
   }
 
@@ -753,10 +785,11 @@ export function TeamMonthView({
           retrying={query.isFetching}
         />
       )}
-      {t.pending > 0 && (
+      {/* 3.6 (W-08): the Super Admin sees these under the header, next to Lock; not twice. */}
+      {t.pending > 0 && !(isSuperAdmin && month < monthOfDate(todayKey())) && (
         <div
           role="status"
-          className="flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-2 rounded-2xl border border-attention-edge bg-attention-wash px-4 py-3 text-sm text-attention-ink sm:flex-row sm:items-center sm:justify-between"
         >
           <p>
             <span className="font-semibold">
@@ -768,7 +801,7 @@ export function TeamMonthView({
           </p>
           <Link
             href={blockingApprovalsHref(month, isSuperAdmin)}
-            className="shrink-0 font-semibold text-amber-900 underline underline-offset-2 print:hidden"
+            className="shrink-0 font-semibold text-attention-ink underline underline-offset-2 print:hidden"
           >
             Review approvals
           </Link>
@@ -778,9 +811,9 @@ export function TeamMonthView({
       {pausedRows.length > 0 && (
         <div
           role="note"
-          className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+          className="flex items-start gap-2 rounded-2xl border border-card bg-fill px-4 py-3 text-sm text-strong"
         >
-          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-quiet" aria-hidden />
           <span>
             <span className="block font-semibold">{pausedRows[0].payroll?.label}</span>
             {pausedRows.length === 1
@@ -793,13 +826,13 @@ export function TeamMonthView({
       )}
 
       {report.rows.length === 0 ? (
-        <div className={cardBase}>
+        <Card>
           <EmptyState
             icon={Users}
             title="Nobody in this report"
             message="People appear once they have work sessions in the month."
           />
-        </div>
+        </Card>
       ) : (
         <>
           <TimeFigures figures={monthFigures(t)} showIdle={activityAllowed} />
@@ -892,9 +925,9 @@ export function TeamMonthView({
               {!activityAllowed ? (
                 <ActivityGate>{null}</ActivityGate>
               ) : flagged.length === 0 ? (
-                <p className="text-sm text-slate-500">Nobody this month.</p>
+                <p className="text-sm text-quiet">Nobody this month.</p>
               ) : (
-                <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                <ul className="divide-y divide-divider rounded-xl border border-card">
                   {sortRows(flagged, "quiet", -1).map((r) => (
                     <li
                       key={r.person.id}
@@ -906,7 +939,7 @@ export function TeamMonthView({
                           `/dashboard/reports/team?month=${month}`,
                           `${formatMonth(month)} team report`,
                         )}
-                        className="min-w-0 break-words font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                        className="min-w-0 break-words font-semibold text-brand underline-offset-2 hover:underline"
                       >
                         {r.person.name}
                       </Link>
@@ -948,7 +981,7 @@ export function TeamMonthView({
           </ReportSection>
 
           <ReportSection title="How the numbers work">
-            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-slate-600">
+            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-soft">
               <BreakRulesItems
                 bufferMin={s?.breakBufferMin}
                 fullDayPct={s?.fullDayPct}

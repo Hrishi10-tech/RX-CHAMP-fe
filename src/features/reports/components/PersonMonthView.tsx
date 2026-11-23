@@ -12,7 +12,6 @@ import {
   LoadingState,
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
-import { cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage, errorStatus } from "@/lib/api";
 import {
   formatDuration,
@@ -22,7 +21,7 @@ import {
 } from "@/lib/format/duration";
 import { formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
-import { formatMonth } from "@/lib/time/months";
+import { formatMonth, monthOfDate } from "@/lib/time/months";
 import { roleLabel } from "@/constants/roles";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
@@ -59,6 +58,8 @@ import {
   leaveText,
   wfhText,
 } from "@/features/reports/lib/dayNotes";
+import { Th } from "@/components/ui/Table";
+import { Card } from "@/components/ui/Card";
 
 function personLine(r: PersonMonthReport): string {
   const p = r.person;
@@ -117,48 +118,42 @@ function DaysTable({
     `/dashboard/reports/person/${encodeURIComponent(userId)}?date=${date}`;
   return (
     <>
-      <ul className="divide-y divide-slate-100 border-t border-slate-100 xl:hidden print:hidden">
+      <ul className="divide-y divide-divider border-t border-divider xl:hidden print:hidden">
         {days.map((d) => (
           <li
             key={d.date}
-            className={`space-y-1.5 px-4 py-3 sm:px-6 ${d.workday ? "" : "bg-slate-50/60"}`}
+            className={`space-y-1.5 px-4 py-3 sm:px-6 ${d.workday ? "" : "bg-fill/60"}`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-2">
                 <Link
                   href={href(d.date)}
-                  className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                  className="font-semibold text-brand underline-offset-2 hover:underline"
                 >
                   {formatDayWithWeekday(d.date)}
                 </Link>
                 <DayClassChip dayClass={d.dayClass} />
-                {d.label && <span className="text-xs text-slate-500">{d.label}</span>}
+                {d.label && <span className="text-xs text-quiet">{d.label}</span>}
               </span>
               {worked(d) && (
-                <span className="text-sm font-bold tabular-nums text-slate-900">
+                <span className="text-sm font-bold tabular-nums text-primary">
                   {formatDuration(d.focusSec)}
                 </span>
               )}
             </div>
-            {holidayText(d) && (
-              <p className="text-xs font-semibold text-sky-700">{holidayText(d)}</p>
-            )}
-            {leaveText(d) && (
-              <p className="text-xs font-semibold text-violet-700">{leaveText(d)}</p>
-            )}
-            {wfhText(d) && (
-              <p className="text-xs font-semibold text-[rgb(34_34_204)]">{wfhText(d)}</p>
-            )}
+            {holidayText(d) && <p className="text-xs font-semibold text-brand">{holidayText(d)}</p>}
+            {leaveText(d) && <p className="text-xs font-semibold text-meeting">{leaveText(d)}</p>}
+            {wfhText(d) && <p className="text-xs font-semibold text-brand">{wfhText(d)}</p>}
             {compOffEarnedText(d) && (
-              <p className="text-xs font-semibold text-emerald-700">{compOffEarnedText(d)}</p>
+              <p className="text-xs font-semibold text-working">{compOffEarnedText(d)}</p>
             )}
             {d.noCheckout && (
-              <p className="text-xs font-semibold text-amber-700">
+              <p className="text-xs font-semibold text-attention">
                 No check-out: closed at the last punch
               </p>
             )}
             {worked(d) && (
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-soft">
                 {d.startedAt
                   ? `${formatTime12(d.startedAt)} to ${d.endedAt ? formatTime12(d.endedAt) : "now"}`
                   : ""}
@@ -173,7 +168,7 @@ function DaysTable({
               </p>
             )}
             {pendingText(d) && (
-              <p className="text-xs font-semibold text-amber-700">{pendingText(d)}</p>
+              <p className="text-xs font-semibold text-attention">{pendingText(d)}</p>
             )}
           </li>
         ))}
@@ -181,32 +176,26 @@ function DaysTable({
       <div className="hidden overflow-x-auto xl:block print:block">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-y border-slate-200 bg-slate-50/70">
-              <th scope="col" className={`${thBase} pl-6`}>
+            <tr className="border-y border-card bg-fill/70">
+              <Th scope="col" className="pl-6">
                 Date
-              </th>
-              <th scope="col" className={thBase}>
-                Attendance
-              </th>
-              <th scope="col" className={thBase}>
-                Day
-              </th>
-              <th scope="col" className={`${thBase} text-right`}>
+              </Th>
+              <Th scope="col">Attendance</Th>
+              <Th scope="col">Day</Th>
+              <Th scope="col" className="text-right">
                 Focus
-              </th>
-              <th scope="col" className={`${thBase} text-right`}>
+              </Th>
+              <Th scope="col" className="text-right">
                 Paid time
-              </th>
-              <th scope="col" className={thBase}>
-                Breaks
-              </th>
-              <th scope="col" className={`${thBase} ${activity ? "" : "pr-6"} text-right`}>
+              </Th>
+              <Th scope="col">Breaks</Th>
+              <Th scope="col" className={`${activity ? "" : "pr-6"} text-right`}>
                 Meetings
-              </th>
+              </Th>
               {activity && (
-                <th scope="col" className={`${thBase} pr-6 text-right`}>
+                <Th scope="col" className="pr-6 text-right">
                   Activity
-                </th>
+                </Th>
               )}
             </tr>
           </thead>
@@ -214,8 +203,8 @@ function DaysTable({
             {days.map((d) => (
               <tr
                 key={d.date}
-                className={`border-b border-slate-100 align-top last:border-b-0 ${
-                  d.workday ? "" : "bg-slate-50/60"
+                className={`border-b border-divider align-top last:border-b-0 ${
+                  d.workday ? "" : "bg-fill/60"
                 }`}
               >
                 <th
@@ -224,53 +213,53 @@ function DaysTable({
                 >
                   <Link
                     href={href(d.date)}
-                    className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                    className="font-semibold text-brand underline-offset-2 hover:underline"
                   >
                     {formatDayWithWeekday(d.date)}
                   </Link>
-                  {d.label && <span className="block text-xs text-slate-500">{d.label}</span>}
+                  {d.label && <span className="block text-xs text-quiet">{d.label}</span>}
                 </th>
                 <td className="px-4 py-2.5">
                   <DayClassChip dayClass={d.dayClass} />
                   {holidayText(d) && (
-                    <span className="mt-1 block text-xs font-semibold text-sky-700">
+                    <span className="mt-1 block text-xs font-semibold text-brand">
                       {holidayText(d)}
                     </span>
                   )}
                   {leaveText(d) && (
-                    <span className="mt-1 block max-w-[14rem] text-xs font-semibold text-violet-700">
+                    <span className="mt-1 block max-w-[14rem] text-xs font-semibold text-meeting">
                       {leaveText(d)}
                     </span>
                   )}
                   {wfhText(d) && (
-                    <span className="mt-1 block max-w-[14rem] text-xs font-semibold text-[rgb(34_34_204)]">
+                    <span className="mt-1 block max-w-[14rem] text-xs font-semibold text-brand">
                       {wfhText(d)}
                     </span>
                   )}
                   {compOffEarnedText(d) && (
-                    <span className="mt-1 block text-xs font-semibold text-emerald-700">
+                    <span className="mt-1 block text-xs font-semibold text-working">
                       {compOffEarnedText(d)}
                     </span>
                   )}
                 </td>
-                <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-slate-700">
+                <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-body">
                   {d.startedAt
                     ? `${formatTime12(d.startedAt)} to ${d.endedAt ? formatTime12(d.endedAt) : "now"}`
                     : ""}
                   {lateText(d) && (
-                    <span className="block max-w-[16rem] whitespace-normal text-xs font-semibold text-amber-700">
+                    <span className="block max-w-[16rem] whitespace-normal text-xs font-semibold text-attention">
                       {lateText(d)}
                     </span>
                   )}
                   {d.autoClosed && (
-                    <span className="block text-xs text-slate-500">
+                    <span className="block text-xs text-quiet">
                       {d.noCheckout
                         ? "no check-out: closed at the last punch"
                         : "closed automatically"}
                     </span>
                   )}
                   {d.extended && (
-                    <span className="block text-xs font-semibold text-indigo-700">
+                    <span className="block text-xs font-semibold text-brand">
                       {d.extendedSec && d.extendedSec >= 60
                         ? `extended ${formatDuration(d.extendedSec)}`
                         : "extended shift"}
@@ -279,53 +268,51 @@ function DaysTable({
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
                   {worked(d) && (
-                    <span className="font-semibold text-slate-900">
-                      {formatDuration(d.focusSec)}
-                    </span>
+                    <span className="font-semibold text-primary">{formatDuration(d.focusSec)}</span>
                   )}
                   {d.targetSec > 0 && (
-                    <span className="block text-xs text-slate-500">
+                    <span className="block text-xs text-quiet">
                       of {formatDuration(d.targetSec)}
                     </span>
                   )}
                   {/* Notes wrap, so the column stays narrow and the table fits. */}
                   {unverifiedNote(d.unverifiedSec) && (
-                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-quiet">
                       {unverifiedNote(d.unverifiedSec)}
                     </span>
                   )}
                   {awayText(d) && (
-                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs text-quiet">
                       {awayText(d)}
                     </span>
                   )}
                   {pendingText(d) && (
-                    <span className="block min-w-[5.5rem] whitespace-normal text-xs font-semibold text-amber-700">
+                    <span className="block min-w-[5.5rem] whitespace-normal text-xs font-semibold text-attention">
                       {pendingText(d)}
                     </span>
                   )}
                 </td>
-                <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                   {worked(d) ? formatDuration(d.paidSec) : ""}
                 </td>
-                <td className="px-4 py-2.5 text-xs text-slate-600">
+                <td className="px-4 py-2.5 text-xs text-soft">
                   {worked(d) ? breaksText(d) : ""}
                   {worked(d) && breakPayText(d) && <span className="block">{breakPayText(d)}</span>}
                 </td>
-                <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                   {d.meetings ? `${d.meetings} · ${formatDuration(d.meetingSec)}` : ""}
                 </td>
                 {activity && (
-                  <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums text-slate-700">
+                  <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums text-body">
                     {worked(d) ? `${formatDuration(d.activeSec ?? d.activeMin * 60)}` : ""}
                     {worked(d) && d.availableSec ? (
-                      <span className="block text-xs text-slate-500">
+                      <span className="block text-xs text-quiet">
                         {Math.round(((d.activeSec ?? d.activeMin * 60) / d.availableSec) * 100)}% of
                         available
                       </span>
                     ) : null}
                     {d.quietHours > 0 && (
-                      <span className="block text-xs font-semibold text-amber-700">
+                      <span className="block text-xs font-semibold text-attention">
                         {d.quietHours} quiet
                       </span>
                     )}
@@ -422,9 +409,9 @@ export function PersonMonthView({
 
   if (query.isLoading) {
     return shell(
-      <div className={cardBase}>
+      <Card>
         <LoadingState label="Loading the month report…" />
-      </div>,
+      </Card>,
     );
   }
   // A failed refresh keeps the report on screen (see the notice below); only a
@@ -432,7 +419,7 @@ export function PersonMonthView({
   if (!report) {
     const status = errorStatus(query.error);
     return shell(
-      <div className={cardBase}>
+      <Card>
         {status === 403 || status === 404 || status === 400 ? (
           <EmptyState
             icon={Info}
@@ -460,7 +447,7 @@ export function PersonMonthView({
             retrying={query.isFetching}
           />
         )}
-      </div>,
+      </Card>,
     );
   }
 
@@ -489,9 +476,9 @@ export function PersonMonthView({
       {payroll && (
         <div
           role="note"
-          className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+          className="flex items-start gap-2 rounded-2xl border border-card bg-fill px-4 py-3 text-sm text-strong"
         >
-          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-quiet" aria-hidden />
           <span>
             <span className="block font-semibold">{payroll.label}</span>
             {payroll.paused
@@ -500,10 +487,11 @@ export function PersonMonthView({
           </span>
         </div>
       )}
-      {t.pending > 0 && (
+      {/* 3.6 (W-08): the Super Admin sees these under the header, next to Lock; not twice. */}
+      {t.pending > 0 && !(isSuperAdmin && month < monthOfDate(todayKey())) && (
         <div
           role="status"
-          className="flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-2 rounded-2xl border border-attention-edge bg-attention-wash px-4 py-3 text-sm text-attention-ink sm:flex-row sm:items-center sm:justify-between"
         >
           <p>
             <span className="font-semibold">
@@ -514,7 +502,7 @@ export function PersonMonthView({
           </p>
           <Link
             href={`${blockingApprovalsHref(month, isSuperAdmin)}&userId=${encodeURIComponent(userId)}`}
-            className="shrink-0 font-semibold text-amber-900 underline underline-offset-2 print:hidden"
+            className="shrink-0 font-semibold text-attention-ink underline underline-offset-2 print:hidden"
           >
             Review approvals
           </Link>
@@ -523,12 +511,12 @@ export function PersonMonthView({
       {t.needsALook && canSeeActivity && (
         <div
           role="note"
-          className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-800"
+          className="flex items-start gap-2 rounded-2xl border border-attention-edge bg-card px-4 py-3 text-sm text-strong"
         >
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-attention" aria-hidden />
           <span>
-            <span className="font-semibold text-amber-800">Needs a look.</span> {t.quietHours} quiet
-            hours this month ({flagAt} or more flags it). A quiet hour is an hour with little
+            <span className="font-semibold text-attention-ink">Needs a look.</span> {t.quietHours}{" "}
+            quiet hours this month ({flagAt} or more flags it). A quiet hour is an hour with little
             keyboard and mouse activity and no break or meeting logged. It never changes focus time.
           </span>
         </div>
@@ -673,7 +661,7 @@ export function PersonMonthView({
         flush
       >
         <DaysTable days={sorted} userId={userId} activity={canSeeActivity} />
-        <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:px-6">
+        <p className="border-t border-divider px-4 py-3 text-xs text-quiet sm:px-6">
           {ROUNDING_NOTE}
         </p>
       </ReportSection>

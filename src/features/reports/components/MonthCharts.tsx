@@ -21,6 +21,13 @@ import { HEAT_LEGEND, dayClassLook, heatShade } from "@/features/reports/lib/lab
 import { heatmapHours } from "@/features/reports/lib/heatmap";
 import { hourLabel } from "@/features/teamToday/lib/hourly";
 import type { DayClass, HeatmapDay, PersonDaySummary } from "@/features/reports/types";
+import {
+  axisLine,
+  axisTick,
+  chartCursor,
+  chartGrid,
+  tokenColor,
+} from "@/components/charts/chartTheme";
 
 /** The day classes the focus chart's legend names (the others rarely carry focus). */
 export const FOCUS_LEGEND: DayClass[] = ["FULL", "HALF", "ABSENT", "LEAVE", "EXTRA"];
@@ -38,12 +45,12 @@ function DayTooltip({ active, payload }: TooltipProps<number, string>) {
   const p = active ? (payload?.[0]?.payload as DayPoint | undefined) : undefined;
   if (!p) return null;
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
-      <p className="font-semibold text-slate-900">
+    <div className="rounded-xl border border-card bg-card px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold text-primary">
         {formatDayWithWeekday(p.date)} · {dayClassLook(p.dayClass).label}
       </p>
-      <p className="text-slate-600">Focus {formatDuration(p.focusSec)}</p>
-      {p.span && <p className="text-slate-500">{p.span}</p>}
+      <p className="text-soft">Focus {formatDuration(p.focusSec)}</p>
+      {p.span && <p className="text-quiet">{p.span}</p>}
     </div>
   );
 }
@@ -102,27 +109,27 @@ export function FocusByDayChart({ days }: { days: PersonDaySummary[] }) {
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
-            <CartesianGrid vertical={false} stroke="rgb(238 242 246)" />
+            <CartesianGrid {...chartGrid} />
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 10, fill: "rgb(100 116 139)" }}
+              tick={axisTick(10)}
               tickLine={false}
-              axisLine={{ stroke: "rgb(203 213 225)" }}
+              axisLine={axisLine}
               interval="preserveStartEnd"
               minTickGap={6}
             />
             <YAxis
               domain={[0, max]}
               tickFormatter={(v: number) => (v ? `${v}h` : "0")}
-              tick={{ fontSize: 11, fill: "rgb(100 116 139)" }}
+              tick={axisTick(11)}
               tickLine={false}
               axisLine={false}
               allowDecimals={false}
             />
             {expected > 0 && (
-              <ReferenceLine y={expected} stroke="rgb(51 65 85)" strokeDasharray="5 4" />
+              <ReferenceLine y={expected} stroke={tokenColor("body")} strokeDasharray="5 4" />
             )}
-            <Tooltip content={<DayTooltip />} cursor={{ fill: "rgba(34,34,204,0.05)" }} />
+            <Tooltip content={<DayTooltip />} cursor={chartCursor} />
             <Bar dataKey="hours" radius={[3, 3, 0, 0]} maxBarSize={22} isAnimationActive={false}>
               {data.map((p) => (
                 <Cell key={p.date} fill={dayClassLook(p.dayClass).fill} />
@@ -131,7 +138,7 @@ export function FocusByDayChart({ days }: { days: PersonDaySummary[] }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-soft">
         {FOCUS_LEGEND.map((c) => (
           <span key={c} className="inline-flex items-center gap-1.5">
             {/* The bars' own colour, so key and chart cannot drift apart. */}
@@ -145,7 +152,7 @@ export function FocusByDayChart({ days }: { days: PersonDaySummary[] }) {
         ))}
         {expected > 0 && (
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="w-4 border-t-2 border-dashed border-slate-700" />
+            <span aria-hidden className="w-4 border-t-2 border-dashed border-body" />
             {formatDuration(expected * 3600)} expected
           </span>
         )}
@@ -176,7 +183,7 @@ export function MonthHeatmap({
   }, [heatmap, days]);
 
   if (rows.length === 0 || hours.length === 0) {
-    return <p className="text-sm text-slate-500">No keyboard or mouse activity this month.</p>;
+    return <p className="text-sm text-quiet">No keyboard or mouse activity this month.</p>;
   }
 
   const avg = hours.map((h) => {
@@ -194,14 +201,14 @@ export function MonthHeatmap({
         role="img"
         tabIndex={0}
         aria-label={`Active minutes by hour on ${rows.length} days, ${hourLabel(hours[0])} to ${hourLabel((hours[hours.length - 1] + 1) % 24)}. Busiest hour on average: ${hourLabel(busiest)}.`}
-        className="overflow-x-auto rounded-lg pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+        className="overflow-x-auto rounded-lg pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
       >
         <div
-          className="grid w-max min-w-full gap-[2px] text-[10px] tabular-nums text-slate-500"
+          className="grid w-max min-w-full gap-[2px] text-[0.6875rem] tabular-nums text-quiet"
           style={{ gridTemplateColumns: cols }}
           aria-hidden
         >
-          <span className="sticky left-0 z-10 bg-white" />
+          <span className="sticky left-0 z-10 bg-card" />
           {hours.map((h) => (
             <span key={h} className="text-center">
               {String(h).padStart(2, "0")}
@@ -209,7 +216,7 @@ export function MonthHeatmap({
           ))}
           {rows.map((r) => (
             <div key={r.date} className="contents">
-              <span className="sticky left-0 z-10 truncate bg-white pr-1 text-slate-600">
+              <span className="sticky left-0 z-10 truncate bg-card pr-1 text-soft">
                 {formatDayWithWeekday(r.date).replace(/ \w+$/, "")}
               </span>
               {hours.map((h) => {
@@ -224,15 +231,15 @@ export function MonthHeatmap({
               })}
             </div>
           ))}
-          <span className="sticky left-0 z-10 bg-white pt-1 text-slate-600">Avg</span>
+          <span className="sticky left-0 z-10 bg-card pt-1 text-soft">Avg</span>
           {avg.map((v, i) => (
-            <span key={hours[i]} className="pt-1 text-center font-semibold text-slate-700">
+            <span key={hours[i]} className="pt-1 text-center font-semibold text-body">
               {v}
             </span>
           ))}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-soft">
         <span>Active minutes</span>
         {HEAT_LEGEND.map((l) => (
           <span key={l.label} className="inline-flex items-center gap-1.5">

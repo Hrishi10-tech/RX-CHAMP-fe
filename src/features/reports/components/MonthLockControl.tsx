@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { AlertTriangle, Loader2, Lock, LockOpen, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Chip } from "@/components/ui/Chip";
+import { IconButton } from "@/components/ui/IconButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { btnPrimary, btnSecondary } from "@/components/ui/classes";
 import { errorCode, errorDetails, errorMessage, errorStatus } from "@/lib/api";
 import { formatDayLong, formatMonth, monthOfDate } from "@/lib/time/months";
 import { dateKeyOf, todayKey } from "@/lib/time/businessTime";
@@ -15,6 +16,15 @@ import { useMonthLock, useMonthLockMutation } from "@/features/reports/hooks/use
 import { blockingApprovalsHref } from "@/features/approvals/lib/query";
 import { LockBlockers } from "@/features/reports/components/LockBlockers";
 import type { MonthLockBlockers } from "@/features/reports/types";
+import { REPORT_NOTICES_ID } from "@/features/reports/components/ReportShell";
+import { Button } from "@/components/ui/Button";
+
+/** 3.6 (W-08): under the report header when there is one, else in place. */
+function Notices({ children }: { children: ReactNode }) {
+  const [target, setTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => setTarget(document.getElementById(REPORT_NOTICES_ID)), []);
+  return target ? createPortal(children, target) : <>{children}</>;
+}
 
 /** "Locked for payroll by Neha Iyer on 2 Oct 2026". */
 function lockedLine(lockedByName: string | null, lockedAt: string | null): string {
@@ -154,7 +164,7 @@ export function MonthLockControl({ month }: { month: string }) {
 
   if (lock.isLoading) {
     return (
-      <span className="inline-flex h-10 items-center gap-2 px-2 text-sm text-slate-500">
+      <span className="inline-flex h-10 items-center gap-2 px-2 text-sm text-quiet">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
         Checking lock…
       </span>
@@ -165,104 +175,105 @@ export function MonthLockControl({ month }: { month: string }) {
   if (lock.isError && errorStatus(lock.error) === 400) return null;
   if (lock.isError || !lock.data) {
     return (
-      <button
+      <Button
+        variant="secondary"
         type="button"
         onClick={() => lock.refetch()}
         disabled={lock.isFetching}
-        className={btnSecondary}
       >
         <Lock className="h-4 w-4" aria-hidden />
         Couldn't check the lock. Retry
-      </button>
+      </Button>
     );
   }
 
   return (
     <>
       {lock.data.locked ? (
-        <button
+        <Button
+          variant="secondary"
           type="button"
           onClick={() => setConfirmUnlock(true)}
           disabled={mutation.isPending}
-          className={btnSecondary}
         >
           <LockOpen className="h-4 w-4" aria-hidden />
           Unlock {label}
-        </button>
+        </Button>
       ) : current ? (
-        <span className="inline-flex min-h-10 items-center gap-2 px-1 text-sm text-slate-500">
+        <span className="inline-flex min-h-10 items-center gap-2 px-1 text-sm text-quiet">
           <Lock className="h-4 w-4 shrink-0" aria-hidden />
           You can lock {label} for payroll once it has ended.
         </span>
       ) : (
-        <button type="button" onClick={doLock} disabled={mutation.isPending} className={btnPrimary}>
+        <Button variant="primary" type="button" onClick={doLock} disabled={mutation.isPending}>
           {mutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           ) : (
             <Lock className="h-4 w-4" aria-hidden />
           )}
           Lock for payroll
-        </button>
+        </Button>
       )}
 
-      {!refusal &&
-        !lock.data.locked &&
-        !current &&
-        (lock.data.pending > 0 ||
-          (lock.data.blockers?.openSessions.length ?? 0) > 0 ||
-          (lock.data.blockers?.pendingLeave ?? 0) > 0 ||
-          (lock.data.blockers?.pendingWfh ?? 0) > 0) && (
-          <LockBlockers
-            month={month}
-            pending={lock.data.pending}
-            blockers={lock.data.blockers}
-            isSuperAdmin
-          />
-        )}
+      <Notices>
+        {!refusal &&
+          !lock.data.locked &&
+          !current &&
+          (lock.data.pending > 0 ||
+            (lock.data.blockers?.openSessions.length ?? 0) > 0 ||
+            (lock.data.blockers?.pendingLeave ?? 0) > 0 ||
+            (lock.data.blockers?.pendingWfh ?? 0) > 0) && (
+            <LockBlockers
+              month={month}
+              pending={lock.data.pending}
+              blockers={lock.data.blockers}
+              isSuperAdmin
+            />
+          )}
 
-      {refusal && (
-        <div
-          role="alert"
-          className="flex w-full items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900 sm:basis-full"
-        >
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">
-              {label} can't be locked yet.{" "}
-              {refusal.count !== null
-                ? `${refusal.count} ${refusal.count === 1 ? "approval is" : "approvals are"} still pending.`
-                : refusal.message}
-            </p>
-            <p className="mt-0.5">
-              Decide them first, then lock the month.{" "}
-              <Link
-                href={blockingApprovalsHref(month, true)}
-                className="font-semibold text-amber-900 underline underline-offset-2"
-              >
-                Open them in Approvals
-              </Link>
-            </p>
-            {refusal.blockers && (
-              <div className="mt-2">
-                <LockBlockers
-                  month={month}
-                  pending={refusal.count ?? 0}
-                  blockers={refusal.blockers}
-                  isSuperAdmin
-                />
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setRefusal(null)}
-            aria-label="Dismiss"
-            className="rounded-lg p-1 text-amber-700 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+        {refusal && (
+          <div
+            role="alert"
+            className="flex w-full items-start gap-2.5 rounded-xl border border-attention-edge bg-attention-wash px-3.5 py-2.5 text-sm text-attention-ink sm:basis-full"
           >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
-        </div>
-      )}
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-attention" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">
+                {label} can't be locked yet.{" "}
+                {refusal.count !== null
+                  ? `${refusal.count} ${refusal.count === 1 ? "approval is" : "approvals are"} still pending.`
+                  : refusal.message}
+              </p>
+              <p className="mt-0.5">
+                Decide them first, then lock the month.{" "}
+                <Link
+                  href={blockingApprovalsHref(month, true)}
+                  className="font-semibold text-attention-ink underline underline-offset-2"
+                >
+                  Open them in Approvals
+                </Link>
+              </p>
+              {refusal.blockers && (
+                <div className="mt-2">
+                  <LockBlockers
+                    month={month}
+                    pending={refusal.count ?? 0}
+                    blockers={refusal.blockers}
+                    isSuperAdmin
+                  />
+                </div>
+              )}
+            </div>
+            <IconButton
+              onClick={() => setRefusal(null)}
+              label="Dismiss"
+              className="h-8 w-8 text-attention hover:bg-attention-wash-strong hover:text-attention-ink"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </IconButton>
+          </div>
+        )}
+      </Notices>
 
       <ConfirmDialog
         open={confirmUnlock}

@@ -12,11 +12,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { btnSecondary, btnSmall } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { formatDayLong } from "@/lib/time/months";
 import { todayKey } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+
+/** Where a header action renders its notices, under the header rather than beside it. */
+export const REPORT_NOTICES_ID = "report-notices";
 
 export interface Crumb {
   label: string;
@@ -31,21 +35,13 @@ export interface Stepper {
   onNext?: () => void;
 }
 
-const stepBtn =
-  "flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] disabled:cursor-not-allowed disabled:opacity-40";
-
 /** Download PDF: the browser's print dialog over the A4 print layout. */
 export function PrintButton({ disabled }: { disabled?: boolean }) {
   return (
-    <button
-      type="button"
-      onClick={() => window.print()}
-      disabled={disabled}
-      className={btnSecondary}
-    >
+    <Button variant="secondary" type="button" onClick={() => window.print()} disabled={disabled}>
       <Printer className="h-4 w-4" aria-hidden />
       Download PDF
-    </button>
+    </Button>
   );
 }
 
@@ -77,12 +73,12 @@ export function ExcelButton({
     }
   }
   return (
-    <button
+    <Button
+      variant={small ? "small" : "secondary"}
       type="button"
       onClick={run}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      className={small ? btnSmall : btnSecondary}
     >
       {busy ? (
         <Loader2
@@ -93,7 +89,7 @@ export function ExcelButton({
         <FileSpreadsheet className={small ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
       )}
       {busy ? "Preparing…" : label}
-    </button>
+    </Button>
   );
 }
 
@@ -142,7 +138,7 @@ export function ReportShell({
         {back && (
           <Link
             href={back.href}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-quiet hover:text-body"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
             {back.label}
@@ -152,19 +148,19 @@ export function ReportShell({
           {crumbs.map((c, i) => (
             <span key={`${c.label}-${i}`} className="flex min-w-0 items-center gap-1.5">
               {i > 0 && (
-                <span aria-hidden className="text-slate-300">
+                <span aria-hidden className="text-faint">
                   /
                 </span>
               )}
               {c.href ? (
                 <Link
                   href={c.href}
-                  className="font-medium text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                  className="font-medium text-brand underline-offset-2 hover:underline"
                 >
                   {c.label}
                 </Link>
               ) : (
-                <span className="truncate font-semibold text-slate-700" aria-current="page">
+                <span className="truncate font-semibold text-body" aria-current="page">
                   {c.label}
                 </span>
               )}
@@ -173,44 +169,43 @@ export function ReportShell({
         </nav>
       </div>
 
-      <p className="hidden text-xs text-slate-500 print:block">
+      <p className="hidden text-xs text-quiet print:block">
         RX Vision report · printed {formatDayLong(todayKey())}, {formatTime12(now)}
       </p>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <header className="min-w-0">
-          <h1 className="break-words text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-          {subtitle && <p className="mt-1 break-words text-sm text-slate-500">{subtitle}</p>}
+          <h1 className="break-words text-2xl font-bold tracking-tight text-primary">{title}</h1>
+          {subtitle && <p className="mt-1 break-words text-sm text-quiet">{subtitle}</p>}
         </header>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end print:hidden">
           {stepper && (
-            <div className="flex items-center justify-between gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-              <button
-                type="button"
+            <div className="flex items-center justify-between gap-1 rounded-xl border border-card bg-card p-1 shadow-sm">
+              <IconButton
                 onClick={stepper.onPrev}
                 disabled={!stepper.onPrev}
-                aria-label={stepper.prevLabel}
-                className={stepBtn}
+                label={stepper.prevLabel}
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden />
-              </button>
-              <span className="min-w-[8.5rem] px-1 text-center text-sm font-semibold text-slate-800">
+              </IconButton>
+              <span className="min-w-[8.5rem] px-1 text-center text-sm font-semibold text-strong">
                 {stepper.label}
               </span>
-              <button
-                type="button"
+              <IconButton
                 onClick={stepper.onNext}
                 disabled={!stepper.onNext}
-                aria-label={stepper.nextLabel}
-                className={stepBtn}
+                label={stepper.nextLabel}
               >
                 <ChevronRight className="h-4 w-4" aria-hidden />
-              </button>
+              </IconButton>
             </div>
           )}
           {actions && <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">{actions}</div>}
         </div>
       </div>
+
+      {/* 3.6 (W-08): what an action has to say (the month lock's blockers) goes here, full width. */}
+      <div id={REPORT_NOTICES_ID} className="empty:hidden print:hidden" />
 
       {children}
     </div>

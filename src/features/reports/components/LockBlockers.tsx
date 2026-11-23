@@ -55,7 +55,7 @@ export function LockBlockers({
   if (pending <= 0 && open.length === 0 && pendingLeave <= 0 && pendingWfh <= 0) return null;
   const label = formatMonth(month);
   return (
-    <div className="w-full space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-3 text-sm text-amber-950 sm:basis-full">
+    <div className="w-full space-y-2.5 rounded-xl border border-attention-edge bg-attention-wash/70 px-3.5 py-3 text-sm text-attention-ink sm:basis-full">
       {pending > 0 && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -65,14 +65,14 @@ export function LockBlockers({
             </p>
             <Link
               href={blockingApprovalsHref(month, isSuperAdmin)}
-              className="inline-flex items-center gap-1 font-semibold text-amber-900 underline underline-offset-2"
+              className="inline-flex items-center gap-1 font-semibold text-attention-ink underline underline-offset-2"
             >
               Open exactly these in Approvals
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
           {items.length > 0 && (
-            <ul className="divide-y divide-amber-200/70 overflow-hidden rounded-lg border border-amber-200 bg-white">
+            <ul className="divide-y divide-attention-edge/70 overflow-hidden rounded-lg border border-attention-edge bg-card">
               {items.map((b) => {
                 const who = waitingFor(b);
                 return (
@@ -80,15 +80,15 @@ export function LockBlockers({
                     key={`${b.type}:${b.id}`}
                     className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:gap-3"
                   >
-                    <span className="min-w-0 font-semibold text-slate-900 sm:w-44 sm:shrink-0 sm:truncate">
+                    <span className="min-w-0 font-semibold text-primary sm:w-44 sm:shrink-0 sm:truncate">
                       {b.userName}
                     </span>
-                    <span className="min-w-0 flex-1 text-slate-700">
+                    <span className="min-w-0 flex-1 text-body">
                       {CATEGORY_FILTER_LABEL[b.category as ApprovalCategory] ?? "Approval"} ·{" "}
                       {formatDay(b.date)}
                     </span>
                     <span
-                      className={`flex items-center gap-1 text-xs ${who.left ? "font-semibold text-rose-700" : "text-slate-500"}`}
+                      className={`flex items-center gap-1 text-xs ${who.left ? "font-semibold text-attention" : "text-quiet"}`}
                     >
                       {who.left && <UserX className="h-3.5 w-3.5" aria-hidden />}
                       Waiting for {who.text}
@@ -99,7 +99,7 @@ export function LockBlockers({
             </ul>
           )}
           {blockers?.moreItems && (
-            <p className="text-xs text-amber-900">
+            <p className="text-xs text-attention-ink">
               And more: open them in Approvals to see every one.
             </p>
           )}
@@ -114,23 +114,23 @@ export function LockBlockers({
             </p>
             <Link
               href="/dashboard/leave?tab=requests"
-              className="inline-flex items-center gap-1 font-semibold text-amber-900 underline underline-offset-2"
+              className="inline-flex items-center gap-1 font-semibold text-attention-ink underline underline-offset-2"
             >
               Open Leave requests
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
           {leave.length > 0 && (
-            <ul className="divide-y divide-amber-200/70 overflow-hidden rounded-lg border border-amber-200 bg-white">
+            <ul className="divide-y divide-attention-edge/70 overflow-hidden rounded-lg border border-attention-edge bg-card">
               {leave.map((l) => (
                 <li
                   key={l.id}
                   className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:gap-3"
                 >
-                  <span className="min-w-0 font-semibold text-slate-900 sm:w-44 sm:shrink-0 sm:truncate">
+                  <span className="min-w-0 font-semibold text-primary sm:w-44 sm:shrink-0 sm:truncate">
                     {l.userName}
                   </span>
-                  <span className="min-w-0 flex-1 text-slate-700">
+                  <span className="min-w-0 flex-1 text-body">
                     {l.category === "CLSL" ? "CL/SL" : l.category === "ELPL" ? "EL/PL" : "Comp off"}{" "}
                     · {formatDay(l.startDate)}
                     {l.endDate !== l.startDate ? ` to ${formatDay(l.endDate)}` : ""} · {l.days}{" "}
@@ -151,23 +151,23 @@ export function LockBlockers({
             </p>
             <Link
               href="/dashboard/wfh?tab=requests"
-              className="inline-flex items-center gap-1 font-semibold text-amber-900 underline underline-offset-2"
+              className="inline-flex items-center gap-1 font-semibold text-attention-ink underline underline-offset-2"
             >
               Open Work from home requests
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
           {wfh.length > 0 && (
-            <ul className="divide-y divide-amber-200/70 overflow-hidden rounded-lg border border-amber-200 bg-white">
+            <ul className="divide-y divide-attention-edge/70 overflow-hidden rounded-lg border border-attention-edge bg-card">
               {wfh.map((w) => (
                 <li
                   key={w.id}
                   className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:gap-3"
                 >
-                  <span className="min-w-0 font-semibold text-slate-900 sm:w-44 sm:shrink-0 sm:truncate">
+                  <span className="min-w-0 font-semibold text-primary sm:w-44 sm:shrink-0 sm:truncate">
                     {w.userName}
                   </span>
-                  <span className="min-w-0 flex-1 text-slate-700">
+                  <span className="min-w-0 flex-1 text-body">
                     From home · {formatDay(w.startDate)}
                     {w.endDate !== w.startDate ? ` to ${formatDay(w.endDate)}` : ""} · {w.days}{" "}
                     {w.days === 1 || w.days < 1 ? "day" : "days"}
@@ -183,7 +183,7 @@ export function LockBlockers({
           <p className="font-semibold">
             {open.length === 1 ? "A working day is" : `${open.length} working days are`} still open
           </p>
-          <ul className="space-y-0.5 text-amber-900">
+          <ul className="space-y-0.5 text-attention-ink">
             {open.map((o) => (
               <li key={`${o.userId}:${o.date}`} className="flex items-center gap-1.5">
                 <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden />

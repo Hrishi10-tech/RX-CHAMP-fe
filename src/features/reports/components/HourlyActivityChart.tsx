@@ -22,6 +22,13 @@ import {
   spanHours,
   workSpan,
 } from "@/features/teamToday/lib/hourly";
+import {
+  chartGrid,
+  axisTick,
+  axisLine,
+  chartCursor,
+  tokenColor,
+} from "@/components/charts/chartTheme";
 
 interface Point {
   hour: string;
@@ -32,19 +39,19 @@ interface Point {
   quiet: boolean;
 }
 
-const INDIGO = "rgb(79 70 229)";
-const AMBER = "rgb(245 158 11)";
+const INDIGO = tokenColor("brand");
+const AMBER = tokenColor("attention");
 
 function HourTooltip({ active, payload }: TooltipProps<number, string>) {
   const p = active ? (payload?.[0]?.payload as Point | undefined) : undefined;
   if (!p) return null;
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
-      <p className="font-semibold text-slate-900">{p.hour}</p>
-      <p className="text-slate-600">
+    <div className="rounded-xl border border-card bg-card px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold text-primary">{p.hour}</p>
+      <p className="text-soft">
         {p.active} active min{p.quiet ? ", a quiet hour" : ""}
       </p>
-      <p className="text-slate-500">
+      <p className="text-quiet">
         {p.available} min working · {p.breakMin} min break · {p.meetingMin} min meeting
       </p>
     </div>
@@ -94,7 +101,7 @@ export function HourlyActivityChart({
   );
 
   if (!span || data.length === 0) {
-    return <p className="text-sm text-slate-500">No keyboard or mouse activity on this day.</p>;
+    return <p className="text-sm text-quiet">No keyboard or mouse activity on this day.</p>;
   }
 
   return (
@@ -102,30 +109,30 @@ export function HourlyActivityChart({
       <div role="img" aria-label={hourlyLabel(name, normalized, span)} className="h-52 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
-            <CartesianGrid vertical={false} stroke="rgb(238 242 246)" />
+            <CartesianGrid {...chartGrid} />
             <XAxis
               dataKey="hour"
               tickFormatter={(h: string) => h.slice(0, 2)}
-              tick={{ fontSize: 11, fill: "rgb(100 116 139)" }}
+              tick={axisTick(11)}
               tickLine={false}
-              axisLine={{ stroke: "rgb(203 213 225)" }}
+              axisLine={axisLine}
               interval="preserveStartEnd"
             />
             <YAxis
               domain={[0, 60]}
               ticks={[0, 20, 40, 60]}
               tickFormatter={(v: number) => (v ? `${v}m` : "0")}
-              tick={{ fontSize: 11, fill: "rgb(100 116 139)" }}
+              tick={axisTick(11)}
               tickLine={false}
               axisLine={false}
             />
             <ReferenceLine
               y={quietBelow}
-              stroke="rgb(180 83 9)"
+              stroke={tokenColor("attention")}
               strokeDasharray="4 3"
               ifOverflow="extendDomain"
             />
-            <Tooltip content={<HourTooltip />} cursor={{ fill: "rgba(34,34,204,0.05)" }} />
+            <Tooltip content={<HourTooltip />} cursor={chartCursor} />
             <Bar dataKey="active" radius={[4, 4, 0, 0]} maxBarSize={30} isAnimationActive={false}>
               {data.map((p) => (
                 <Cell key={p.hour} fill={p.quiet ? AMBER : INDIGO} />
@@ -134,17 +141,17 @@ export function HourlyActivityChart({
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-soft">
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-sm bg-indigo-600" />
+          <span aria-hidden className="h-2.5 w-2.5 rounded-sm bg-brand" />
           Active minutes
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
+          <span aria-hidden className="h-2.5 w-2.5 rounded-sm bg-attention" />
           Quiet hour
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="w-4 border-t-2 border-dashed border-amber-700" />
+          <span aria-hidden className="w-4 border-t-2 border-dashed border-attention" />
           {quietBelow} min line
         </span>
       </div>

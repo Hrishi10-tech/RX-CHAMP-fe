@@ -10,6 +10,7 @@ export const reportKeys = {
     [...reportKeys.all, "person", userId, "month", month] as const,
   teamDay: (params: TeamDayParams) => [...reportKeys.all, "team", "day", params] as const,
   teamMonth: (params: TeamMonthParams) => [...reportKeys.all, "team", "month", params] as const,
+  myMonth: (month: string) => [...reportKeys.all, "me", "month", month] as const,
   runs: () => [...reportKeys.all, "runs"] as const,
   locks: () => [...reportKeys.all, "lock"] as const,
   lock: (month: string) => [...reportKeys.locks(), month] as const,

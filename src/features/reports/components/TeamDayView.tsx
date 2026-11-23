@@ -12,7 +12,6 @@ import {
   LoadingState,
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
-import { cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage, errorStatus } from "@/lib/api";
 import { ROUNDING_NOTE, formatDuration, formatSignedAmount } from "@/lib/format/duration";
 import { withReturnTo } from "@/lib/nav/returnTo";
@@ -36,6 +35,9 @@ import {
 } from "@/features/reports/components/ReportParts";
 import { PrintButton, ReportShell, type Crumb } from "@/features/reports/components/ReportShell";
 import type { PersonDaySummary, ReportPerson, TeamDayParams } from "@/features/reports/types";
+import { Card } from "@/components/ui/Card";
+import { Th } from "@/components/ui/Table";
+import { dayTableTotals, totalsLabel } from "@/features/reports/lib/tableTotals";
 
 function span(s: PersonDaySummary): string {
   if (!s.startedAt) return "";
@@ -58,7 +60,7 @@ function breaks(s: PersonDaySummary): string {
 
 /** "9:05 AM to 6:20 PM" for a table cell: each time stays whole when the cell wraps. */
 function SpanText({ s }: { s: PersonDaySummary }) {
-  if (!s.startedAt) return <span className="text-slate-400">Did not start</span>;
+  if (!s.startedAt) return <span className="text-quiet">Did not start</span>;
   return (
     <>
       <span className="whitespace-nowrap">{formatTime12(s.startedAt)}</span> to{" "}
@@ -169,9 +171,9 @@ export function TeamDayView({
 
   if (query.isLoading) {
     return shell(
-      <div className={cardBase}>
+      <Card>
         <LoadingState label="Loading the day report…" />
-      </div>,
+      </Card>,
     );
   }
   // A failed refresh keeps the report on screen (see the notice below); only a
@@ -179,7 +181,7 @@ export function TeamDayView({
   if (!report) {
     const status = errorStatus(query.error);
     return shell(
-      <div className={cardBase}>
+      <Card>
         {status === 404 ? (
           <EmptyState
             icon={Info}
@@ -200,7 +202,7 @@ export function TeamDayView({
             retrying={query.isFetching}
           />
         )}
-      </div>,
+      </Card>,
     );
   }
 
@@ -230,13 +232,13 @@ export function TeamDayView({
         />
       )}
       {rows.length === 0 ? (
-        <div className={cardBase}>
+        <Card>
           <EmptyState
             icon={Users}
             title="Nobody in this report"
             message="Pick other people from Reports."
           />
-        </div>
+        </Card>
       ) : (
         <>
           <KpiGrid wide>
@@ -307,27 +309,27 @@ export function TeamDayView({
           >
             {/* Cards below xl: the table needs about 720px, more than the card has
                 beside the sidebar at 1024px. */}
-            <ul className="divide-y divide-slate-100 border-t border-slate-100 xl:hidden print:hidden">
+            <ul className="divide-y divide-divider border-t border-divider xl:hidden print:hidden">
               {rows.map(({ person, summary: s }) => (
                 <li key={person.id} className="space-y-1.5 px-4 py-3 sm:px-6">
                   <div className="flex items-start justify-between gap-2">
                     <Link
                       href={personHref(person.id)}
-                      className="min-w-0 break-words font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                      className="min-w-0 break-words font-semibold text-brand underline-offset-2 hover:underline"
                     >
                       {person.name}
                     </Link>
                     <DayClassChip dayClass={s.dayClass} />
                   </div>
                   {s.payrollPaused && <PayrollPausedChip />}
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-soft">
                     {span(s) || (dayOffText(s) ?? "Did not start")}
                     {lateText(s) ? ` · ${lateText(s)}` : ""}
                     {unverifiedNote(s.unverifiedSec)
                       ? ` · ${unverifiedNote(s.unverifiedSec)}`
                       : ""}{" "}
                     · paid time{" "}
-                    <span className="font-semibold text-slate-900">
+                    <span className="font-semibold text-primary">
                       {s.payrollPaused ? "paused" : formatDuration(s.paidSec)}
                     </span>{" "}
                     · {breaks(s)} · {breakPay(s)}
@@ -341,7 +343,7 @@ export function TeamDayView({
                     />
                   )}
                   {pending(s) && (
-                    <p className="text-xs font-semibold text-amber-700">{pending(s)}</p>
+                    <p className="text-xs font-semibold text-attention">{pending(s)}</p>
                   )}
                 </li>
               ))}
@@ -349,59 +351,55 @@ export function TeamDayView({
             <div className="hidden overflow-x-auto xl:block print:block">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="border-y border-slate-200 bg-slate-50/70">
-                    <th scope="col" className={`${thBase} pl-6`}>
+                  <tr className="border-y border-card bg-fill/70">
+                    <Th scope="col" className="pl-6">
                       Person
-                    </th>
-                    <th scope="col" className={thBase}>
-                      Attendance
-                    </th>
-                    <th scope="col" className={thBase}>
-                      Day
-                    </th>
-                    <th scope="col" className={`${thBase} text-right`}>
+                    </Th>
+                    <Th scope="col">Attendance</Th>
+                    <Th scope="col">Day</Th>
+                    <Th scope="col" className="text-right">
                       Working
-                    </th>
-                    <th scope="col" className={`${thBase} text-right`}>
+                    </Th>
+                    <Th scope="col" className="text-right">
                       Focus
-                    </th>
-                    <th scope="col" className={`${thBase} text-right`}>
+                    </Th>
+                    <Th scope="col" className="text-right">
                       Paid time
-                    </th>
+                    </Th>
                     {canSeeActivity && (
-                      <th scope="col" className={`${thBase} text-right`}>
+                      <Th scope="col" className="text-right">
                         Idle
-                      </th>
+                      </Th>
                     )}
-                    <th scope="col" className={`${thBase} text-right`}>
+                    <Th scope="col" className="text-right">
                       Break
-                    </th>
-                    <th scope="col" className={`${thBase} text-right`}>
+                    </Th>
+                    <Th scope="col" className="text-right">
                       Away
-                    </th>
-                    <th scope="col" className={`${thBase} text-right`}>
+                    </Th>
+                    <Th scope="col" className="text-right">
                       Meeting
-                    </th>
-                    <th scope="col" className={`${thBase} pr-6 text-right`}>
+                    </Th>
+                    <Th scope="col" className="pr-6 text-right">
                       Open
-                    </th>
+                    </Th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map(({ person, summary: s }) => (
                     <tr
                       key={person.id}
-                      className="border-b border-slate-100 align-top last:border-b-0"
+                      className="border-b border-divider align-top last:border-b-0"
                     >
                       <th scope="row" className="py-2.5 pl-6 pr-4 text-left font-normal">
                         <Link
                           href={personHref(person.id)}
-                          className="font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+                          className="font-semibold text-brand underline-offset-2 hover:underline"
                         >
                           {person.name}
                         </Link>
                         {person.department && (
-                          <span className="block text-xs text-slate-500">{person.department}</span>
+                          <span className="block text-xs text-quiet">{person.department}</span>
                         )}
                         {s.payrollPaused && (
                           <span className="mt-1 block">
@@ -413,66 +411,66 @@ export function TeamDayView({
                         <DayClassChip dayClass={s.dayClass} />
                       </td>
                       {/* "9:05 AM to 6:20 PM" may wrap after "to", so the table fits at 1280px. */}
-                      <td className="min-w-[6.5rem] px-4 py-2.5 tabular-nums text-slate-700">
+                      <td className="min-w-[6.5rem] px-4 py-2.5 tabular-nums text-body">
                         <SpanText s={s} />
                         {dayOffText(s) && (
-                          <span className="block text-xs font-semibold text-sky-700">
+                          <span className="block text-xs font-semibold text-brand">
                             {holidayText(s)}
                           </span>
                         )}
                         {lateText(s) && (
-                          <span className="block max-w-[16rem] whitespace-normal text-xs font-semibold text-amber-700">
+                          <span className="block max-w-[16rem] whitespace-normal text-xs font-semibold text-attention">
                             {lateText(s)}
                           </span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                         {figureText(workingSec(s))}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
-                        <span className="font-semibold text-slate-900">
+                        <span className="font-semibold text-primary">
                           {formatDuration(s.focusSec)}
                         </span>
                         {s.targetSec > 0 && (
-                          <span className="block text-xs text-slate-500">
+                          <span className="block text-xs text-quiet">
                             of {formatDuration(s.targetSec)}
                           </span>
                         )}
                         {/* Notes wrap, so the column stays narrow and the table fits. */}
                         {unverifiedNote(s.unverifiedSec) && (
-                          <span className="block min-w-[5.5rem] whitespace-normal text-xs text-slate-500">
+                          <span className="block min-w-[5.5rem] whitespace-normal text-xs text-quiet">
                             {unverifiedNote(s.unverifiedSec)}
                           </span>
                         )}
                         {pending(s) && (
-                          <span className="block min-w-[5.5rem] whitespace-normal text-xs font-semibold text-amber-700">
+                          <span className="block min-w-[5.5rem] whitespace-normal text-xs font-semibold text-attention">
                             {pending(s)}
                           </span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                         {s.payrollPaused ? "Paused" : formatDuration(s.paidSec)}
                       </td>
                       {canSeeActivity && (
-                        <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                        <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                           {figureText(s.idleSec ?? null)}
                         </td>
                       )}
-                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
+                      <td className="px-4 py-2.5 text-right tabular-nums text-body">
                         {formatDuration(s.breakSec)}
-                        <span className="block whitespace-nowrap text-xs text-slate-500">
+                        <span className="block whitespace-nowrap text-xs text-quiet">
                           {breaks(s)}
                         </span>
-                        <span className="block whitespace-nowrap text-xs text-slate-500">
+                        <span className="block whitespace-nowrap text-xs text-quiet">
                           {breakPay(s)}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs tabular-nums text-slate-600">
-                        {away(s) ?? <span className="text-slate-400">None</span>}
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs tabular-nums text-soft">
+                        {away(s) ?? <span className="text-quiet">None</span>}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
                         {formatDuration(s.meetingSec)}
-                        <span className="block text-xs text-slate-500">
+                        <span className="block text-xs text-quiet">
                           {s.meetings
                             ? `${s.meetings} ${s.meetings === 1 ? "meeting" : "meetings"}`
                             : "None"}
@@ -484,15 +482,58 @@ export function TeamDayView({
                             {s.pending} open
                           </Chip>
                         ) : (
-                          <span className="text-xs text-slate-400">None</span>
+                          <span className="text-xs text-quiet">None</span>
                         )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
+                {/* W-23: the day, added up. */}
+                {rows.length > 1 &&
+                  (() => {
+                    const sum = dayTableTotals(
+                      rows.map(({ summary: s }) => ({ ...s, working: workingSec(s) })),
+                    );
+                    return (
+                      <tfoot>
+                        <tr className="border-t border-card bg-fill/70 font-semibold">
+                          <th
+                            scope="row"
+                            colSpan={3}
+                            className="py-2.5 pl-6 pr-4 text-left text-primary"
+                          >
+                            {totalsLabel(sum)}
+                          </th>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
+                            {figureText(sum.working)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
+                            <span className="text-primary">{formatDuration(sum.focusSec)}</span>
+                            {sum.expectedSec > 0 && (
+                              <span className="block text-xs font-normal text-quiet">
+                                of {formatDuration(sum.expectedSec)}
+                              </span>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
+                            {figureText(sum.idleSec)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
+                            {formatDuration(sum.breakSec)}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-body">
+                            {formatDuration(sum.meetingSec)}
+                          </td>
+                          <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums">
+                            {sum.pending > 0 ? `${sum.pending} open` : "None"}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    );
+                  })()}
               </table>
             </div>
-            <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:px-6">
+            <p className="border-t border-divider px-4 py-3 text-xs text-quiet sm:px-6">
               {ROUNDING_NOTE}
             </p>
           </ReportSection>

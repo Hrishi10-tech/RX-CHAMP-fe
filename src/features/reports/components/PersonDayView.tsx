@@ -21,7 +21,6 @@ import {
   LoadingState,
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
-import { btnSmall, cardBase, thBase } from "@/components/ui/classes";
 import { errorMessage, errorStatus } from "@/lib/api";
 import { formatDuration, formatMinutesShort, formatSignedAmount } from "@/lib/format/duration";
 import { formatMinutes, todayKey } from "@/lib/time/businessTime";
@@ -84,6 +83,9 @@ import type { ApprovalItemView } from "@/features/approvals/types";
 import type { BreakRecordView } from "@/features/breaks/types";
 import type { MeetingRecordView } from "@/features/meetings/types";
 import type { PersonDayReport, ReportSkip } from "@/features/reports/types";
+import { Th } from "@/components/ui/Table";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 function personLine(report: PersonDayReport): string {
   const p = report.person;
@@ -125,15 +127,13 @@ interface BreakRow {
 function decisionCell(r: BreakRecordView): ReactNode {
   const status = r.approvalStatus;
   if (status === "NOT_REQUIRED")
-    return <span className="text-xs text-slate-500">No approval needed</span>;
+    return <span className="text-xs text-quiet">No approval needed</span>;
   return (
     <span className="space-y-0.5">
       <Chip tone={APPROVAL_TONE[status] ?? "neutral"} dot={status === "PENDING"}>
         {APPROVAL_LABEL[status] ?? status}
       </Chip>
-      {r.decidedByName && (
-        <span className="block text-xs text-slate-500">by {r.decidedByName}</span>
-      )}
+      {r.decidedByName && <span className="block text-xs text-quiet">by {r.decidedByName}</span>}
     </span>
   );
 }
@@ -172,9 +172,9 @@ function breakRows(report: PersonDayReport): BreakRow[] {
         </span>
       ),
       reason: reasonText ? (
-        <span className="text-slate-800">&ldquo;{reasonText}&rdquo;</span>
+        <span className="text-strong">&ldquo;{reasonText}&rdquo;</span>
       ) : (
-        <span className="italic text-slate-500">
+        <span className="italic text-quiet">
           {r.needsComment ? NO_COMMENT_TEXT : "None needed"}
         </span>
       ),
@@ -182,7 +182,7 @@ function breakRows(report: PersonDayReport): BreakRow[] {
       effect: approval ? (
         <EffectChip item={approval} />
       ) : (
-        <span className="text-xs text-slate-400">No change</span>
+        <span className="text-xs text-quiet">No change</span>
       ),
     };
   });
@@ -206,9 +206,9 @@ function breakRows(report: PersonDayReport): BreakRow[] {
             {s.outcome === "SKIPPED" ? "Skipped" : "Auto-skipped"}
           </Chip>
         ),
-        reason: <span className="italic text-slate-500">Not recorded</span>,
-        decision: <span className="text-xs text-slate-500">See Approvals</span>,
-        effect: <span className="text-xs text-slate-400">No change</span>,
+        reason: <span className="italic text-quiet">Not recorded</span>,
+        decision: <span className="text-xs text-quiet">See Approvals</span>,
+        effect: <span className="text-xs text-quiet">No change</span>,
       }),
     );
   return rows;
@@ -216,22 +216,18 @@ function breakRows(report: PersonDayReport): BreakRow[] {
 
 function BreaksTable({ rows }: { rows: BreakRow[] }) {
   if (rows.length === 0) {
-    return (
-      <p className="px-4 pb-5 text-sm text-slate-500 sm:px-6">No breaks recorded on this day.</p>
-    );
+    return <p className="px-4 pb-5 text-sm text-quiet sm:px-6">No breaks recorded on this day.</p>;
   }
   return (
     <>
-      <ul className="divide-y divide-slate-100 border-t border-slate-100 lg:hidden print:hidden">
+      <ul className="divide-y divide-divider border-t border-divider lg:hidden print:hidden">
         {rows.map((r) => (
           <li key={r.key} className="space-y-1.5 px-4 py-3 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-semibold text-slate-900">{r.name}</p>
+              <p className="font-semibold text-primary">{r.name}</p>
               {r.result}
             </div>
-            <p className="text-xs text-slate-600">
-              {[r.scheduled, r.when].filter(Boolean).join(" · ")}
-            </p>
+            <p className="text-xs text-soft">{[r.scheduled, r.when].filter(Boolean).join(" · ")}</p>
             <p className="text-sm">{r.reason}</p>
             <div className="flex flex-wrap items-center gap-2">
               {r.decision}
@@ -243,37 +239,27 @@ function BreaksTable({ rows }: { rows: BreakRow[] }) {
       <div className="hidden overflow-x-auto lg:block print:block">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-y border-slate-200 bg-slate-50/70">
-              <th scope="col" className={`${thBase} pl-6`}>
+            <tr className="border-y border-card bg-fill/70">
+              <Th scope="col" className="pl-6">
                 Break
-              </th>
-              <th scope="col" className={thBase}>
-                Taken
-              </th>
-              <th scope="col" className={thBase}>
-                Result
-              </th>
-              <th scope="col" className={thBase}>
-                Reason
-              </th>
-              <th scope="col" className={thBase}>
-                Decision
-              </th>
-              <th scope="col" className={`${thBase} pr-6`}>
+              </Th>
+              <Th scope="col">Taken</Th>
+              <Th scope="col">Result</Th>
+              <Th scope="col">Reason</Th>
+              <Th scope="col">Decision</Th>
+              <Th scope="col" className="pr-6">
                 Focus time
-              </th>
+              </Th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.key} className="border-b border-slate-100 align-top last:border-b-0">
+              <tr key={r.key} className="border-b border-divider align-top last:border-b-0">
                 <th scope="row" className="py-3 pl-6 pr-4 text-left font-normal">
-                  <span className="block font-semibold text-slate-900">{r.name}</span>
-                  {r.scheduled && (
-                    <span className="block text-xs text-slate-500">{r.scheduled}</span>
-                  )}
+                  <span className="block font-semibold text-primary">{r.name}</span>
+                  {r.scheduled && <span className="block text-xs text-quiet">{r.scheduled}</span>}
                 </th>
-                <td className="px-4 py-3 text-xs tabular-nums text-slate-700">{r.when}</td>
+                <td className="px-4 py-3 text-xs tabular-nums text-body">{r.when}</td>
                 <td className="px-4 py-3">{r.result}</td>
                 <td className="max-w-xs px-4 py-3 text-sm">{r.reason}</td>
                 <td className="px-4 py-3">{r.decision}</td>
@@ -295,10 +281,10 @@ function MeetingsList({
   approvals: ApprovalItemView[];
 }) {
   if (meetings.length === 0) {
-    return <p className="text-sm text-slate-500">No meetings logged on this day.</p>;
+    return <p className="text-sm text-quiet">No meetings logged on this day.</p>;
   }
   return (
-    <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+    <ul className="divide-y divide-divider rounded-xl border border-card">
       {meetings.map((m) => {
         const approval = effectFor(approvals, "MEETING", m.id);
         const people = (m.participants ?? []).map((p) => p.name).filter(Boolean);
@@ -308,16 +294,16 @@ function MeetingsList({
             className="grid gap-2 px-4 py-3 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:gap-4"
           >
             <div>
-              <p className="text-sm font-semibold tabular-nums text-slate-900">
+              <p className="text-sm font-semibold tabular-nums text-primary">
                 {formatTime12(m.startedAt)} to {m.endedAt ? formatTime12(m.endedAt) : "now"}
               </p>
-              <p className="text-xs text-slate-500">{formatDuration(m.durationSec)}</p>
+              <p className="text-xs text-quiet">{formatDuration(m.durationSec)}</p>
             </div>
             <div className="min-w-0">
               {m.kind !== "STATUS" && (
-                <p className="break-words text-sm text-slate-900">{m.agenda}</p>
+                <p className="break-words text-sm text-primary">{m.agenda}</p>
               )}
-              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-quiet">
                 <Chip tone="neutral">
                   {m.kind === "STATUS"
                     ? "In a meeting"
@@ -354,10 +340,10 @@ function MeetingsList({
 
 function ApprovalsList({ items, fetchedAt }: { items: ApprovalItemView[]; fetchedAt: number }) {
   if (items.length === 0) {
-    return <p className="text-sm text-slate-500">Nothing on this day needed a decision.</p>;
+    return <p className="text-sm text-quiet">Nothing on this day needed a decision.</p>;
   }
   return (
-    <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+    <ul className="divide-y divide-divider rounded-xl border border-card">
       {items.map((a) => {
         const decided = decidedLine(a);
         return (
@@ -368,14 +354,12 @@ function ApprovalsList({ items, fetchedAt }: { items: ApprovalItemView[]; fetche
               <EffectChip item={a} />
               <DueChip item={a} fetchedAt={fetchedAt} />
             </div>
-            <p className="break-words text-sm font-semibold text-slate-900">{a.title}</p>
-            <p className="break-words text-xs text-slate-600">{a.detail}</p>
-            {a.reason && (
-              <p className="break-words text-sm text-slate-700">&ldquo;{a.reason}&rdquo;</p>
-            )}
+            <p className="break-words text-sm font-semibold text-primary">{a.title}</p>
+            <p className="break-words text-xs text-soft">{a.detail}</p>
+            {a.reason && <p className="break-words text-sm text-body">&ldquo;{a.reason}&rdquo;</p>}
             {decided && (
               <p
-                className={`text-xs ${a.status === "REJECTED" ? "text-rose-700" : "text-emerald-700"}`}
+                className={`text-xs ${a.status === "REJECTED" ? "text-attention" : "text-working"}`}
               >
                 {decided}
                 {a.decisionNote ? `. Note: ${a.decisionNote}` : "."}
@@ -469,16 +453,16 @@ export function PersonDayView({
 
   if (query.isLoading)
     return shell(
-      <div className={cardBase}>
+      <Card>
         <LoadingState label="Loading the day report…" />
-      </div>,
+      </Card>,
     );
   // A failed refresh keeps the report on screen (see the notice below); only a
   // report that never loaded shows the error.
   if (!report) {
     const status = errorStatus(query.error);
     return shell(
-      <div className={cardBase}>
+      <Card>
         {status === 403 || status === 404 ? (
           <EmptyState
             icon={Info}
@@ -497,7 +481,7 @@ export function PersonDayView({
             retrying={query.isFetching}
           />
         )}
-      </div>,
+      </Card>,
     );
   }
 
@@ -537,9 +521,9 @@ export function PersonDayView({
       {leaveText(s) && (
         <div
           role="note"
-          className="flex items-start gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900"
+          className="flex items-start gap-2 rounded-2xl border border-meeting-edge bg-meeting-wash px-4 py-3 text-sm text-meeting-ink"
         >
-          <CalendarOff className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" aria-hidden />
+          <CalendarOff className="mt-0.5 h-4 w-4 shrink-0 text-meeting" aria-hidden />
           <span>
             <span className="font-semibold">{leaveText(s)}.</span>{" "}
             {s.leave?.full
@@ -553,9 +537,9 @@ export function PersonDayView({
       {s.payrollPaused && (
         <div
           role="note"
-          className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+          className="flex items-start gap-2 rounded-2xl border border-card bg-fill px-4 py-3 text-sm text-strong"
         >
-          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-quiet" aria-hidden />
           <span>
             <span className="block font-semibold">{PAYROLL_PAUSED_LABEL}</span>
             The day is tracked as usual; its paid time is not calculated.
@@ -565,9 +549,9 @@ export function PersonDayView({
       {wfhText(s) && (
         <div
           role="note"
-          className="flex items-start gap-2 rounded-2xl border border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.05)] px-4 py-3 text-sm text-slate-800"
+          className="flex items-start gap-2 rounded-2xl border border-brand/25 bg-brand/5 px-4 py-3 text-sm text-strong"
         >
-          <Home className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(34_34_204)]" aria-hidden />
+          <Home className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
           <span>
             <span className="font-semibold">{wfhText(s)}.</span>{" "}
             {typeof s.wfhSec === "number" && s.wfhSec > 0
@@ -579,10 +563,10 @@ export function PersonDayView({
       {(compOffEarnedText(s) || s.noCheckout) && (
         <div
           role="note"
-          className={`flex items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${s.noCheckout ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}
+          className={`flex items-start gap-2 rounded-2xl border px-4 py-3 text-sm ${s.noCheckout ? "border-attention-edge bg-attention-wash text-attention-ink" : "border-working-edge bg-working-wash text-working-ink"}`}
         >
           <Fingerprint
-            className={`mt-0.5 h-4 w-4 shrink-0 ${s.noCheckout ? "text-amber-600" : "text-emerald-600"}`}
+            className={`mt-0.5 h-4 w-4 shrink-0 ${s.noCheckout ? "text-attention" : "text-working"}`}
             aria-hidden
           />
           <span>
@@ -598,16 +582,16 @@ export function PersonDayView({
       {punches.length > 0 && (
         <div
           role="note"
-          className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+          className="flex items-start gap-2 rounded-2xl border border-card bg-fill px-4 py-3 text-sm text-body"
         >
-          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-quiet" aria-hidden />
           <span className="min-w-0">
             <span className="font-semibold">Punches: </span>
             <span className="inline-flex flex-wrap gap-1.5 align-middle">
               {punches.map((p, i) => (
                 <span
                   key={`${p.at}-${i}`}
-                  className={`rounded-md border px-1.5 py-0.5 font-mono text-xs ${p.voided ? "border-slate-200 text-slate-400 line-through" : "border-slate-200 bg-white text-slate-800"}`}
+                  className={`rounded-md border px-1.5 py-0.5 font-mono text-xs ${p.voided ? "border-card text-quiet line-through" : "border-card bg-card text-strong"}`}
                   title={`${p.deviceId} · ${p.source.toLowerCase()}${p.voided ? " · voided" : ""}`}
                 >
                   {formatTime12(p.at)}
@@ -621,9 +605,9 @@ export function PersonDayView({
       {offText && (
         <div
           role="note"
-          className="flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+          className="flex items-start gap-2 rounded-2xl border border-brand-edge bg-brand-wash px-4 py-3 text-sm text-brand-ink"
         >
-          <CalendarOff className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" aria-hidden />
+          <CalendarOff className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
           <span>
             <span className="font-semibold">{offText}.</span>{" "}
             {s.startedAt
@@ -635,7 +619,7 @@ export function PersonDayView({
       {s.pending > 0 ? (
         <div
           role="status"
-          className="flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-2 rounded-2xl border border-attention-edge bg-attention-wash px-4 py-3 text-sm text-attention-ink sm:flex-row sm:items-center sm:justify-between"
         >
           <p>
             <span className="font-semibold">
@@ -655,7 +639,7 @@ export function PersonDayView({
           </p>
           <Link
             href={approvalsHref}
-            className="shrink-0 font-semibold text-amber-900 underline underline-offset-2 print:hidden"
+            className="shrink-0 font-semibold text-attention-ink underline underline-offset-2 print:hidden"
           >
             Review approvals
           </Link>
@@ -663,9 +647,9 @@ export function PersonDayView({
       ) : report.approvals.length > 0 ? (
         <div
           role="status"
-          className="flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+          className="flex items-start gap-2 rounded-2xl border border-working-edge bg-working-wash px-4 py-3 text-sm text-working-ink"
         >
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-working" aria-hidden />
           <span>
             <span className="font-semibold">
               {report.approvals.length === 1
@@ -802,7 +786,7 @@ export function PersonDayView({
           pendingApprovals.length > 0 ? (
             <Link
               href={approvalsHref}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline print:hidden"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand underline-offset-2 hover:underline print:hidden"
             >
               <ClipboardCheck className="h-4 w-4" aria-hidden />
               Open Approvals
@@ -825,18 +809,19 @@ export function PersonDayView({
           }
           aside={
             canAdjust ? (
-              <button
+              <Button
+                variant="small"
                 type="button"
                 onClick={() => setAdjusting(true)}
-                className={`${btnSmall} print:hidden`}
+                className="print:hidden"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
                 Adjust focus time
-              </button>
+              </Button>
             ) : canAccess(role, adjustmentsHref) ? (
               <Link
                 href={adjustmentsHref}
-                className="text-sm font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline print:hidden"
+                className="text-sm font-semibold text-brand underline-offset-2 hover:underline print:hidden"
               >
                 All adjustments
               </Link>
@@ -853,7 +838,7 @@ export function PersonDayView({
               embedded
             />
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-quiet">
               When an agent missed something and the day&apos;s focus time is wrong, add or take off
               minutes here. {name} is told, with the reason, and every report follows.
             </p>
@@ -868,7 +853,7 @@ export function PersonDayView({
           aside={<ManagersOnly />}
         >
           {input === null ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-quiet">
               The input for this day could not be read. Try again later.
             </p>
           ) : (

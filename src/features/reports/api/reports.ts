@@ -4,6 +4,7 @@ import { readItems, unwrap } from "@/lib/api/list";
 import { paidSecOf } from "@/lib/format/payroll";
 import { buildTeamDayQuery, buildTeamMonthQuery, fileSlug } from "@/features/reports/lib/query";
 import type {
+  MyMonthReport,
   MonthLockView,
   MonthTotals,
   PersonDaySummary,
@@ -162,6 +163,15 @@ export async function getPersonMonthReport(
     days: list(r.days).map(daySummaryOf),
     heatmap: list(r.heatmap).map((d) => ({ ...d, hours: list(d.hours) })),
   };
+}
+
+/** The signed-in person's own month: totals and every day, no activity (History, D-86). */
+export async function getMyMonthReport(month: string): Promise<MyMonthReport> {
+  const { data } = await apiClient.get<ApiResponse<MyMonthReport>>(`${BASE}/me/month`, {
+    params: { month },
+  });
+  const r = unwrap(data, "Failed to load your month");
+  return { ...r, totals: totalsOf(r.totals), days: list(r.days) };
 }
 
 export async function getTeamDayReport(params: TeamDayParams): Promise<TeamDayReport> {

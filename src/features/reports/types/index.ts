@@ -59,6 +59,8 @@ export interface PersonDaySummary {
   dayOff?: { kind: "HOLIDAY" | "WEEKLY_OFF"; name: string | null } | null;
   focusSec: number;
   expectedSec: number;
+  /** 3.6 (D-86): the day's target, a future working day included (expectedSec is 0 there). */
+  plannedSec?: number;
   breakSec: number;
   meetingSec: number;
   approvedPlusSec: number;
@@ -176,6 +178,8 @@ export interface MonthTotals {
   extra: number;
   focusSec: number;
   expectedSec: number;
+  /** 3.6 (D-86): the whole month's target, future working days included. Absent before 3.6. */
+  plannedSec?: number;
   avgFocusSec: number;
   lateStarts: number;
   /** 3.2: late starts still without a reason. */
@@ -267,6 +271,15 @@ export interface TeamMonthRow {
   days: TeamMonthDay[];
   /** 3.6: set when some day of the month is paused. */
   payroll?: PersonPayroll;
+}
+
+/** GET /reports/me/month: the signed-in person's own month (History, D-86). */
+export interface MyMonthReport {
+  person: ReportPerson;
+  month: string;
+  locked: boolean;
+  totals: MonthTotals;
+  days: PersonDaySummary[];
 }
 
 export interface TeamMonthReport {

@@ -35,7 +35,7 @@ export function TimeFigures({
       className={
         compact
           ? `grid grid-cols-3 gap-x-3 gap-y-1.5 ${cols}`
-          : `grid grid-cols-3 gap-x-4 gap-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${cols} print:shadow-none`
+          : `grid grid-cols-3 gap-x-4 gap-y-3 rounded-2xl border border-card bg-card p-4 shadow-sm ${cols} print:shadow-none`
       }
     >
       {shown.map((f) => (
@@ -43,8 +43,8 @@ export function TimeFigures({
           <dt
             className={
               compact
-                ? "text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-                : "text-[13px] font-semibold text-slate-600"
+                ? "text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet"
+                : "text-[0.8125rem] font-semibold text-soft"
             }
           >
             {f.label}
@@ -52,10 +52,10 @@ export function TimeFigures({
           <dd
             className={`tabular-nums ${
               f.sec === null
-                ? "text-xs text-slate-400"
+                ? "text-xs text-quiet"
                 : compact
-                  ? "text-sm font-semibold text-slate-900"
-                  : "text-xl font-bold tracking-tight text-slate-900"
+                  ? "text-sm font-semibold text-primary"
+                  : "text-xl font-bold tracking-tight text-primary"
             }`}
           >
             {figureText(f.sec)}
@@ -88,7 +88,7 @@ export function PayrollStanding({ payroll }: { payroll: PersonPayroll }) {
     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
       <PayrollPausedChip label={payroll.label} />
       {!payroll.paused && (
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-quiet">
           {payroll.pausedFrom === payroll.pausedTo
             ? `${days} left out, ${from}`
             : `${days} left out, between ${from} and ${to}`}

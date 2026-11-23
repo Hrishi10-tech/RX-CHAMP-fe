@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { FileCheck2 } from "lucide-react";
 
-import { cardBase } from "@/components/ui/classes";
 import { todayKey } from "@/lib/time/businessTime";
 import { addMonths, formatMonth, monthOfDate } from "@/lib/time/months";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
@@ -11,6 +10,7 @@ import { useMonthLock, useReportRuns } from "@/features/reports/hooks/useReports
 import { CreateReport } from "@/features/reports/components/CreateReport";
 import { MonthlyRuns } from "@/features/reports/components/MonthlyRuns";
 import { blockingApprovalsHref } from "@/features/approvals/lib/query";
+import { Card } from "@/components/ui/Card";
 
 /** "Your September report is ready", while last month is built and not yet locked. */
 function ReadyBanner({ isSuperAdmin }: { isSuperAdmin: boolean }) {
@@ -23,10 +23,10 @@ function ReadyBanner({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   return (
     <div
       role="status"
-      className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-950 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 rounded-2xl border border-brand-edge bg-brand-wash px-4 py-3 text-sm text-brand-ink sm:flex-row sm:items-center sm:justify-between"
     >
       <p className="flex items-start gap-2">
-        <FileCheck2 className="mt-0.5 h-4 w-4 shrink-0 text-indigo-700" aria-hidden />
+        <FileCheck2 className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
         <span>
           <span className="font-semibold">
             Your {formatMonth(lastMonth).split(" ")[0]} report is ready.
@@ -45,14 +45,14 @@ function ReadyBanner({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       <span className="flex shrink-0 flex-wrap gap-3">
         <Link
           href={`/dashboard/reports/team?month=${lastMonth}`}
-          className="font-semibold text-indigo-900 underline underline-offset-2"
+          className="font-semibold text-brand-ink underline underline-offset-2"
         >
           Open report
         </Link>
         {pending > 0 && (
           <Link
             href={blockingApprovalsHref(lastMonth, isSuperAdmin)}
-            className="font-semibold text-indigo-900 underline underline-offset-2"
+            className="font-semibold text-brand-ink underline underline-offset-2"
           >
             Review approvals
           </Link>
@@ -105,23 +105,23 @@ function HowNumbersWork() {
     ],
   ];
   return (
-    <aside aria-labelledby="numbers-work" className={`${cardBase} p-4 sm:p-6`}>
-      <h2 id="numbers-work" className="text-base font-bold text-slate-900">
+    <Card as="aside" aria-labelledby="numbers-work" className="p-4 sm:p-6">
+      <h2 id="numbers-work" className="text-base font-bold text-primary">
         How the numbers work
       </h2>
       <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-1">
         {rows.map(([k, v]) => (
           <div key={k}>
-            <dt className="text-sm font-semibold text-slate-800">{k}</dt>
-            <dd className="text-sm leading-relaxed text-slate-600">{v}</dd>
+            <dt className="text-sm font-semibold text-strong">{k}</dt>
+            <dd className="text-sm leading-relaxed text-soft">{v}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-4 text-xs text-slate-500">
+      <p className="mt-4 text-xs text-quiet">
         The Admin changes these rules in Settings and the working days in Calendar, and locks each
         month for payroll once its approvals are decided.
       </p>
-    </aside>
+    </Card>
   );
 }
 
@@ -130,8 +130,8 @@ export function ReportsHome({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Reports</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-primary">Reports</h1>
+        <p className="mt-1 text-sm text-quiet">
           Attendance and focus hours, ready for payroll. Last month's report arrives on the 1st.
         </p>
       </header>

@@ -11,7 +11,6 @@ import {
   LoadingState,
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
-import { btnSmall, cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { dateKeyOf, formatDay } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
@@ -21,6 +20,8 @@ import { runFigures, runFiguresText } from "@/features/reports/lib/runs";
 import { useMonthLocks, useReportRuns } from "@/features/reports/hooks/useReports";
 import { ExcelButton } from "@/features/reports/components/ReportShell";
 import type { MonthLockView, ReportRun } from "@/features/reports/types";
+import { Card } from "@/components/ui/Card";
+import { buttonClass } from "@/components/ui/Button";
 
 function scopeText(run: ReportRun): string {
   const { people, payrollPaused } = runFigures(run.summary);
@@ -70,12 +71,12 @@ export function MonthlyRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const lockOf = new Map(months.map((m, i) => [m, locks[i]?.data]));
 
   return (
-    <section aria-labelledby="monthly-reports" className={`${cardBase} overflow-hidden`}>
+    <Card as="section" aria-labelledby="monthly-reports" className="overflow-hidden">
       <div className="px-4 pb-3 pt-4 sm:px-6">
-        <h2 id="monthly-reports" className="text-base font-bold text-slate-900">
+        <h2 id="monthly-reports" className="text-base font-bold text-primary">
           Monthly reports
         </h2>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <p className="mt-0.5 text-sm text-quiet">
           {isSuperAdmin
             ? "Built at 12:30 AM on the 1st for everyone, managers included."
             : "Built at 12:30 AM on the 1st for everyone in your departments."}
@@ -107,7 +108,7 @@ export function MonthlyRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           message="The first one arrives at 12:30 AM on the 1st of next month. You can create any report above meanwhile."
         />
       ) : (
-        <ul className="divide-y divide-slate-100 border-t border-slate-100">
+        <ul className="divide-y divide-divider border-t border-divider">
           {sorted.map((run) => {
             const href = `/dashboard/reports/team?month=${run.month}`;
             return (
@@ -116,21 +117,21 @@ export function MonthlyRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                 className="flex flex-col gap-3 px-4 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between"
               >
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900">{formatMonth(run.month)}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="font-semibold text-primary">{formatMonth(run.month)}</p>
+                  <p className="text-xs text-quiet">
                     {[scopeText(run), builtText(run)].filter(Boolean).join(" · ")}
                   </p>
                   {runFiguresText(run) && (
-                    <p className="text-xs text-slate-600">{runFiguresText(run)}</p>
+                    <p className="text-xs text-soft">{runFiguresText(run)}</p>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <LockStatus lock={lockOf.get(run.month)} />
-                  <Link href={href} className={btnSmall}>
+                  <Link href={href} className={buttonClass("small")}>
                     Open
                     <span className="sr-only"> the {formatMonth(run.month)} report</span>
                   </Link>
-                  <Link href={`${href}&print=1`} className={btnSmall}>
+                  <Link href={`${href}&print=1`} className={buttonClass("small")}>
                     <Printer className="h-3.5 w-3.5" aria-hidden />
                     PDF
                     <span className="sr-only"> of {formatMonth(run.month)}</span>
@@ -146,6 +147,6 @@ export function MonthlyRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           })}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }

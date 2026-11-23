@@ -30,7 +30,7 @@ export function TimelineBar({
   }, [timeline, skips]);
 
   if (!layout) {
-    return <p className="text-sm text-slate-500">Nothing was recorded on this day.</p>;
+    return <p className="text-sm text-quiet">Nothing was recorded on this day.</p>;
   }
 
   return (
@@ -40,7 +40,7 @@ export function TimelineBar({
         {layout.ticks.map((t, i) => (
           <span
             key={t.ms}
-            className={`absolute top-0 -translate-x-1/2 text-[10px] tabular-nums text-slate-500 ${
+            className={`absolute top-0 -translate-x-1/2 text-xs tabular-nums text-quiet ${
               i % 2 === 1 ? "hidden sm:block" : ""
             } ${i === 0 ? "translate-x-0" : ""} ${i === layout.ticks.length - 1 ? "-translate-x-full" : ""}`}
             style={{ left: `${t.left}%` }}
@@ -48,11 +48,11 @@ export function TimelineBar({
             {formatTimeCompact12(t.ms)}
           </span>
         ))}
-        <div className="relative h-9 overflow-hidden rounded-lg bg-slate-100">
+        <div className="relative h-9 overflow-hidden rounded-lg bg-panel">
           {layout.ticks.map((t) => (
             <span
               key={t.ms}
-              className="absolute inset-y-0 w-px bg-white/70"
+              className="absolute inset-y-0 w-px bg-card/70"
               style={{ left: `${t.left}%` }}
             />
           ))}
@@ -68,12 +68,12 @@ export function TimelineBar({
         {layout.markers.map((m) => (
           <span key={m.at}>
             <span
-              className="absolute top-5 h-11 w-0 border-l-2 border-dashed border-violet-500"
+              className="absolute top-5 h-11 w-0 border-l-2 border-dashed border-meeting"
               style={{ left: `${m.left}%` }}
             />
             {/* The label hangs off the line, away from the nearer edge, so it never spills out. */}
             <span
-              className={`absolute bottom-0 whitespace-nowrap rounded border border-violet-200 bg-violet-50 px-1 text-[10px] font-semibold text-violet-700 ${
+              className={`absolute bottom-0 whitespace-nowrap rounded border border-meeting-edge bg-meeting-wash px-1 text-[0.6875rem] font-semibold text-meeting ${
                 m.left > 70 ? "-translate-x-full" : m.left > 30 ? "-translate-x-1/2" : ""
               }`}
               style={{ left: `${m.left}%` }}
@@ -98,19 +98,19 @@ export function TimelineBar({
         ))}
       </ol>
 
-      <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-slate-700" aria-label="Totals">
+      <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-body" aria-label="Totals">
         {LEGEND_ORDER.filter((k) => layout.totals[k]).map((k) => (
           <li key={k} className="inline-flex items-center gap-1.5">
             <span aria-hidden className={`h-2.5 w-4 rounded-sm ${TIMELINE[k].swatch}`} />
             {TIMELINE[k].label}
-            <span className="font-semibold tabular-nums text-slate-900">
+            <span className="font-semibold tabular-nums text-primary">
               {formatDuration(layout.totals[k] ?? 0)}
             </span>
           </li>
         ))}
         {layout.markers.length > 0 && (
           <li className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="h-3 w-0 border-l-2 border-dashed border-violet-500" />
+            <span aria-hidden className="h-3 w-0 border-l-2 border-dashed border-meeting" />
             Skipped break
           </li>
         )}

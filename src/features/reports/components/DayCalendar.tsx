@@ -6,9 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { addDaysToKey } from "@/lib/time/businessTime";
 import { WEEKDAY_SHORT, addMonths, daysInMonth, formatMonth, monthOfDate } from "@/lib/time/months";
 import { calendarDays, canShowNextMonth } from "@/features/reports/lib/period";
-
-const navBtn =
-  "flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] disabled:cursor-not-allowed disabled:opacity-40";
+import { IconButton } from "@/components/ui/IconButton";
 
 /**
  * A month calendar to pick one day, never after today. One tab stop: arrow keys
@@ -86,28 +84,21 @@ export function DayCalendar({
   }
 
   return (
-    <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-3">
+    <div className="w-full max-w-sm rounded-xl border border-card bg-card p-3">
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => onViewMonth(addMonths(viewMonth, -1))}
-          aria-label="Previous month"
-          className={navBtn}
-        >
+        <IconButton onClick={() => onViewMonth(addMonths(viewMonth, -1))} label="Previous month">
           <ChevronLeft className="h-4 w-4" aria-hidden />
-        </button>
-        <p className="text-sm font-semibold text-slate-900" aria-live="polite">
+        </IconButton>
+        <p className="text-sm font-semibold text-primary" aria-live="polite">
           {formatMonth(viewMonth)}
         </p>
-        <button
-          type="button"
+        <IconButton
           onClick={() => onViewMonth(addMonths(viewMonth, 1))}
           disabled={!canShowNextMonth(viewMonth, today)}
-          aria-label="Next month"
-          className={navBtn}
+          label="Next month"
         >
           <ChevronRight className="h-4 w-4" aria-hidden />
-        </button>
+        </IconButton>
       </div>
       <div role="grid" aria-label={formatMonth(viewMonth)} className="mt-2">
         <div role="row" className="grid grid-cols-7 gap-1">
@@ -116,7 +107,7 @@ export function DayCalendar({
               key={d}
               role="columnheader"
               aria-label={d}
-              className="py-1 text-center text-[11px] font-semibold uppercase text-slate-500"
+              className="py-1 text-center text-[0.6875rem] font-semibold uppercase text-quiet"
             >
               {d.slice(0, 2)}
             </span>
@@ -142,12 +133,12 @@ export function DayCalendar({
                       onSelect(c.date as string);
                     }}
                     onKeyDown={(e) => onKey(e, c.date as string)}
-                    className={`flex h-9 w-full items-center justify-center rounded-lg text-sm tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.45)] disabled:cursor-not-allowed disabled:opacity-35 ${
+                    className={`flex h-9 w-full items-center justify-center rounded-lg text-sm tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/45 disabled:cursor-not-allowed disabled:opacity-35 ${
                       c.selected
-                        ? "bg-[rgb(34_34_204)] font-bold text-white"
+                        ? "bg-brand font-bold text-on-brand"
                         : c.today
-                          ? "border border-indigo-300 font-bold text-slate-900 hover:bg-slate-100"
-                          : "font-medium text-slate-800 hover:bg-slate-100"
+                          ? "border border-brand-edge-strong font-bold text-primary hover:bg-panel"
+                          : "font-medium text-strong hover:bg-panel"
                     }`}
                   >
                     {c.label}
