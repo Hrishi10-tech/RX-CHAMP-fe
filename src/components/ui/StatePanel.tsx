@@ -24,7 +24,6 @@ export function ErrorState({
   message,
   onRetry,
   retrying = false,
-  tone = "light",
 }: {
   title?: string;
   message?: string;
@@ -33,20 +32,18 @@ export function ErrorState({
   /** "dark" sits on the dark cards of the avatar screens. */
   tone?: "light" | "dark";
 }) {
-  const dark = tone === "dark";
+  // Agent design: every card is dark, so both tones read the same.
   return (
     <div
       role="alert"
-      className={`flex flex-col items-center gap-3 px-6 py-12 text-center text-sm ${
-        dark ? "text-slate-300" : "text-slate-600"
-      }`}
+      className={`flex flex-col items-center gap-3 px-6 py-12 text-center text-sm ${"text-soft"}`}
     >
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-attention-wash text-attention">
         <AlertTriangle className="h-5 w-5" aria-hidden />
       </span>
       <div>
-        <p className={`font-semibold ${dark ? "text-slate-100" : "text-slate-800"}`}>{title}</p>
-        <p className={`mt-1 ${dark ? "text-slate-300" : "text-slate-500"}`}>
+        <p className={`font-semibold ${"text-strong"}`}>{title}</p>
+        <p className={`mt-1 ${"text-quiet"}`}>
           {message ?? "Check your connection and try again."}
         </p>
       </div>
@@ -82,10 +79,10 @@ export function RefreshFailedNotice({
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-sm text-amber-900"
+      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-attention-edge bg-attention-wash px-3.5 py-2 text-sm text-attention-ink"
     >
       <p className="flex min-w-0 items-start gap-2">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-attention" aria-hidden />
         <span>
           Couldn&apos;t refresh {what}.{at ? ` Showing it as of ${at}.` : ""}
         </span>
@@ -94,7 +91,7 @@ export function RefreshFailedNotice({
         type="button"
         onClick={onRetry}
         disabled={retrying}
-        className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 font-semibold text-amber-900 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 disabled:opacity-60"
+        className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 font-semibold text-attention-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-attention-edge-strong disabled:opacity-60"
       >
         <RotateCw className={`h-4 w-4 ${retrying ? "animate-spin" : ""}`} aria-hidden />
         Try again
@@ -116,12 +113,12 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-12 text-center text-sm">
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-panel text-quiet">
         <Icon className="h-5 w-5" aria-hidden />
       </span>
       <div>
-        <p className="font-semibold text-slate-800">{title}</p>
-        {message && <p className="mt-1 text-slate-500">{message}</p>}
+        <p className="font-semibold text-strong">{title}</p>
+        {message && <p className="mt-1 text-quiet">{message}</p>}
       </div>
       {action}
     </div>

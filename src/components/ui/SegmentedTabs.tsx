@@ -21,7 +21,6 @@ export function SegmentedTabs<T extends string>({
   label,
   idPrefix,
   size = "md",
-  tone = "light",
 }: {
   tabs: SegmentedTab<T>[];
   value: T;
@@ -31,7 +30,7 @@ export function SegmentedTabs<T extends string>({
   /** When set, each tab gets id `${idPrefix}-tab-${value}` and controls `${idPrefix}-panel`. */
   idPrefix?: string;
   size?: "sm" | "md";
-  /** "dark" sits on the dark cards of the avatar screens (design page 10). */
+  /** Kept for callers; every surface is dark in the agent design, so both look the same. */
   tone?: "light" | "dark";
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -49,8 +48,7 @@ export function SegmentedTabs<T extends string>({
   }
 
   // Tighter on phones so four tabs still fit a 390px screen without scrolling.
-  const pad = size === "sm" ? "px-3 py-1.5 text-[13px]" : "px-2.5 py-2 text-sm sm:px-4";
-  const dark = tone === "dark";
+  const pad = size === "sm" ? "px-3 py-1.5 text-[0.8125rem]" : "px-2.5 py-2 text-sm sm:px-4";
   // Nothing chosen (a value outside the tabs): the first tab keeps the keyboard's way in.
   const noneSelected = !tabs.some((tab) => tab.value === value);
 
@@ -59,9 +57,9 @@ export function SegmentedTabs<T extends string>({
       <div
         role="tablist"
         aria-label={label}
-        className={`inline-flex min-w-max items-center gap-1 rounded-xl border p-1 shadow-sm ${
-          dark ? "border-white/10 bg-[#131823]" : "border-slate-200 bg-white"
-        }`}
+        // 3.6 (W-16): on a phone the tabs wrap rather than hide off the right edge.
+        // Agent tabs: a field-coloured well on every surface.
+        className="inline-flex flex-wrap items-center gap-1 rounded-[10px] border border-card bg-field p-1 sm:min-w-max sm:flex-nowrap"
       >
         {tabs.map((tab, i) => {
           const selected = tab.value === value;
@@ -79,25 +77,18 @@ export function SegmentedTabs<T extends string>({
               tabIndex={selected || (noneSelected && i === 0) ? 0 : -1}
               onClick={() => onChange(tab.value)}
               onKeyDown={(e) => move(e, i)}
-              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 ${
-                dark
-                  ? "focus-visible:ring-[#6FC9B6]/60"
-                  : "focus-visible:ring-[rgba(34,34,204,0.35)]"
-              } ${pad} ${
-                dark
-                  ? selected
-                    ? "bg-[#2B3445] text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
-                  : selected
-                    ? "bg-[rgb(34_34_204)] text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/45 max-sm:min-h-11 ${pad} ${
+                // Agent tabs: the chosen tab is the neutral fill with full text, never a brand fill.
+                selected
+                  ? "bg-fill text-primary shadow-sm"
+                  : "text-quiet hover:bg-panel hover:text-primary"
               }`}
             >
               {tab.label}
               {tab.badge !== undefined && tab.badge !== null && tab.badge !== false && (
                 <span
-                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
-                    selected ? "bg-white text-[rgb(34_34_204)]" : "bg-slate-100 text-slate-600"
+                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[0.6875rem] font-bold tabular-nums ${
+                    selected ? "bg-brand/14 text-brand" : "bg-fill text-soft"
                   }`}
                 >
                   {tab.badge}

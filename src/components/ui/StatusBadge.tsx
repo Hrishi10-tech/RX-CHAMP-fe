@@ -3,16 +3,16 @@ export type Status = "Active" | "Invited" | "Inactive";
 
 const STATUS_STYLES: Record<Status, { pill: string; dot: string }> = {
   Active: {
-    pill: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    dot: "bg-emerald-500",
+    pill: "border-working-edge bg-working-wash text-working",
+    dot: "bg-working",
   },
   Invited: {
-    pill: "border-amber-200 bg-amber-50 text-amber-700",
-    dot: "bg-amber-500",
+    pill: "border-attention-edge bg-attention-wash text-attention",
+    dot: "bg-attention",
   },
   Inactive: {
-    pill: "border-slate-200 bg-slate-50 text-slate-500",
-    dot: "bg-slate-400",
+    pill: "border-card bg-fill text-quiet",
+    dot: "bg-neutral",
   },
 };
 

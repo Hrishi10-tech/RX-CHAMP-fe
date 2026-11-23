@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const BUTTON =
-  "flex h-9 min-w-9 items-center justify-center rounded-lg border px-2 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]";
+  "flex h-9 min-w-9 items-center justify-center rounded-lg border px-2 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35";
 
 /**
  * The page numbers to show: always the first and last, the current one and its
@@ -57,13 +57,13 @@ export function Pager({
   return (
     <nav
       aria-label="Pagination"
-      className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-500 sm:px-6"
+      className="flex flex-wrap items-center justify-between gap-3 border-t border-card px-4 py-3 text-sm text-quiet sm:px-6"
     >
       <span>
-        <span className="font-semibold text-slate-700">
+        <span className="font-semibold text-body">
           {first}–{last}
         </span>{" "}
-        of <span className="font-semibold text-slate-700">{total}</span> {nouns}
+        of <span className="font-semibold text-body">{total}</span> {nouns}
       </span>
       <div className="flex items-center gap-1.5">
         <button
@@ -71,14 +71,14 @@ export function Pager({
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           aria-label="Previous page"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-card text-quiet hover:bg-fill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         {numbered ? (
           pageList(page, pageCount).map((p, i) =>
             p === "…" ? (
-              <span key={`gap-${i}`} aria-hidden className="px-1 text-slate-400">
+              <span key={`gap-${i}`} aria-hidden className="px-1 text-quiet">
                 …
               </span>
             ) : (
@@ -90,8 +90,8 @@ export function Pager({
                 aria-current={p === page ? "page" : undefined}
                 className={`${BUTTON} ${
                   p === page
-                    ? "border-[rgb(34_34_204)] bg-[rgb(34_34_204)] font-semibold text-white"
-                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "border-brand bg-brand font-semibold text-on-brand"
+                    : "border-card text-soft hover:bg-fill"
                 }`}
               >
                 {p}
@@ -108,7 +108,7 @@ export function Pager({
           onClick={() => onPageChange(page + 1)}
           disabled={page >= pageCount}
           aria-label="Next page"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-card text-quiet hover:bg-fill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

@@ -15,7 +15,7 @@ export const PasswordField = forwardRef<
     <div className="relative mt-1.5">
       <Lock
         aria-hidden
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet"
       />
       <input
         ref={ref}
@@ -29,7 +29,7 @@ export const PasswordField = forwardRef<
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
-        className="absolute inset-y-0 right-0 flex items-center rounded-r-lg px-3 text-slate-400 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+        className="absolute inset-y-0 right-0 flex items-center rounded-r-lg px-3 text-quiet hover:text-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
       >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>

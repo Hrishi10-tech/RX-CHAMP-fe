@@ -3,77 +3,71 @@ import type { Config } from "tailwindcss";
 // as ESM (native TS support, Node 22+), and `require` is not defined there.
 import tailwindcssAnimate from "tailwindcss-animate";
 
+import plugin from "tailwindcss/plugin";
+import { TOKENS, cssVar, type TokenName } from "./src/styles/tokens";
+
 /**
- * Demo tokens (bg/card/text/muted/accent/active/idle/productive/danger/line) are
- * preserved exactly so the legacy /admin, /manager, /me dashboards are unchanged.
- * The enterprise UI (shadcn-style) adds the tokens below — only *new* keys plus
- * `-foreground` companions, so no demo class changes meaning.
+ * D-89: the portal's colours are the semantic tokens of src/styles/tokens.ts and nothing else.
+ * Tailwind's own palette (slate, white, rose, sky, ...) is replaced, not extended, so a class can
+ * only say what it means: bg-panel, bg-card, bg-field, bg-fill, text-primary, text-quiet,
+ * border-card, bg-brand, text-on-brand, text-attention, bg-working, text-meeting, ...
+ * Each token is a CSS variable with a screen value (the agent's dark design) and a print value
+ * (paper stays light), written below by the plugin.
  */
+const names = Object.keys(TOKENS) as TokenName[];
+const color = (name: TokenName) => `rgb(var(${cssVar(name)}) / <alpha-value>)`;
+const palette: Record<string, string> = {
+  transparent: "transparent",
+  current: "currentColor",
+  inherit: "inherit",
+  ...Object.fromEntries(names.map((name) => [name, color(name)])),
+};
+
+const rgb = (v: readonly number[]) => v.join(" ");
+const tokenVariables = plugin(({ addBase }) => {
+  addBase({
+    ":root": Object.fromEntries(names.map((name) => [cssVar(name), rgb(TOKENS[name].screen)])),
+    "@media print": {
+      ":root": Object.fromEntries(names.map((name) => [cssVar(name), rgb(TOKENS[name].print)])),
+    },
+  });
+});
+
 const config: Config = {
-  darkMode: "class",
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
+    colors: palette,
+    // border-card is the card's edge (the agent's CardBorder), border-surface the card colour.
+    borderColor: ({ theme }) => ({
+      ...theme("colors"),
+      DEFAULT: color("edge"),
+      card: color("edge"),
+      surface: color("card"),
+    }),
+    // Tailwind falls back to blue for a bare ring and white for its offset: the brand and the card.
+    ringColor: ({ theme }) => ({ ...theme("colors"), DEFAULT: color("brand") }),
+    ringOffsetColor: ({ theme }) => ({ ...theme("colors"), DEFAULT: color("card") }),
     extend: {
-      colors: {
-        // ---- Legacy demo tokens (unchanged) ----
-        bg: "rgb(var(--c-bg) / <alpha-value>)",
-        card: "rgb(var(--c-card) / <alpha-value>)",
-        text: "rgb(var(--c-text) / <alpha-value>)",
-        muted: "rgb(var(--c-muted) / <alpha-value>)",
-        accent: "rgb(var(--c-accent) / <alpha-value>)",
-        active: "rgb(var(--c-active) / <alpha-value>)",
-        idle: "rgb(var(--c-idle) / <alpha-value>)",
-        productive: "rgb(var(--c-productive) / <alpha-value>)",
-        danger: "rgb(var(--c-danger) / <alpha-value>)",
-        line: "rgb(var(--c-line) / <alpha-value>)",
-
-        // ---- Enterprise (shadcn-style) tokens, additive ----
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        success: {
-          DEFAULT: "hsl(var(--success))",
-          foreground: "hsl(var(--success-foreground))",
-        },
-        warning: {
-          DEFAULT: "hsl(var(--warning))",
-          foreground: "hsl(var(--warning-foreground))",
-        },
-        subtle: {
-          DEFAULT: "hsl(var(--muted-surface))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        surface: {
-          DEFAULT: "hsl(var(--surface))",
-          foreground: "hsl(var(--surface-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-      },
+      // Every whole percent, so a token's tint can be written as it was (bg-brand/6, ring-brand/14).
+      opacity: Object.fromEntries(
+        Array.from({ length: 101 }, (_, i) => [String(i), String(i / 100)]),
+      ),
       borderRadius: {
-        xl: "calc(var(--radius) + 4px)",
+        xl: "calc(var(--radius) + 6px)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Segoe UI", "system-ui", "sans-serif"],
+        // The agent draws in Inter (Avalonia.Fonts.Inter); the portal loads it in the root layout.
+        sans: [
+          "var(--font-inter)",
+          "Inter",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "sans-serif",
+        ],
       },
       keyframes: {
         "accordion-down": {
@@ -91,6 +85,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [tailwindcssAnimate],
+  plugins: [tailwindcssAnimate, tokenVariables],
 };
 export default config;

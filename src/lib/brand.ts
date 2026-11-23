@@ -11,10 +11,21 @@ export interface Brand {
   /** Natural size of that image, so it keeps its shape. */
   width: number;
   height: number;
+  /**
+   * 3.6: the round mark drawn in the menu and on sign-in, when the brand has one (the desktop
+   * agent's grey RX mark, so the three apps carry one logo). Without one the logo is drawn.
+   */
+  mark?: string;
 }
 
 const BRANDS: Record<BrandId, Brand> = {
-  rx: { id: "rx", logo: "/brand/rx/logo.png", width: 1024, height: 1024 },
+  rx: {
+    id: "rx",
+    logo: "/brand/rx/logo.png",
+    width: 1024,
+    height: 1024,
+    mark: "/brand/rx-mark-grey.svg",
+  },
   techindia: { id: "techindia", logo: "/brand/techindia/logo.png", width: 507, height: 361 },
 };
 

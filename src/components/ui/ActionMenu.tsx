@@ -6,7 +6,7 @@ import { MoreHorizontal } from "lucide-react";
 import type { ActionMenuProps } from "./types";
 
 const DEFAULT_TRIGGER =
-  "inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 outline-none hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.3)] data-[state=open]:bg-slate-100 data-[state=open]:text-slate-600";
+  "inline-flex h-8 w-8 items-center justify-center rounded-lg text-quiet max-sm:h-11 max-sm:w-11 outline-none hover:bg-panel hover:text-soft focus-visible:ring-2 focus-visible:ring-brand/30 data-[state=open]:bg-panel data-[state=open]:text-soft";
 
 export function ActionMenu({ items, label = "Row actions", triggerClassName }: ActionMenuProps) {
   return (
@@ -27,7 +27,7 @@ export function ActionMenu({ items, label = "Row actions", triggerClassName }: A
           align="end"
           sideOffset={6}
           onClick={(e) => e.stopPropagation()}
-          className="z-50 min-w-[9rem] rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/[0.02]"
+          className="z-50 min-w-[9rem] rounded-xl border border-card bg-card p-1.5 shadow-xl ring-1 ring-scrim/[0.02]"
         >
           {items.map((item, i) => {
             const Icon = item.icon;
@@ -38,8 +38,8 @@ export function ActionMenu({ items, label = "Row actions", triggerClassName }: A
                 onSelect={() => item.onSelect()}
                 className={`flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${
                   item.destructive
-                    ? "text-red-600 data-[highlighted]:bg-red-50"
-                    : "text-slate-600 data-[highlighted]:bg-slate-50 data-[highlighted]:text-slate-900"
+                    ? "text-attention data-[highlighted]:bg-attention-wash"
+                    : "text-soft data-[highlighted]:bg-fill data-[highlighted]:text-primary"
                 }`}
               >
                 {Icon && <Icon className="h-4 w-4" />}

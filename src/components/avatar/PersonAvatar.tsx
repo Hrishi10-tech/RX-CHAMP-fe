@@ -56,12 +56,12 @@ export function PersonAvatar({
           height={inner}
           draggable={false}
           onError={onError}
-          className="rounded-full bg-[#2A303B] object-cover"
+          className="rounded-full bg-fill object-cover"
           style={{ width: inner, height: inner }}
         />
       ) : (
         <span
-          className="flex items-center justify-center rounded-full bg-[#2A303B] font-semibold text-slate-100"
+          className="flex items-center justify-center rounded-full bg-fill font-semibold text-body"
           style={{ width: inner, height: inner, fontSize: Math.max(9, Math.round(size * 0.32)) }}
         >
           {initialsOf(name)}

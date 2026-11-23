@@ -24,7 +24,7 @@ function buildPages(current: number, count: number): (number | "…")[] {
   return pages;
 }
 
-const CHECKBOX = "h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-[rgb(34_34_204)]";
+const CHECKBOX = "h-4 w-4 shrink-0 cursor-pointer rounded border-edge-strong accent-brand";
 
 export function DataTable<T>({
   columns,
@@ -111,15 +111,15 @@ export function DataTable<T>({
   const detailColumns = otherColumns.filter((c) => c !== actionsColumn);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-card bg-card shadow-sm">
       {selectable && selected.size > 0 && (
-        <div className="flex flex-col gap-3 border-b border-slate-200 bg-[rgba(34,34,204,0.04)] px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-card bg-brand/4 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-slate-700">{selected.size} selected</span>
+            <span className="text-sm font-semibold text-body">{selected.size} selected</span>
             <button
               type="button"
               onClick={clearSelection}
-              className="text-sm font-medium text-slate-500 hover:text-slate-700"
+              className="text-sm font-medium text-quiet hover:text-body"
             >
               Clear
             </button>
@@ -132,12 +132,12 @@ export function DataTable<T>({
         </div>
       )}
       {showToolbar && (
-        <div className="flex flex-col gap-3 border-b border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-card px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            {title && <h2 className="text-base font-semibold text-slate-900">{title}</h2>}
+            {title && <h2 className="text-base font-semibold text-primary">{title}</h2>}
             {searchable && (
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet" />
                 <input
                   type="search"
                   value={query}
@@ -146,7 +146,7 @@ export function DataTable<T>({
                     setPage(1);
                   }}
                   placeholder={searchPlaceholder}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[rgb(34_34_204)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[rgba(34,34,204,0.15)] sm:w-64"
+                  className="w-full rounded-lg border border-card bg-fill py-2 pl-9 pr-3 text-sm text-body placeholder:text-neutral focus:border-brand focus:bg-field focus:outline-none focus:ring-2 focus:ring-brand/15 sm:w-64"
                 />
               </div>
             )}
@@ -155,9 +155,9 @@ export function DataTable<T>({
         </div>
       )}
 
-      <ul className="divide-y divide-slate-100 sm:hidden">
+      <ul className="divide-y divide-divider sm:hidden">
         {paged.length === 0 ? (
-          <li className="px-4 py-10 text-center text-sm text-slate-400">{emptyMessage}</li>
+          <li className="px-4 py-10 text-center text-sm text-quiet">{emptyMessage}</li>
         ) : (
           paged.map((row, i) => {
             const globalIndex = paginated ? (currentPage - 1) * effSize + i : i;
@@ -168,8 +168,8 @@ export function DataTable<T>({
                 key={k}
                 data-selected={isSelected || undefined}
                 onClick={onRowClick ? () => onRowClick(row, globalIndex) : undefined}
-                className={`space-y-2.5 px-4 py-3.5 data-[selected]:bg-[rgba(34,34,204,0.04)] ${
-                  onRowClick ? "cursor-pointer active:bg-slate-50" : ""
+                className={`space-y-2.5 px-4 py-3.5 data-[selected]:bg-brand/4 ${
+                  onRowClick ? "cursor-pointer active:bg-fill" : ""
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -188,7 +188,7 @@ export function DataTable<T>({
                     </label>
                   )}
                   {headColumn && (
-                    <div className="min-w-0 flex-1 text-sm font-medium text-slate-700 [overflow-wrap:anywhere]">
+                    <div className="min-w-0 flex-1 text-sm font-medium text-body [overflow-wrap:anywhere]">
                       {cellOf(headColumn, row, globalIndex)}
                     </div>
                   )}
@@ -197,10 +197,10 @@ export function DataTable<T>({
                   <dl className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
                     {detailColumns.map((col) => (
                       <Fragment key={col.key}>
-                        <dt className="pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        <dt className="pt-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
                           {col.header}
                         </dt>
-                        <dd className="min-w-0 break-words text-slate-700">
+                        <dd className="min-w-0 break-words text-body">
                           {cellOf(col, row, globalIndex)}
                         </dd>
                       </Fragment>
@@ -219,7 +219,7 @@ export function DataTable<T>({
       <div className="relative hidden overflow-x-auto sm:block">
         <table className="w-full border-collapse text-sm" style={{ minWidth }}>
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/70">
+            <tr className="border-b border-card bg-fill/70">
               {selectable && (
                 <th className="w-12 px-6 py-4">
                   <input
@@ -234,7 +234,7 @@ export function DataTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-600 ${
+                  className={`px-4 py-4 text-xs font-bold uppercase tracking-wider text-soft ${
                     ALIGN[col.align ?? "left"]
                   } ${col.className ?? ""}`}
                 >
@@ -247,7 +247,7 @@ export function DataTable<T>({
           <tbody>
             {paged.length === 0 ? (
               <tr>
-                <td colSpan={colCount} className="px-6 py-12 text-center text-sm text-slate-400">
+                <td colSpan={colCount} className="px-6 py-12 text-center text-sm text-quiet">
                   {emptyMessage}
                 </td>
               </tr>
@@ -261,7 +261,7 @@ export function DataTable<T>({
                     key={k}
                     data-selected={isSelected || undefined}
                     onClick={onRowClick ? () => onRowClick(row, globalIndex) : undefined}
-                    className={`border-b border-slate-100 last:border-0 hover:bg-slate-50/60 data-[selected]:bg-[rgba(34,34,204,0.04)] ${
+                    className={`border-b border-divider last:border-0 hover:bg-fill/60 data-[selected]:bg-brand/4 ${
                       onRowClick ? "cursor-pointer" : ""
                     }`}
                   >
@@ -279,7 +279,7 @@ export function DataTable<T>({
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={`px-6 py-4 font-medium text-slate-700 ${
+                        className={`px-4 py-4 font-medium text-body ${
                           ALIGN[col.align ?? "left"]
                         } ${col.className ?? ""}`}
                       >
@@ -297,7 +297,7 @@ export function DataTable<T>({
       </div>
 
       {paginated && (
-        <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-3.5 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-card px-6 py-3.5 text-sm text-quiet sm:flex-row sm:items-center sm:justify-between">
           {pageSizeOptions ? (
             <div className="flex items-center gap-2">
               <span>Show items</span>
@@ -308,7 +308,7 @@ export function DataTable<T>({
                     setSize(Number(e.target.value));
                     setPage(1);
                   }}
-                  className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-sm font-medium text-slate-700 focus:border-[rgb(34_34_204)] focus:outline-none focus:ring-2 focus:ring-[rgba(34,34,204,0.15)]"
+                  className="appearance-none rounded-lg border border-card bg-field py-1.5 pl-3 pr-8 text-sm font-medium text-body focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
                   aria-label="Rows per page"
                 >
                   {pageSizeOptions.map((n) => (
@@ -317,7 +317,7 @@ export function DataTable<T>({
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet" />
               </div>
             </div>
           ) : (
@@ -326,10 +326,10 @@ export function DataTable<T>({
                 `0 ${noun}`
               ) : (
                 <>
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-body">
                     {(currentPage - 1) * effSize + 1}–{Math.min(currentPage * effSize, total)}
                   </span>{" "}
-                  of <span className="font-semibold text-slate-700">{total}</span> {noun}
+                  of <span className="font-semibold text-body">{total}</span> {noun}
                 </>
               )}
             </span>
@@ -340,7 +340,7 @@ export function DataTable<T>({
               type="button"
               onClick={() => goTo(currentPage - 1)}
               disabled={currentPage <= 1}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-card text-quiet hover:bg-fill disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Previous page"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -348,7 +348,7 @@ export function DataTable<T>({
 
             {buildPages(currentPage, pageCount).map((p, idx) =>
               p === "…" ? (
-                <span key={`gap-${idx}`} className="px-1.5 text-slate-400" aria-hidden>
+                <span key={`gap-${idx}`} className="px-1.5 text-quiet" aria-hidden>
                   …
                 </span>
               ) : (
@@ -359,8 +359,8 @@ export function DataTable<T>({
                   aria-current={p === currentPage ? "page" : undefined}
                   className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-sm font-medium ${
                     p === currentPage
-                      ? "bg-[rgb(34_34_204)] text-white shadow-sm shadow-[rgba(34,34,204,0.3)]"
-                      : "text-slate-600 hover:bg-slate-100"
+                      ? "bg-brand text-on-brand shadow-sm shadow-brand/30"
+                      : "text-soft hover:bg-panel"
                   }`}
                 >
                   {p}
@@ -372,7 +372,7 @@ export function DataTable<T>({
               type="button"
               onClick={() => goTo(currentPage + 1)}
               disabled={currentPage >= pageCount}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-card text-quiet hover:bg-fill disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Next page"
             >
               <ChevronRight className="h-4 w-4" />

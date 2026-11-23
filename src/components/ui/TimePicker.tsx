@@ -7,8 +7,9 @@ import { ChevronDown, Clock } from "lucide-react";
 import { formatTime12 } from "@/lib/time/format";
 
 import type { Parsed, TimePickerProps } from "./types";
+import { hex } from "@/styles/tokens";
 
-const BRAND = "#2222cc";
+const BRAND = hex.brand;
 const FACE = 188;
 const CENTER = FACE / 2;
 const RADIUS = 72;
@@ -41,7 +42,7 @@ export function TimePicker({
   onChange,
   id,
   placeholder = "Select time",
-  iconClassName = "text-[rgb(34_34_204)]",
+  iconClassName = "text-brand",
   hasError = false,
   variant = "field",
 }: TimePickerProps) {
@@ -79,17 +80,13 @@ export function TimePicker({
       ? Array.from({ length: 12 }, (_, i) => i + 1)
       : Array.from({ length: 12 }, (_, i) => i * 5);
 
-  const borderClass = hasError
-    ? "border-red-400"
-    : open
-      ? "border-[rgb(34_34_204)]"
-      : "border-slate-200";
+  const borderClass = hasError ? "border-attention" : open ? "border-brand" : "border-card";
 
   return (
     <div className="relative">
       {variant === "inline" ? (
         <div
-          className={`inline-flex items-stretch rounded-xl border bg-white shadow-sm transition-colors ${borderClass}`}
+          className={`inline-flex items-stretch rounded-xl border bg-card shadow-sm transition-colors ${borderClass}`}
         >
           <button
             id={id}
@@ -97,12 +94,12 @@ export function TimePicker({
             onClick={() => setOpen((o) => !o)}
             aria-haspopup="dialog"
             aria-expanded={open}
-            className="flex items-center gap-2.5 rounded-l-xl py-2 pl-3 pr-3 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[rgba(34,34,204,0.15)]"
+            className="flex items-center gap-2.5 rounded-l-xl py-2 pl-3 pr-3 transition-colors hover:bg-fill focus:outline-none focus:ring-2 focus:ring-brand/15"
           >
             <Clock className={`h-[18px] w-[18px] shrink-0 ${iconClassName}`} />
             <span
-              className={`text-[15px] font-bold tabular-nums ${
-                value ? "text-slate-900" : "text-slate-400"
+              className={`text-[0.9375rem] font-bold tabular-nums ${
+                value ? "text-primary" : "text-quiet"
               }`}
             >
               {value
@@ -111,7 +108,7 @@ export function TimePicker({
             </span>
           </button>
 
-          <span aria-hidden className="my-2 w-px shrink-0 bg-slate-200" />
+          <span aria-hidden className="my-2 w-px shrink-0 bg-edge" />
 
           {/* A native select rather than a popover: two options do not justify one,
               and this keeps keyboard and touch behaviour the platform's. */}
@@ -120,14 +117,14 @@ export function TimePicker({
               aria-label="AM or PM"
               value={sel.p}
               onChange={(e) => commit({ p: e.target.value as Parsed["p"] })}
-              className="cursor-pointer appearance-none rounded-r-xl bg-transparent py-2 pl-3 pr-8 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[rgba(34,34,204,0.15)]"
+              className="cursor-pointer appearance-none rounded-r-xl bg-transparent py-2 pl-3 pr-8 text-sm font-semibold text-soft transition-colors hover:bg-fill focus:outline-none focus:ring-2 focus:ring-brand/15"
             >
               <option value="AM">AM</option>
               <option value="PM">PM</option>
             </select>
             <ChevronDown
               aria-hidden
-              className="pointer-events-none absolute right-2.5 h-4 w-4 text-slate-400"
+              className="pointer-events-none absolute right-2.5 h-4 w-4 text-quiet"
             />
           </div>
         </div>
@@ -138,20 +135,20 @@ export function TimePicker({
           onClick={() => setOpen((o) => !o)}
           aria-haspopup="dialog"
           aria-expanded={open}
-          className={`flex w-full items-center gap-2.5 rounded-lg border bg-white py-2.5 pl-3.5 pr-3 text-left text-sm font-semibold tabular-nums transition-colors focus:outline-none focus:ring-2 ${
+          className={`flex w-full items-center gap-2.5 rounded-lg border bg-card py-2.5 pl-3.5 pr-3 text-left text-sm font-semibold tabular-nums transition-colors focus:outline-none focus:ring-2 ${
             hasError
-              ? "border-red-400 focus:ring-[rgba(239,68,68,0.15)]"
+              ? "border-attention focus:ring-attention/15"
               : open
-                ? "border-[rgb(34_34_204)] focus:ring-[rgba(34,34,204,0.15)]"
-                : "border-slate-200 hover:border-slate-300 focus:ring-[rgba(34,34,204,0.15)]"
+                ? "border-brand focus:ring-brand/15"
+                : "border-card hover:border-edge-strong focus:ring-brand/15"
           }`}
         >
           <Clock className={`h-4 w-4 shrink-0 ${iconClassName}`} />
-          <span className={value ? "text-slate-900" : "text-slate-400"}>
+          <span className={value ? "text-primary" : "text-quiet"}>
             {value ? formatTime12(value) : placeholder}
           </span>
           <ChevronDown
-            className={`ml-auto h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+            className={`ml-auto h-4 w-4 shrink-0 text-quiet transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -162,7 +159,7 @@ export function TimePicker({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 p-4 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           >
             <div
@@ -170,33 +167,33 @@ export function TimePicker({
               aria-modal="true"
               aria-label="Select time"
               onClick={(e) => e.stopPropagation()}
-              className="w-[264px] overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_18px_50px_-18px_rgba(20,23,60,0.45)]"
+              className="w-[264px] overflow-hidden rounded-[26px] border border-card bg-card shadow-[0_18px_50px_-18px_rgb(var(--c-scrim)/0.45)]"
             >
-              <div className="bg-gradient-to-b from-[rgba(34,34,204,0.05)] to-transparent px-[22px] pb-5 pt-5">
-                <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
+              <div className="bg-gradient-to-b from-brand/5 to-transparent px-[22px] pb-5 pt-5">
+                <p className="mb-2 text-[0.6875rem] font-extrabold uppercase tracking-[0.14em] text-quiet">
                   {mode === "hours" ? "Select hour" : "Select minute"}
                 </p>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-baseline gap-0.5 text-[40px] font-extrabold tabular-nums leading-none tracking-tight">
+                  <div className="flex items-baseline gap-0.5 text-[2.5rem] font-extrabold tabular-nums leading-none tracking-tight">
                     <button
                       type="button"
                       onClick={() => setMode("hours")}
                       className={`rounded-[9px] px-1.5 py-0.5 transition-colors ${
                         mode === "hours"
-                          ? "bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]"
-                          : "text-slate-300 hover:text-slate-400"
+                          ? "bg-brand/10 text-brand"
+                          : "text-faint hover:text-neutral"
                       }`}
                     >
                       {String(sel.h12).padStart(2, "0")}
                     </button>
-                    <span className="text-slate-300">:</span>
+                    <span className="text-faint">:</span>
                     <button
                       type="button"
                       onClick={() => setMode("minutes")}
                       className={`rounded-[9px] px-1.5 py-0.5 transition-colors ${
                         mode === "minutes"
-                          ? "bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]"
-                          : "text-slate-300 hover:text-slate-400"
+                          ? "bg-brand/10 text-brand"
+                          : "text-faint hover:text-neutral"
                       }`}
                     >
                       {String(sel.m).padStart(2, "0")}
@@ -210,8 +207,8 @@ export function TimePicker({
                         onClick={() => commit({ p })}
                         className={`rounded-[9px] px-2.5 py-1.5 text-xs font-extrabold transition-colors ${
                           sel.p === p
-                            ? "bg-[rgb(34_34_204)] text-white shadow-[0_4px_10px_-3px_rgba(34,34,204,0.55)]"
-                            : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                            ? "bg-brand text-on-brand shadow-[0_4px_10px_-3px_rgb(var(--c-brand)/0.55)]"
+                            : "bg-panel text-quiet hover:bg-edge"
                         }`}
                       >
                         {p}
@@ -223,12 +220,12 @@ export function TimePicker({
 
               <div className="flex justify-center px-[22px]">
                 <div
-                  className="relative rounded-full border border-[#eceef6]"
+                  className="relative rounded-full border border-fill"
                   style={{
                     width: FACE,
                     height: FACE,
-                    background: "radial-gradient(circle at 50% 38%, #fff, #f4f5fb)",
-                    boxShadow: "inset 0 2px 8px rgba(15,23,42,0.05)",
+                    background: `radial-gradient(circle at 50% 38%, ${hex.edge}, ${hex.fill})`,
+                    boxShadow: "inset 0 2px 8px rgb(var(--c-scrim) / 0.05)",
                   }}
                 >
                   <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -244,7 +241,7 @@ export function TimePicker({
                             top: y,
                             width: major ? 2 : 1,
                             height: major ? 9 : 5,
-                            background: major ? "#c7cbe0" : "#e1e4ef",
+                            background: major ? hex["edge-strong"] : hex.edge,
                             transform: `translate(-50%, -50%) rotate(${i * 6}deg)`,
                           }}
                         />
@@ -276,12 +273,12 @@ export function TimePicker({
                       left: knob.x - NUM / 2,
                       top: knob.y - NUM / 2,
                       background: BRAND,
-                      boxShadow: "0 4px 12px -2px rgba(34,34,204,0.5)",
+                      boxShadow: "0 4px 12px -2px rgb(var(--c-brand) / 0.5)",
                     }}
                   />
 
                   <div
-                    className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white"
+                    className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card"
                     style={{ background: BRAND }}
                   />
 
@@ -300,13 +297,13 @@ export function TimePicker({
                             commit({ m: n });
                           }
                         }}
-                        className="absolute z-10 flex items-center justify-center rounded-full text-[13px] tabular-nums transition-colors"
+                        className="absolute z-10 flex items-center justify-center rounded-full text-[0.8125rem] tabular-nums transition-colors"
                         style={{
                           width: NUM,
                           height: NUM,
                           left: x - NUM / 2,
                           top: y - NUM / 2,
-                          color: selected ? "#fff" : "#475069",
+                          color: selected ? hex["on-brand"] : hex.soft,
                           fontWeight: selected ? 800 : 600,
                         }}
                       >
@@ -321,14 +318,14 @@ export function TimePicker({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="flex-1 rounded-[13px] border border-slate-200 py-2.5 text-sm font-bold text-slate-500 transition-colors hover:bg-slate-50"
+                  className="flex-1 rounded-[13px] border border-card py-2.5 text-sm font-bold text-quiet transition-colors hover:bg-fill"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="flex-1 rounded-[13px] bg-[rgb(34_34_204)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[rgb(28_28_180)]"
+                  className="flex-1 rounded-[13px] bg-brand py-2.5 text-sm font-bold text-on-brand transition-colors hover:bg-brand-hover"
                 >
                   Done
                 </button>

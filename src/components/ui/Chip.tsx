@@ -14,27 +14,27 @@ export type ChipTone =
   | "dangerSolid";
 
 const TONE: Record<ChipTone, string> = {
-  neutral: "border-slate-200 bg-slate-50 text-slate-600",
-  brand: "border-[rgba(34,34,204,0.25)] bg-[rgba(34,34,204,0.06)] text-[rgb(34_34_204)]",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
-  danger: "border-rose-200 bg-rose-50 text-rose-700",
-  info: "border-sky-200 bg-sky-50 text-sky-700",
-  violet: "border-violet-200 bg-violet-50 text-violet-700",
-  successSolid: "border-emerald-600 bg-emerald-600 text-white",
-  dangerSolid: "border-rose-600 bg-rose-600 text-white",
+  neutral: "border-card bg-fill text-soft",
+  brand: "border-brand/25 bg-brand/6 text-brand",
+  success: "border-working-edge bg-working-wash text-working",
+  warning: "border-attention-edge bg-attention-wash text-attention-ink",
+  danger: "border-attention-edge bg-attention-wash text-attention",
+  info: "border-brand-edge bg-brand-wash text-brand",
+  violet: "border-meeting-edge bg-meeting-wash text-meeting",
+  successSolid: "border-working bg-working text-on-brand",
+  dangerSolid: "border-attention bg-attention text-on-brand",
 };
 
 const DOT: Record<ChipTone, string> = {
-  neutral: "bg-slate-400",
-  brand: "bg-[rgb(34_34_204)]",
-  success: "bg-emerald-500",
-  warning: "bg-amber-500",
-  danger: "bg-rose-500",
-  info: "bg-sky-500",
-  violet: "bg-violet-500",
-  successSolid: "bg-white",
-  dangerSolid: "bg-white",
+  neutral: "bg-neutral",
+  brand: "bg-brand",
+  success: "bg-working",
+  warning: "bg-attention",
+  danger: "bg-attention",
+  info: "bg-brand",
+  violet: "bg-meeting",
+  successSolid: "bg-card",
+  dangerSolid: "bg-card",
 };
 
 /** A small status label, in the shape the members table already uses for its pills. */
@@ -63,7 +63,7 @@ export function Chip({
   return (
     <span
       title={title}
-      className={`inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${
+      className={`inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-[0.6875rem] font-semibold ${
         wrap ? "whitespace-normal" : "whitespace-nowrap"
       } ${TONE[tone]} ${className}`}
     >
