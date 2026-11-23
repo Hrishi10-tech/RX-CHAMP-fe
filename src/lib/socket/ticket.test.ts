@@ -17,7 +17,7 @@ interface Harness {
 type Responder = (call: number) => { token: string; expiresIn?: number } | Error;
 
 /**
- * Fresh copy per test — the module caches the ticket in module state, so tests
+ * Fresh copy per test, the module caches the ticket in module state, so tests
  * would otherwise leak into each other.
  */
 async function loadHarness(responder: Responder): Promise<Harness> {
@@ -69,7 +69,7 @@ describe("getSocketTicket", () => {
     expect(h.calls).toHaveLength(1);
   });
 
-  it("collapses concurrent requests into one — the four-namespace case", async () => {
+  it("collapses concurrent requests into one, the four-namespace case", async () => {
     const h = await loadHarness(ok);
 
     const tokens = await Promise.all([
@@ -109,7 +109,7 @@ describe("getSocketTicket", () => {
     expect(h.calls).toHaveLength(2);
   });
 
-  it("does not cache a failure — the next attempt retries", async () => {
+  it("does not cache a failure; the next attempt retries", async () => {
     const h = await loadHarness((n) => (n === 1 ? new Error("503") : { token: `ticket-${n}` }));
 
     await expect(h.getSocketTicket()).rejects.toThrow("503");
@@ -149,7 +149,7 @@ describe("socketAuth", () => {
     const h = await loadHarness(() => new Error("offline"));
     const payload = await new Promise<{ token?: string }>((resolve) => h.socketAuth(resolve));
 
-    // Not `{ token: undefined }` — the handshake proceeds with no token at all.
+    // Not `{ token: undefined }`, the handshake proceeds with no token at all.
     expect(payload).toEqual({});
   });
 });

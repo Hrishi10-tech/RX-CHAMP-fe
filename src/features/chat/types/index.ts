@@ -57,6 +57,8 @@ export interface ConversationViewProps {
   sending: boolean;
   onSend: (body: string) => void;
   emptyState?: string;
+  /** 3.6: below `lg`, a way back to the list of people. */
+  onBack?: () => void;
 }
 
 export interface UseChatOptions {

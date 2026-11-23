@@ -66,7 +66,7 @@ export function MobileNav({
       {open && (
         <div className="pointer-events-none fixed inset-0 z-50 lg:hidden">
           <motion.div
-            className="pointer-events-auto absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="pointer-events-auto absolute inset-0 bg-scrim/40 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -81,7 +81,7 @@ export function MobileNav({
             aria-modal="true"
             aria-label="Menu"
             onKeyDown={trapTab}
-            className="pointer-events-auto absolute bottom-0 left-0 top-0 flex w-72 max-w-[85vw] flex-col bg-white p-4 shadow-2xl"
+            className="pointer-events-auto absolute bottom-0 left-0 top-0 flex w-72 max-w-[85vw] flex-col bg-card p-4 shadow-2xl"
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
@@ -94,7 +94,7 @@ export function MobileNav({
                 type="button"
                 onClick={onClose}
                 aria-label="Close menu"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-quiet hover:bg-panel hover:text-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
               >
                 <X className="h-5 w-5" />
               </button>

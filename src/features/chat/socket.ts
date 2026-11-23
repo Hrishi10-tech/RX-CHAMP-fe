@@ -16,7 +16,7 @@ let refCount = 0;
  * that raises a popup from any other screen. A connection each would double the
  * gateway's fan-out and hand every message to both.
  *
- * Holders must remove their own handlers by reference — `socket.off()` with no
+ * Holders must remove their own handlers by reference, `socket.off()` with no
  * arguments strips every listener, the other holder's included.
  */
 export function acquireChatSocket(): Socket {

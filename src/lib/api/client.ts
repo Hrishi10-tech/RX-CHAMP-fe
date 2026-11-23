@@ -12,8 +12,8 @@ const REFRESH_URL = "/api/v1/auth/refresh";
 export const ORG_HEADER = "X-Org-Id";
 
 /**
- * A 401 from one of these is a rejected credential — a wrong password, or a
- * refresh cookie that is genuinely gone — not an expired access token.
+ * A 401 from one of these is a rejected credential, a wrong password, or a
+ * refresh cookie that is genuinely gone, not an expired access token.
  * Refreshing off one of them is how the refresh loop starts.
  */
 const AUTH_URLS = [REFRESH_URL, "/api/v1/auth/login", "/api/v1/auth/logout"];
@@ -57,8 +57,8 @@ export function onAccessTokenRefreshed(listener: () => void): () => void {
 
 /**
  * Re-issues the short-lived `accessToken` cookie. Single-flight, so a burst of
- * 401s — a dashboard's worth of parallel requests, or several sockets kicked at
- * once — triggers one refresh, not one each. Racing refreshes rotate the token
+ * 401s, a dashboard's worth of parallel requests, or several sockets kicked at
+ * once, triggers one refresh, not one each. Racing refreshes rotate the token
  * N times server-side and only the last one survives, killing the rest.
  */
 export function refreshAccessToken(): Promise<void> {
@@ -109,7 +109,7 @@ apiClient.interceptors.response.use(
       dropMissingOrg(typeof sent === "string" ? sent : null);
     }
 
-    // `_retry` caps this at one refresh per request — no loops.
+    // `_retry` caps this at one refresh per request, no loops.
     if (status !== 401 || !original || original._retry || isAuthCall) {
       return Promise.reject(error);
     }

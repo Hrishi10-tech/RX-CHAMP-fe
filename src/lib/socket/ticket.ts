@@ -42,8 +42,8 @@ async function fetchTicket(): Promise<Ticket> {
  * browser never sends it there. This is fetched over the proxied API instead,
  * where the cookie does apply, and passed in the handshake.
  *
- * Deliberately not usable as an API credential — the server rejects `typ:
- * "socket"` on the HTTP path — because unlike the cookie this is readable by
+ * Deliberately not usable as an API credential, the server rejects `typ:
+ * "socket"` on the HTTP path, because unlike the cookie this is readable by
  * JavaScript.
  */
 export function getSocketTicket(): Promise<string> {

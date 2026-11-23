@@ -3,8 +3,8 @@
  *
  * Back links used to point at a fixed page chosen by role, which is wrong as soon as
  * a page can be reached from more than one place. The activity view has three
- * entrances — Team Management, a manager's own team, and the org → manager
- * drill-down — and it always went back to the first, so drilling down two levels and
+ * entrances, Team management, a manager's own team, and the org → manager
+ * drill-down, and it always went back to the first, so drilling down two levels and
  * pressing back dumped you on a page you had never visited, under the wrong label.
  *
  * Kept in the URL rather than read from history so a reload or a shared link still

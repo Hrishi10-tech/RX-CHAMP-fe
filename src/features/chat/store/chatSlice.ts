@@ -14,7 +14,7 @@ const initialState: ChatState = { unreadTotal: 0 };
  *
  * The notifier owns increments, since it is the one thing mounted on every
  * screen. The page owns decrements, because opening a thread is what marks it
- * read — split that the other way and the two would race over the same number.
+ * read, split that the other way and the two would race over the same number.
  */
 const chatSlice = createSlice({
   name: "chat",

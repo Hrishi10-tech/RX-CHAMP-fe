@@ -7,44 +7,51 @@ function labels(...args: Parameters<typeof navFor>): string[] {
 
 /** SPEC 7.1: the sidebar and the phone menu per role. */
 describe("navFor", () => {
+  // 3.6 (D-87): Menu, People, Reports, Setup; the daily jobs first, Approvals third.
   it("gives the Super Admin inside an organisation everything", () => {
     expect(labels("SUPER_ADMIN", { hasOrg: true })).toEqual([
-      "Organisations",
       "Overview",
       "Team",
       "Approvals",
+      "Team breaks",
       "Leave",
       "Work from home",
       "Messages",
       "Team management",
       "Departments",
-      "Team breaks",
+      "Reports",
       "Shifts",
       "Assign shifts",
       "Calendar",
       "Attendance",
       "Input tracking",
-      "Reports",
-      "Screenshot archive",
+      "Organisations",
       "Sign-out keys",
+      "Screenshot archive",
       "Settings",
       "Instructions",
       "Profile",
+    ]);
+    expect(navFor("SUPER_ADMIN", { hasOrg: true }).map((s) => s.heading)).toEqual([
+      "Menu",
+      "People",
+      "Reports",
+      "Setup",
     ]);
   });
 
   it("gives the Super Admin on All organisations only what works without one", () => {
     expect(labels("SUPER_ADMIN", { hasOrg: false })).toEqual([
-      "Organisations",
       "Overview",
       // 3.3: combined approvals and team breaks, and Team management listing everyone
       // in every organisation (and the Super Managers).
       "Approvals",
+      "Team breaks",
       "Leave",
       "Work from home",
       "Messages",
       "Team management",
-      "Team breaks",
+      "Organisations",
       "Instructions",
       "Profile",
     ]);
@@ -71,12 +78,12 @@ describe("navFor", () => {
       "Overview",
       "Team",
       "Approvals",
+      "Team breaks",
       "Leave",
       "Work from home",
       "Messages",
-      "Team breaks",
-      "Calendar",
       "Reports",
+      "Calendar",
       "Instructions",
       "Profile",
     ]);
@@ -88,12 +95,12 @@ describe("navFor", () => {
     expect(items).toEqual([
       "Overview",
       "Approvals",
+      "Team breaks",
       "Leave",
       "Work from home",
       "Messages",
-      "Team breaks",
-      "Calendar",
       "Reports",
+      "Calendar",
       "Instructions",
       "Profile",
     ]);

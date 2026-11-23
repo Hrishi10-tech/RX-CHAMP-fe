@@ -42,7 +42,7 @@ describe("resolveReturnTo", () => {
     });
   });
 
-  it("falls back when arriving fresh — a reload or a bookmark", () => {
+  it("falls back when arriving fresh: a reload or a bookmark", () => {
     expect(resolveReturnTo(params(""), FALLBACK)).toEqual(FALLBACK);
   });
 
@@ -59,7 +59,7 @@ describe("resolveReturnTo", () => {
     );
   });
 
-  // The value is attacker-controllable — it comes off the URL — so a back link must
+  // The value is attacker-controllable, it comes off the URL, so a back link must
   // never be able to point off-site.
   it.each([
     ["absolute http", "https://evil.test/phish"],

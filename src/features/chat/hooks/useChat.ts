@@ -100,7 +100,7 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
     }
 
     inFlightRef.current.add(userId);
-    // A forced refetch is a silent catch-up over messages already on screen —
+    // A forced refetch is a silent catch-up over messages already on screen ,
     // showing the spinner would blank the thread and read as a blink.
     const silent = force || cached;
     if (!silent && activeUserIdRef.current === userId) setLoadingMessages(true);
@@ -126,7 +126,7 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
 
   /**
    * Tells the server the open thread has been read. Re-reading it is what does
-   * that — there is no endpoint for the acknowledgement alone — so it waits until
+   * that, there is no endpoint for the acknowledgement alone, so it waits until
    * the reader leaves, or hides the tab. One call per visit, rather than one per
    * message for as long as a conversation stays live.
    *
@@ -216,7 +216,7 @@ export function useChat({ enabled, autoSelectRole }: UseChatOptions): UseChatRes
       if (!active) return;
       const open = activeUserIdRef.current;
       // Messages sent while the socket was down never arrived, so the closed
-      // threads are stale — drop them and they refetch when next opened. The
+      // threads are stale, drop them and they refetch when next opened. The
       // open one keeps its flag so the catch-up below stays silent.
       loadedRef.current = new Set(open && loadedRef.current.has(open) ? [open] : []);
       if (open) void loadMessages(open, true);

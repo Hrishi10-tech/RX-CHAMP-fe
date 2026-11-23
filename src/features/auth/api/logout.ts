@@ -2,7 +2,7 @@ import { apiClient } from "@/lib/api";
 
 /**
  * Clears both httpOnly cookies server-side. JavaScript cannot delete them, so
- * skipping this call leaves the refresh cookie valid for its full TTL — the
+ * skipping this call leaves the refresh cookie valid for its full TTL, the
  * session stays usable long after the user thinks they signed out.
  */
 export async function logout(): Promise<void> {

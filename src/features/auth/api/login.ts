@@ -41,7 +41,7 @@ function readBody(data: unknown): { message?: string; code?: string } {
 function classify(error: unknown): { reason: LoginFailureReason; message?: string } {
   if (!isAxiosError(error)) return { reason: "unknown" };
 
-  // No response at all — server unreachable, DNS failure, timeout, offline.
+  // No response at all, server unreachable, DNS failure, timeout, offline.
   if (!error.response) return { reason: "network" };
 
   const status = error.response.status;

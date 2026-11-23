@@ -12,13 +12,11 @@ export function MemberChat({ enabled }: { enabled: boolean }) {
   });
 
   return (
-    <div className="flex h-[calc(100vh-11rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="flex h-[calc(100vh-11rem)] flex-col overflow-hidden rounded-2xl border border-card bg-card shadow-sm">
       {loadingContacts && !activeContact ? (
-        <div className="flex h-full items-center justify-center text-sm text-slate-400">
-          Loading…
-        </div>
+        <div className="flex h-full items-center justify-center text-sm text-quiet">Loading…</div>
       ) : !activeContact ? (
-        <div className="flex h-full flex-col items-center justify-center gap-3 text-slate-400">
+        <div className="flex h-full flex-col items-center justify-center gap-3 text-quiet">
           <MessageSquare className="h-10 w-10" />
           <p className="text-sm">No manager assigned to message yet.</p>
         </div>

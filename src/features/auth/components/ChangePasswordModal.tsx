@@ -7,17 +7,11 @@ import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
 import { PasswordField } from "@/components/ui/PasswordField";
-import {
-  btnPrimary,
-  btnSecondary,
-  checkboxBase,
-  errorText,
-  hintBase,
-  labelBase,
-} from "@/components/ui/classes";
 import { errorCode, errorMessage } from "@/lib/api";
 import { changePassword } from "@/features/auth/api/changePassword";
 import { PASSWORD_RULE, newPasswordProblem } from "@/features/auth/lib/passwordRules";
+import { Checkbox, FieldError, Hint, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 interface FieldErrors {
   current?: string;
@@ -95,9 +89,7 @@ export function ChangePasswordModal({ open, onClose }: { open: boolean; onClose:
     >
       <form onSubmit={submit} noValidate className="space-y-4 px-6 py-5">
         <div>
-          <label htmlFor="cp-current" className={labelBase}>
-            Current password
-          </label>
+          <Label htmlFor="cp-current">Current password</Label>
           <PasswordField
             id="cp-current"
             data-autofocus
@@ -108,17 +100,11 @@ export function ChangePasswordModal({ open, onClose }: { open: boolean; onClose:
             onChange={(e) => setCurrent(e.target.value)}
             disabled={pending}
           />
-          {errors.current && (
-            <p id="cp-current-error" className={errorText}>
-              {errors.current}
-            </p>
-          )}
+          {errors.current && <FieldError id="cp-current-error">{errors.current}</FieldError>}
         </div>
 
         <div>
-          <label htmlFor="cp-next" className={labelBase}>
-            New password
-          </label>
+          <Label htmlFor="cp-next">New password</Label>
           <PasswordField
             id="cp-next"
             autoComplete="new-password"
@@ -128,15 +114,13 @@ export function ChangePasswordModal({ open, onClose }: { open: boolean; onClose:
             onChange={(e) => setNext(e.target.value)}
             disabled={pending}
           />
-          <p id="cp-next-hint" className={errors.next ? errorText : hintBase}>
+          <Hint id="cp-next-hint" error={errors.next}>
             {errors.next ?? PASSWORD_RULE}
-          </p>
+          </Hint>
         </div>
 
         <div>
-          <label htmlFor="cp-confirm" className={labelBase}>
-            Confirm new password
-          </label>
+          <Label htmlFor="cp-confirm">Confirm new password</Label>
           <PasswordField
             id="cp-confirm"
             autoComplete="new-password"
@@ -146,41 +130,36 @@ export function ChangePasswordModal({ open, onClose }: { open: boolean; onClose:
             onChange={(e) => setConfirm(e.target.value)}
             disabled={pending}
           />
-          {errors.confirm && (
-            <p id="cp-confirm-error" className={errorText}>
-              {errors.confirm}
-            </p>
-          )}
+          {errors.confirm && <FieldError id="cp-confirm-error">{errors.confirm}</FieldError>}
         </div>
 
-        <label className="flex cursor-pointer items-start gap-2.5 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            className={`${checkboxBase} mt-0.5`}
+        <label className="flex cursor-pointer items-start gap-2.5 text-sm text-body">
+          <Checkbox
+            className="mt-0.5"
             checked={signOutOthers}
             onChange={(e) => setSignOutOthers(e.target.checked)}
             disabled={pending}
           />
           <span>
             Sign out my other devices
-            <span className="block text-xs text-slate-500">
+            <span className="block text-xs text-quiet">
               The desktop app too. This device stays signed in.
             </span>
           </span>
         </label>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-          <button type="button" onClick={close} disabled={pending} className={btnSecondary}>
+        <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+          <Button variant="secondary" type="button" onClick={close} disabled={pending}>
             Cancel
-          </button>
-          <button type="submit" disabled={pending} className={btnPrimary}>
+          </Button>
+          <Button variant="primary" type="submit" disabled={pending}>
             {pending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <KeyRound className="h-4 w-4" aria-hidden />
             )}
             {pending ? "Changing…" : "Change password"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

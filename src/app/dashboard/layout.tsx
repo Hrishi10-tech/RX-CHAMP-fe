@@ -54,28 +54,34 @@ function Brand({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <Link
       href="/dashboard"
-      className="flex items-center gap-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+      className="flex min-h-11 items-center gap-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
     >
-      <Image
-        src={BRAND.logo}
-        alt=""
-        aria-hidden
-        width={BRAND.width}
-        height={BRAND.height}
-        priority
-        className="h-9 w-auto shrink-0 rounded-xl"
-      />
-      {!collapsed && (
-        <span className="text-lg font-bold tracking-tight text-slate-900">Rx Vision</span>
+      {BRAND.mark ? (
+        // The desktop agent's grey RX mark in its circle, so the three apps carry one logo.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={BRAND.mark} alt="" width={36} height={36} className="h-9 w-9 shrink-0" />
+      ) : (
+        <Image
+          src={BRAND.logo}
+          alt=""
+          aria-hidden
+          width={BRAND.width}
+          height={BRAND.height}
+          priority
+          className="h-9 w-auto shrink-0 rounded-xl"
+        />
       )}
-      {collapsed && <span className="sr-only">Rx Vision</span>}
+      {!collapsed && (
+        <span className="text-lg font-bold tracking-tight text-primary">RX Vision</span>
+      )}
+      {collapsed && <span className="sr-only">RX Vision</span>}
     </Link>
   );
 }
 
 function FullScreenMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4 text-sm text-slate-500">
+    <div className="flex min-h-screen items-center justify-center bg-panel p-4 text-sm text-quiet">
       {children}
     </div>
   );
@@ -188,7 +194,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (meQuery.isError) {
       return (
         <FullScreenMessage>
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="w-full max-w-md rounded-2xl border border-card bg-card shadow-sm">
             <ErrorState
               title="Couldn't check your account"
               message={errorMessage(meQuery.error)}
@@ -207,6 +213,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const badges: Record<string, NavBadge | undefined> = {
     [CHAT_HREF]: {
       count: chatUnread,
+      tone: "info",
       label: `${chatUnread} unread ${chatUnread === 1 ? "message" : "messages"}`,
     },
     [LEAVE_HREF]: approver
@@ -242,18 +249,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const userCard = (compact: boolean) => (
     <div
-      className={`mt-3 flex items-center gap-2.5 rounded-2xl border border-slate-200 p-3 ${
+      className={`mt-3 flex items-center gap-2.5 rounded-2xl border border-card p-3 ${
         compact ? "justify-center" : ""
       }`}
     >
       <span className="relative flex shrink-0">
         <PersonAvatar name={displayName} avatarId={ownAvatarId} userId={user.id} size={36} />
-        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
       </span>
       {!compact && (
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold text-slate-900">{displayName}</p>
-          <p className="truncate text-[13px] text-slate-400">
+          <p className="truncate text-[0.9375rem] font-semibold text-primary">{displayName}</p>
+          <p className="truncate text-[0.8125rem] text-quiet">
             {roleText}
             {orgName ? ` · ${orgName}` : ""}
           </p>
@@ -263,13 +269,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-100 print:block print:min-h-0 print:bg-white">
+    <div className="flex min-h-screen bg-panel print:block print:min-h-0 print:bg-card">
       <aside
         className={`sticky top-0 hidden h-screen shrink-0 p-3 lg:block print:!hidden ${
           collapsed ? "w-24" : "w-72"
         }`}
       >
-        <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex h-full flex-col rounded-2xl border border-card bg-card p-4 shadow-sm">
           <div
             className={`flex items-center px-1 ${collapsed ? "flex-col gap-2" : "justify-between"}`}
           >
@@ -279,7 +285,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               onClick={() => setCollapsed((v) => !v)}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral transition hover:bg-panel hover:text-soft"
             >
               {collapsed ? (
                 <ChevronsRight className="h-4 w-4" />
@@ -315,14 +321,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               aria-label="Open menu"
               aria-expanded={mobileOpen}
               aria-controls="mobile-nav"
-              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-soft hover:bg-edge/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
             >
               <Menu className="h-5 w-5" />
               {approvalsWaiting + chatUnread + leaveWaiting + wfhWaiting > 0 && (
                 <span
                   aria-hidden
-                  className={`absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-slate-100 ${
-                    chatUnread > 0 || approvalsOverdue > 0 ? "bg-red-500" : "bg-[rgb(34_34_204)]"
+                  className={`absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-panel ${
+                    chatUnread > 0 || approvalsOverdue > 0 ? "bg-attention" : "bg-brand"
                   }`}
                 />
               )}
@@ -348,13 +354,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"
               }
               onClick={() => setNotifOpen(true)}
-              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-200/60 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-quiet hover:bg-edge/60 hover:text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
                 <span
                   aria-hidden
-                  className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgb(34_34_204)] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-slate-100"
+                  className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[0.625rem] font-bold leading-none text-on-brand ring-2 ring-panel"
                 >
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
@@ -367,7 +373,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <main className="min-w-0 flex-1 px-4 pb-8 sm:px-6 print:p-0">
           {managerHint && pathname === "/dashboard/overview" && (
-            <p className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 shadow-sm">
+            <p className="mb-4 rounded-xl border border-card bg-card px-4 py-2.5 text-sm text-soft shadow-sm">
               Your Admin hasn&apos;t given you access to screenshots, timelines or activity yet, so
               the Team page is hidden. Approvals, team breaks and reports work as usual.
             </p>

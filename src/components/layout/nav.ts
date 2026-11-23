@@ -60,13 +60,13 @@ const PERMISSION_GATES: Record<string, keyof MePermissions> = {
  */
 export const NAV_SECTIONS: NavSection[] = [
   {
+    // 3.6 (D-87, W-26): the daily jobs first, Approvals right after the live picture.
     heading: "Menu",
     items: [
-      { href: "/dashboard/organisations", label: "Organisations", icon: Building2 },
       { href: "/dashboard/overview", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/team", label: "Team", icon: Users },
-      { href: AGENT_HEALTH_HREF, label: "Agent health", icon: HeartPulse },
       { href: APPROVALS_HREF, label: "Approvals", icon: ClipboardCheck },
+      { href: "/dashboard/breaks/team", label: "Team breaks", icon: Coffee },
       // 3.4: requests, balances and the policy.
       { href: LEAVE_HREF, label: "Leave", icon: CalendarHeart },
       // 3.5: requests, schedules and the policy.
@@ -82,30 +82,27 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    heading: "Time",
+    heading: "Reports",
     items: [
-      { href: "/dashboard/breaks/team", label: "Team breaks", icon: Coffee },
+      { href: "/dashboard/reports", label: "Reports", icon: FileChartColumn },
+      { href: AGENT_HEALTH_HREF, label: "Agent health", icon: HeartPulse },
+      { href: FOCUS_ADJUSTMENTS_HREF, label: "Focus adjustments", icon: SlidersHorizontal },
+    ],
+  },
+  {
+    // 3.6 (D-87): how the organisation runs, set up once and visited rarely.
+    heading: "Setup",
+    items: [
       { href: "/dashboard/shifts", label: "Shifts", icon: Clock3 },
       { href: "/dashboard/shifts/assign", label: "Assign shifts", icon: CalendarClock },
       { href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays },
       // 3.5: biometric attendance (the organisation's integration).
       { href: ATTENDANCE_HREF, label: "Attendance", icon: Fingerprint },
       { href: "/dashboard/tracking", label: "Input tracking", icon: MousePointerClick },
-    ],
-  },
-  {
-    heading: "Reports",
-    items: [
-      { href: "/dashboard/reports", label: "Reports", icon: FileChartColumn },
-      { href: FOCUS_ADJUSTMENTS_HREF, label: "Focus adjustments", icon: SlidersHorizontal },
+      { href: "/dashboard/organisations", label: "Organisations", icon: Building2 },
+      { href: "/dashboard/signout-keys", label: "Sign-out keys", icon: KeyRound },
       // 3.2: the monthly screenshot archive and deletion (the organisation's admins).
       { href: "/dashboard/screenshots/archives", label: "Screenshot archive", icon: FileArchive },
-    ],
-  },
-  {
-    heading: "Organisation",
-    items: [
-      { href: "/dashboard/signout-keys", label: "Sign-out keys", icon: KeyRound },
       { href: "/dashboard/settings", label: "Settings", icon: Settings },
       { href: "/dashboard/instructions", label: "Instructions", icon: BookOpenText },
       // 3.6: your own profile and avatar, for every portal role.

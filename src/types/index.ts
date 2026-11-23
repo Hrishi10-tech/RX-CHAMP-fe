@@ -39,7 +39,7 @@ export interface TeamMember {
   grants: Grants;
   shiftId: string | null;
   /**
-   * Whether their agent is set up and reporting — separate from `status`, which is
+   * Whether their agent is set up and reporting, separate from `status`, which is
    * only whether the account may sign in.
    */
   agentStatus: AgentStatus;
@@ -57,10 +57,10 @@ export interface TeamMember {
 
 /**
  * Each value calls for a different response, which is the point of the column:
- *   LIVE          reporting now — nothing to do.
+ *   LIVE          reporting now, nothing to do.
  *   DAY_ENDED     ended their day; the silence is expected.
- *   NOT_SIGNED_IN no usable session — they must sign in again.
- *   OFFLINE       should be recording and isn't — the one worth chasing.
+ *   NOT_SIGNED_IN no usable session, they must sign in again.
+ *   OFFLINE       should be recording and isn't, the one worth chasing.
  *   NOT_ACTIVATED never installed. One-way: nobody returns to it.
  */
 export type AgentStatus = "LIVE" | "DAY_ENDED" | "OFFLINE" | "NOT_SIGNED_IN" | "NOT_ACTIVATED";

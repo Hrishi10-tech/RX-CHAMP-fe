@@ -4,7 +4,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 
 /**
  * The rules worth pinning down: a popup for a message you can't see, silence for
- * one you can, and one socket no matter how many holders — the messages page
+ * one you can, and one socket no matter how many holders, the messages page
  * takes the same connection, and a bare `off()` from either would mute the other.
  */
 
@@ -34,7 +34,7 @@ interface Harness {
  * React is pinned back to the top-level copy: an isolated registry would hand the
  * hook its own React, and a hook holding one copy while the renderer drives
  * another finds no dispatcher and throws on the first `useEffect`. Importing the
- * renderer in here instead is not an option — it registers lifecycle hooks at
+ * renderer in here instead is not an option, it registers lifecycle hooks at
  * import time, which Jest refuses inside a test.
  *
  * react-redux is pinned for the same reason as React: a Provider from one copy

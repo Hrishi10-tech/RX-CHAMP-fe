@@ -57,35 +57,34 @@ export function UserMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Open user menu"
-        className="flex items-center gap-1.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.3)]"
+        className="flex min-h-11 items-center gap-1.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
       >
+        {/* W-13: green means working now everywhere else; the portal does not know that, so no dot. */}
         <span className="relative flex">
           <PersonAvatar name={name} avatarId={avatarId} userId={user.id} size={36} />
-          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
         </span>
-        <ChevronDown className="h-4 w-4 text-slate-400" />
+        <ChevronDown className="h-4 w-4 text-quiet" />
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
+          className="absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-card bg-card shadow-xl shadow-primary/10"
         >
           <div className="flex flex-col items-center px-5 pb-5 pt-6 text-center">
             <span className="relative flex">
               <PersonAvatar name={name} avatarId={avatarId} userId={user.id} size={64} />
-              <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             </span>
-            <p className="mt-3 text-sm font-semibold text-slate-900">{name}</p>
-            <p className="max-w-full truncate text-xs text-slate-500">{user.email}</p>
+            <p className="mt-3 text-sm font-semibold text-primary">{name}</p>
+            <p className="max-w-full truncate text-xs text-quiet">{user.email}</p>
             {roleLabel && (
-              <span className="mt-2 inline-flex items-center rounded-full bg-[rgba(34,34,204,0.08)] px-2.5 py-0.5 text-[11px] font-semibold text-[rgb(34_34_204)]">
+              <span className="mt-2 inline-flex items-center rounded-full bg-brand/8 px-2.5 py-0.5 text-[0.6875rem] font-semibold text-brand">
                 {roleLabel}
               </span>
             )}
           </div>
 
-          <div className="h-px bg-slate-100" />
+          <div className="h-px bg-panel" />
 
           <div className="p-1.5">
             <MenuRow
@@ -108,7 +107,7 @@ export function UserMenu() {
             />
           </div>
 
-          <div className="h-px bg-slate-100" />
+          <div className="h-px bg-panel" />
 
           <div className="p-3">
             <button
@@ -118,7 +117,7 @@ export function UserMenu() {
                 setOpen(false);
                 logout();
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-attention-wash px-3 py-2.5 text-sm font-semibold text-attention hover:bg-attention-wash-strong"
             >
               <LogOut className="h-[18px] w-[18px]" />
               Sign out
@@ -146,11 +145,11 @@ function MenuRow({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-body hover:bg-fill"
     >
-      <Icon className="h-[18px] w-[18px] text-slate-400" />
+      <Icon className="h-[18px] w-[18px] text-quiet" />
       <span className="flex-1 text-left">{label}</span>
-      <ChevronRight className="h-4 w-4 text-slate-300" />
+      <ChevronRight className="h-4 w-4 text-faint" />
     </button>
   );
 }

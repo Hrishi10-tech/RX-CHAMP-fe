@@ -34,7 +34,7 @@ function ConversationRow({
       type="button"
       onClick={onSelect}
       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-        active ? "bg-[rgba(34,34,204,0.06)]" : "hover:bg-slate-50"
+        active ? "bg-brand/6" : "hover:bg-fill"
       }`}
     >
       <div className="relative shrink-0">
@@ -44,25 +44,25 @@ function ConversationRow({
           userId={contact.userId}
           size={44}
         />
-        <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
+        <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-working ring-2 ring-card" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-sm font-semibold text-slate-900">{contact.name}</p>
-          <span className="shrink-0 text-[11px] text-slate-400">
+          <p className="truncate text-sm font-semibold text-primary">{contact.name}</p>
+          <span className="shrink-0 text-[0.6875rem] text-quiet">
             {relativeLabel(contact.lastAt)}
           </span>
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <p
             className={`truncate text-xs ${
-              contact.unread > 0 ? "font-medium text-slate-600" : "text-slate-400"
+              contact.unread > 0 ? "font-medium text-soft" : "text-quiet"
             }`}
           >
             {contact.lastMessage ?? "No messages yet"}
           </p>
           {contact.unread > 0 && (
-            <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[rgb(34_34_204)] px-1.5 text-[11px] font-bold leading-none text-white">
+            <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-[0.6875rem] font-bold leading-none text-on-brand">
               {contact.unread > 99 ? "99+" : contact.unread}
             </span>
           )}
@@ -105,20 +105,21 @@ export function ConversationList({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-divider px-4 py-3">
         <div className="flex items-center gap-4">
           {tabs.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1.5 text-sm font-semibold transition ${
-                tab === t.key ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
+              aria-pressed={tab === t.key}
+              className={`flex min-h-8 items-center gap-1.5 rounded-lg px-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 max-sm:min-h-11 ${
+                tab === t.key ? "text-primary" : "text-quiet hover:text-soft"
               }`}
             >
               {t.label}
               {!!t.badge && t.badge > 0 && (
-                <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[rgb(34_34_204)] px-1 text-[10px] font-bold leading-none text-white">
+                <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand px-1 text-[0.625rem] font-bold leading-none text-on-brand">
                   {t.badge}
                 </span>
               )}
@@ -128,7 +129,7 @@ export function ConversationList({
         <button
           type="button"
           aria-label="Sort conversations"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-quiet hover:bg-panel hover:text-soft max-sm:h-11 max-sm:w-11"
         >
           <SlidersHorizontal className="h-4 w-4" />
         </button>
@@ -136,9 +137,9 @@ export function ConversationList({
 
       <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
         {loading ? (
-          <p className="px-2 py-8 text-center text-sm text-slate-400">Loading…</p>
+          <p className="px-2 py-8 text-center text-sm text-quiet">Loading…</p>
         ) : filtered.length === 0 ? (
-          <p className="px-2 py-8 text-center text-sm text-slate-400">
+          <p className="px-2 py-8 text-center text-sm text-quiet">
             {tab === "mentions"
               ? "No mentions yet."
               : tab === "unread"

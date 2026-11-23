@@ -12,12 +12,12 @@ import { ManagerMessenger } from "@/features/chat/components/ManagerMessenger";
 function ChatToolbar({ query, onQuery }: { query: string; onQuery: (value: string) => void }) {
   return (
     <div className="relative">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet" />
       <input
         value={query}
         onChange={(e) => onQuery(e.target.value)}
         placeholder="Search messages, people…"
-        className="h-11 w-56 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgb(34_34_204)] md:w-72"
+        className="h-11 w-56 rounded-lg border border-card bg-field pl-9 pr-3 text-sm text-body shadow-sm outline-none transition placeholder:text-neutral focus:border-brand md:w-72"
       />
     </div>
   );

@@ -94,4 +94,11 @@ describe("the user menu's My Profile", () => {
     }
     expect(screen.queryByText("KR")).toBeNull();
   });
+
+  // W-13: green means working now on every other screen; the portal does not know it here.
+  it("draws no status dot on the avatar, on the button or in the open menu", () => {
+    mockRole.current = "MANAGER";
+    openMenu();
+    expect(document.querySelector(".bg-working")).toBeNull();
+  });
 });

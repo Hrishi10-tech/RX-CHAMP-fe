@@ -18,7 +18,7 @@ const PREVIEW_LIMIT = 120;
 let namesPromise: Promise<Map<string, string>> | null = null;
 
 /**
- * Sender names, resolved once and only when a message actually arrives — a
+ * Sender names, resolved once and only when a message actually arrives, a
  * message carries `fromUserId` and nothing else, and most sessions never get one,
  * so fetching the directory up front would usually be wasted.
  *
@@ -75,7 +75,7 @@ export function useChatNotifier(enabled: boolean): void {
       // `mine` covers this tab's own sends and the copy echoed to another tab.
       if (m.mine) return;
       // Reading it is what marks it read, so an open conversation adds nothing
-      // to the badge — and announcing a message already on screen is noise.
+      // to the badge, and announcing a message already on screen is noise.
       if (isConversationOnScreen(m.fromUserId)) return;
 
       dispatch(chatUnreadBumped());
@@ -93,7 +93,7 @@ export function useChatNotifier(enabled: boolean): void {
     };
 
     // A backgrounded tab misses nothing over the socket, but a suspended one
-    // does — laptop lid, phone screen off, a browser throttling the connection.
+    // does, laptop lid, phone screen off, a browser throttling the connection.
     const onVisible = () => {
       if (document.visibilityState === "visible") reconcile();
     };

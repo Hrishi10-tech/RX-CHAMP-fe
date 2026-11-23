@@ -41,7 +41,7 @@ export function NavLinks({
       {sections.map((section, si) => (
         <div key={section.heading ?? si} className={si > 0 ? "mt-3" : ""}>
           {!collapsed && section.heading && (
-            <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-quiet">
               {section.heading}
             </p>
           )}
@@ -58,33 +58,31 @@ export function NavLinks({
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   title={collapsed ? label : undefined}
-                  className={`group relative flex items-center gap-3 rounded-xl py-2.5 text-[15px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)] ${
+                  className={`group relative flex items-center gap-3 rounded-[10px] py-2.5 text-[0.9375rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 ${
                     collapsed ? "justify-center px-0" : "px-3"
                   } ${
-                    active
-                      ? "bg-gradient-to-r from-[rgb(34_34_204)] to-[rgb(74_74_230)] text-white shadow-md shadow-[rgba(34,34,204,0.3)]"
-                      : "text-slate-600 hover:bg-slate-100"
+                    active ? "bg-fill text-primary" : "text-soft hover:bg-fill hover:text-primary"
                   }`}
                 >
                   {active && !collapsed && (
-                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-white/80" />
+                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-brand" />
                   )}
                   <Icon
                     aria-hidden
-                    className={`h-5 w-5 shrink-0 ${
-                      active ? "text-white" : "text-slate-500 group-hover:text-slate-700"
+                    className={`h-[22px] w-[22px] shrink-0 ${
+                      active ? "text-brand" : "text-quiet group-hover:text-body"
                     }`}
                   />
                   {!collapsed && <span className="flex-1 truncate">{label}</span>}
                   {collapsed && <span className="sr-only">{label}</span>}
                   {showBadge && badge && (
                     <span
-                      className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
+                      className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[0.6875rem] font-bold tabular-nums ${
                         active
-                          ? "bg-white text-[rgb(34_34_204)]"
+                          ? "bg-brand/14 text-brand"
                           : badge.tone === "info"
-                            ? "bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]"
-                            : "bg-red-500 text-white"
+                            ? "bg-brand/10 text-brand"
+                            : "bg-attention text-on-brand"
                       } ${collapsed ? "absolute right-1.5 top-1.5" : ""}`}
                     >
                       <span aria-hidden>{badge.count > 99 ? "99+" : badge.count}</span>

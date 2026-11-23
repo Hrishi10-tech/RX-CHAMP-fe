@@ -16,7 +16,7 @@ interface Harness {
 const REFRESH = "/api/v1/auth/refresh";
 
 /**
- * Fresh copy of the client per test — it latches a failed refresh in module
+ * Fresh copy of the client per test, it latches a failed refresh in module
  * state, so tests would otherwise leak into each other.
  */
 async function loadHarness(route: Route): Promise<Harness> {
