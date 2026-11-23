@@ -22,6 +22,7 @@ import { formatMonth, monthOfDate } from "@/lib/time/months";
 import { useTeamDayReport } from "@/features/reports/hooks/useReports";
 import { useDepartments } from "@/features/departments/hooks/useDepartments";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
+import { dayOffText, holidayText, lateText } from "@/features/reports/lib/dayNotes";
 import {
   DayClassChip,
   Kpi,
@@ -314,11 +315,8 @@ export function TeamDayView({
                     <DayClassChip dayClass={s.dayClass} />
                   </div>
                   <p className="text-xs text-slate-600">
-                    {span(s) || "Did not start"}
-                    {s.lateStart && s.lateStart.minutes > 0
-                      ? ` · ${s.lateStart.minutes} min late`
-                      : ""}{" "}
-                    · focus{" "}
+                    {span(s) || (dayOffText(s) ?? "Did not start")}
+                    {lateText(s) ? ` · ${lateText(s)}` : ""} · focus{" "}
                     <span className="font-semibold text-slate-900">
                       {formatDuration(s.focusSec)}
                     </span>{" "}
@@ -392,9 +390,14 @@ export function TeamDayView({
                       {/* "9:05 AM to 6:20 PM" may wrap after "to", so the table fits at 1280px. */}
                       <td className="min-w-[6.5rem] px-4 py-2.5 tabular-nums text-slate-700">
                         <SpanText s={s} />
-                        {s.lateStart && s.lateStart.minutes > 0 && (
-                          <span className="block text-xs font-semibold text-amber-700">
-                            {s.lateStart.minutes} min late
+                        {dayOffText(s) && (
+                          <span className="block text-xs font-semibold text-sky-700">
+                            {holidayText(s)}
+                          </span>
+                        )}
+                        {lateText(s) && (
+                          <span className="block max-w-[16rem] whitespace-normal text-xs font-semibold text-amber-700">
+                            {lateText(s)}
                           </span>
                         )}
                       </td>

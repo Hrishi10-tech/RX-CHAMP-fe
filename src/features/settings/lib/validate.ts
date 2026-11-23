@@ -1,6 +1,7 @@
 import type {
   AppSettingsPatch,
   AppSettingsView,
+  BooleanSettingKey,
   NumericSettingKey,
 } from "@/features/settings/types";
 
@@ -48,8 +49,8 @@ export const NUMERIC_SETTINGS: NumericSettingMeta[] = [
   },
   {
     key: "lateStartGraceMin",
-    label: "Late start after",
-    help: "Start Day more than this after the shift starts is reported as a late start. It never changes focus time.",
+    label: "Late start allowed without a reason",
+    help: "Starting the day within this many minutes of the shift start asks nothing. Later is a late start: the person says why, and it never changes focus time.",
     unit: "min",
     min: 0,
     max: 120,
@@ -83,13 +84,36 @@ export const NUMERIC_SETTINGS: NumericSettingMeta[] = [
     default: 10,
   },
   {
+    key: "forgottenEndDayIdleMin",
+    label: "End a forgotten day after no input for",
+    help: "Once the shift is over, a day nobody ended closes when there has been no keyboard or mouse input for this long. Its end time is the last input: last input 7:30 PM with 30 minutes closes at 8:00 PM, dated 7:30 PM.",
+    unit: "min",
+    min: 10,
+    max: 240,
+    default: 30,
+  },
+  {
     key: "autoCloseAfterShiftEndMin",
-    label: "Close a forgotten day after",
-    help: "A day nobody ended closes this long after the shift ends, at the last keyboard or mouse input.",
+    label: "Latest automatic close after the shift ends",
+    help: "A day still open this long after the shift ends closes anyway, at the last keyboard or mouse input (overtime with input keeps it open until then).",
     unit: "min",
     min: 30,
     max: 720,
     default: 240,
+  },
+];
+
+/** The yes or no settings, with their wording. */
+export const BOOLEAN_SETTINGS: { key: BooleanSettingKey; label: string; help: string }[] = [
+  {
+    key: "requireLateStartReason",
+    label: "Ask for a reason after a late start",
+    help: "When Start Day comes later than the shift start plus the allowance above, the person says why. Managers see it on Team and in the reports.",
+  },
+  {
+    key: "blockManagerEndDayWhenOverdue",
+    label: "Managers can't end their day with overdue approvals",
+    help: "Their End Day waits until every overdue approval is decided.",
   },
 ];
 
@@ -104,13 +128,12 @@ export const DEFAULT_SETTINGS: AppSettingsView = {
   autoCloseAfterShiftEndMin: 240,
   breakBufferMin: 10,
   focusAdjustmentsEnabled: true,
+  requireLateStartReason: true,
+  forgottenEndDayIdleMin: 30,
 };
 
 /** The form keeps numbers as typed, so a field can be empty mid-edit. */
-export type SettingsDraft = Record<NumericSettingKey, string> & {
-  blockManagerEndDayWhenOverdue: boolean;
-  focusAdjustmentsEnabled: boolean;
-};
+export type SettingsDraft = Record<NumericSettingKey, string> & Record<BooleanSettingKey, boolean>;
 
 export type SettingsErrors = Partial<Record<keyof AppSettingsView, string>>;
 
@@ -119,6 +142,8 @@ export function draftFromSettings(settings: AppSettingsView): SettingsDraft {
     blockManagerEndDayWhenOverdue: settings.blockManagerEndDayWhenOverdue,
     // 3.3: an older server sends no such key: on, as 3.3 starts.
     focusAdjustmentsEnabled: settings.focusAdjustmentsEnabled ?? true,
+    // A server older than 3.2 sends no such key: on, as 3.2 starts.
+    requireLateStartReason: settings.requireLateStartReason ?? true,
   } as SettingsDraft;
   for (const meta of NUMERIC_SETTINGS) {
     const value = settings[meta.key];
@@ -144,6 +169,7 @@ export function validateSettings(draft: SettingsDraft): {
   const values = {
     blockManagerEndDayWhenOverdue: Boolean(draft.blockManagerEndDayWhenOverdue),
     focusAdjustmentsEnabled: Boolean(draft.focusAdjustmentsEnabled),
+    requireLateStartReason: Boolean(draft.requireLateStartReason),
   } as AppSettingsView;
 
   for (const meta of NUMERIC_SETTINGS) {

@@ -3,7 +3,14 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ClipboardCheck, Info, SlidersHorizontal, Users } from "lucide-react";
+import {
+  CalendarOff,
+  CheckCircle2,
+  ClipboardCheck,
+  Info,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 
 import { Chip } from "@/components/ui/Chip";
 import {
@@ -22,6 +29,9 @@ import { canAccess, roleLabel } from "@/constants/roles";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { AdjustFocusDialog } from "@/features/adjustments/components/AdjustFocusDialog";
 import { AdjustmentsList } from "@/features/adjustments/components/AdjustmentsList";
+import { blockingApprovalsHref } from "@/features/approvals/lib/query";
+import { dayOffText, lateMinutes, lateReason } from "@/features/reports/lib/dayNotes";
+import { InputBreakdown } from "@/features/reports/components/InputBreakdown";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
 import { usePersonDayReport } from "@/features/reports/hooks/useReports";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
@@ -480,6 +490,13 @@ export function PersonDayView({
         : "Did not start";
   const pendingApprovals = report.approvals.filter((a) => a.status === "PENDING");
   const quietBelow = settings.data?.quietHourActiveMin ?? 20;
+  // The pending items of this day's month, across the organisation for a Super Admin.
+  const approvalsHref = blockingApprovalsHref(monthOfDate(date), role === "SUPER_ADMIN");
+  const offText = dayOffText(s);
+  const late = lateMinutes(s);
+  const reason = lateReason(s);
+  const input = report.input;
+  const activeSec = input ? input.activeSec : s.activeMin * 60;
 
   return shell(
     <div className={`space-y-5 ${query.isPlaceholderData ? "opacity-60 transition-opacity" : ""}`}>
@@ -490,6 +507,20 @@ export function PersonDayView({
           onRetry={() => query.refetch()}
           retrying={query.isFetching}
         />
+      )}
+      {offText && (
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+        >
+          <CalendarOff className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" aria-hidden />
+          <span>
+            <span className="font-semibold">{offText}.</span>{" "}
+            {s.startedAt
+              ? "They started the day anyway: the usual shift rules applied and the hours count."
+              : "Nothing was expected on this day."}
+          </span>
+        </div>
       )}
       {s.pending > 0 ? (
         <div
@@ -513,7 +544,7 @@ export function PersonDayView({
             {s.pendingPlusSec >= 60 || s.pendingMinusSec >= 60 ? "." : ""}
           </p>
           <Link
-            href="/dashboard/approvals"
+            href={approvalsHref}
             className="shrink-0 font-semibold text-amber-900 underline underline-offset-2 print:hidden"
           >
             Review approvals
@@ -572,8 +603,8 @@ export function PersonDayView({
           value={spanText}
           sub={
             [
-              s.lateStart && s.lateStart.minutes > 0
-                ? `${s.lateStart.minutes} min late start`
+              late
+                ? `${late} min late start${reason ? `. Reason: ${reason}` : ", no reason given"}`
                 : s.startedAt
                   ? "Started on time"
                   : null,
@@ -582,7 +613,7 @@ export function PersonDayView({
               .filter(Boolean)
               .join(" · ") || undefined
           }
-          tone={s.lateStart && s.lateStart.minutes > 0 ? "warning" : "default"}
+          tone={late ? "warning" : "default"}
         />
         <Kpi
           label="Meetings"
@@ -616,9 +647,13 @@ export function PersonDayView({
         <Kpi
           label="Activity"
           managersOnly
-          value={`${formatDuration(s.activeMin * 60)} active`}
+          value={`${formatDuration(activeSec)} active`}
           tone={s.quietHours ? "warning" : "default"}
-          sub={`${s.quietHours} quiet ${s.quietHours === 1 ? "hour" : "hours"} · never changes focus time`}
+          sub={`${
+            input && input.availableSec > 0
+              ? `${Math.round((input.activeSec / input.availableSec) * 100)}% of ${formatDuration(input.availableSec)} available · `
+              : ""
+          }${s.quietHours} quiet ${s.quietHours === 1 ? "hour" : "hours"} · never changes focus time`}
         />
       </KpiGrid>
 
@@ -653,7 +688,7 @@ export function PersonDayView({
         aside={
           pendingApprovals.length > 0 ? (
             <Link
-              href="/dashboard/approvals"
+              href={approvalsHref}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline print:hidden"
             >
               <ClipboardCheck className="h-4 w-4" aria-hidden />
@@ -709,6 +744,22 @@ export function PersonDayView({
               When an agent missed something and the day&apos;s focus time is wrong, add or take off
               minutes here. {name} is told, with the reason, and every report follows.
             </p>
+          )}
+        </ReportSection>
+      )}
+
+      {input !== undefined && (
+        <ReportSection
+          title="Active and idle time"
+          subtitle="Keyboard and mouse input while working, not on a break or in a meeting."
+          aside={<ManagersOnly />}
+        >
+          {input === null ? (
+            <p className="text-sm text-slate-500">
+              The input for this day could not be read. Try again later.
+            </p>
+          ) : (
+            <InputBreakdown input={input} />
           )}
         </ReportSection>
       )}

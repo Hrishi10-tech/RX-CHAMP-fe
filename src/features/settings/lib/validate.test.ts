@@ -25,6 +25,8 @@ describe("validateSettings", () => {
       quietHoursFlag: [1, 100],
       autoCloseAfterShiftEndMin: [30, 720],
       breakBufferMin: [0, 60],
+      // 3.2, the same bounds as the API.
+      forgottenEndDayIdleMin: [10, 240],
     });
   });
 
@@ -37,6 +39,7 @@ describe("validateSettings", () => {
     ["quietHoursFlag", "101"],
     ["autoCloseAfterShiftEndMin", "29"],
     ["breakBufferMin", "61"],
+    ["forgottenEndDayIdleMin", "9"],
   ] as const)("refuses %s = %s", (key, value) => {
     const draft = { ...draftFromSettings(DEFAULT_SETTINGS), [key]: value };
     const { values, errors } = validateSettings(draft);

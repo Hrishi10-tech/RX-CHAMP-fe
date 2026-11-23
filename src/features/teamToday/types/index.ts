@@ -53,7 +53,19 @@ export interface TeamTodayRow {
   startedAt: string | null;
   endedAt: string | null;
   autoClosed: boolean;
-  lateStart: { minutes: number } | null;
+  /**
+   * Minutes late after the grace, and why (3.2). A 3.1.0 server sends only the
+   * minutes.
+   */
+  lateStart: {
+    minutes: number;
+    graceMin?: number;
+    reason?: string | null;
+    reasonAt?: string | null;
+    needsReason?: boolean;
+  } | null;
+  /** 3.2: a holiday (with its name) or a weekly day off by the calendar; null on a working day. */
+  dayOff?: { kind: "HOLIDAY" | "WEEKLY_OFF"; name: string | null } | null;
   focus: FocusView;
   expectedSec: number;
   breaks: TeamTodayBreakCell[];

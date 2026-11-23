@@ -214,6 +214,7 @@ describe("canAccess (route guard)", () => {
     ["/dashboard/settings", ADMINS],
     ["/dashboard/chat", yes()],
     ["/dashboard/instructions", yes()],
+    ["/dashboard/screenshots/archives", ADMINS],
   ];
 
   it.each(matrix)("%s", (path, expected) => {

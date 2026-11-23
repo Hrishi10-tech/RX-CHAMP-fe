@@ -29,6 +29,8 @@ export interface TeamPerson {
   agentVersion: string | null;
   /** Minutes after the shift start the day began; 0 when on time or not started. */
   lateStartMin: number;
+  /** 3.2: why the day started late, once given (absent from an older API). */
+  lateReason?: string | null;
 }
 
 export interface TeamCounts {

@@ -18,8 +18,8 @@ import type {
  * SPEC 3.4. Every request in one module so the contract can be checked against
  * the backend in one place:
  *
- *   GET  /approvals?status&scope&type&category&overdue&date&userId&companyId&page&limit
- *   GET  /approvals/summary?scope&companyId
+ *   GET  /approvals?status&scope&type&category&overdue&date&month&userId&companyId&page&limit
+ *   GET  /approvals/summary?scope&companyId&month
  *   GET  /approvals/me?days
  *   POST /approvals/:type/:id/approve   { note? }
  *   POST /approvals/:type/:id/reject    { note }
@@ -60,14 +60,15 @@ export async function getApprovals(
 /**
  * Counts behind the Approvals badge and the summary strip: the caller's own queue,
  * or (Admin, Super Admin) the whole organisation; 3.3: one organisation of the
- * combined view.
+ * combined view; 3.2: optionally one month (what the payroll lock counts).
  */
 export async function getApprovalsSummary(
-  opts: { scope?: "mine" | "all"; companyId?: string } = {},
+  opts: { scope?: "mine" | "all"; companyId?: string; month?: string } = {},
 ): Promise<ApprovalsSummary> {
   const params: Record<string, string> = {};
   if (opts.scope === "all") params.scope = "all";
   if (opts.companyId) params.companyId = opts.companyId;
+  if (opts.month) params.month = opts.month;
   // Without options the request is exactly the 4.0 one.
   const { data } = Object.keys(params).length
     ? await apiClient.get<ApiResponse<ApprovalsSummary>>("/api/v1/approvals/summary", { params })

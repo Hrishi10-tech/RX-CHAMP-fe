@@ -3,6 +3,7 @@ import { formatSignedAmount, withMinusSign } from "@/lib/format/duration";
 import { dateKeyOf, formatDay, todayKey } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
 import type {
+  AfterSkipActivity,
   ApprovalCategory,
   ApprovalEffect,
   ApprovalItemStatus,
@@ -290,4 +291,56 @@ export function atStakeText(
   if (plus) parts.push(`Approving can add ${formatSignedAmount(plus * 60)}.`);
   if (minus) parts.push(`Rejecting can remove up to ${formatSignedAmount(-minus * 60)}.`);
   return parts.join(" ");
+}
+
+// ---- After a skip (3.2, fix 3) -----------------------------------------------------------
+
+/** Whole minutes, at least 1 when there was any time at all. */
+function mins(sec: number): number {
+  return sec > 0 ? Math.max(1, Math.round(sec / 60)) : 0;
+}
+
+/**
+ * What the keyboard and mouse said in the 15 minutes after a skip (an auto-skip:
+ * after the break was due): a short label, a tone, and a sentence for the tooltip.
+ */
+export function afterSkipChip(a: AfterSkipActivity): {
+  label: string;
+  tone: "success" | "warning" | "danger" | "neutral";
+  title: string;
+} {
+  const when = a.basis === "BREAK_START" ? "after the break was due" : "after the skip";
+  const window = `${a.windowMin} minutes ${when}`;
+  switch (a.verdict) {
+    case "ACTIVE":
+      return {
+        label: `Kept working · ${mins(a.activeSec)} min input`,
+        tone: "success",
+        title: `Keyboard or mouse used for ${mins(a.activeSec)} of the ${window}.`,
+      };
+    case "LOW":
+      return {
+        label: `Little input · ${mins(a.activeSec)} min`,
+        tone: "warning",
+        title: `Only ${mins(a.activeSec)} min of keyboard or mouse input in the ${window}.`,
+      };
+    case "NONE":
+      return {
+        label: "No input after the skip",
+        tone: "danger",
+        title: `No keyboard or mouse input in the ${window}: likely away from the computer.`,
+      };
+    case "NO_DATA":
+      return {
+        label: "No activity data",
+        tone: "neutral",
+        title: `The computer sent nothing for the ${window} (switched off, asleep or offline).`,
+      };
+    default:
+      return {
+        label: "Checking input",
+        tone: "neutral",
+        title: `Shown once the ${window} have passed.`,
+      };
+  }
 }

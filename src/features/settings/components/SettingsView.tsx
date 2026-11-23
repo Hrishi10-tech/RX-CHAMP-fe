@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
+import { ReasonPresetsEditor } from "@/features/settings/components/ReasonPresetsEditor";
 import {
   btnPrimary,
   btnSecondary,
@@ -19,6 +22,7 @@ import { errorCode, errorDetails, errorMessage } from "@/lib/api";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
 import { useAppSettings, useUpdateSettings } from "@/features/settings/hooks/useSettings";
 import {
+  BOOLEAN_SETTINGS,
   NUMERIC_SETTINGS,
   draftFromSettings,
   settingsFieldOf,
@@ -28,7 +32,11 @@ import {
   type SettingsDraft,
   type SettingsErrors,
 } from "@/features/settings/lib/validate";
-import type { AppSettingsView, NumericSettingKey } from "@/features/settings/types";
+import type {
+  AppSettingsView,
+  BooleanSettingKey,
+  NumericSettingKey,
+} from "@/features/settings/types";
 
 const GROUPS: {
   title: string;
@@ -37,6 +45,8 @@ const GROUPS: {
   withBlock?: boolean;
   /** 3.3: the switch for manual focus adjustments. */
   withAdjustments?: boolean;
+  /** Yes or no settings shown under the numbers. */
+  bools?: BooleanSettingKey[];
 }[] = [
   {
     title: "Approvals",
@@ -49,6 +59,7 @@ const GROUPS: {
     description:
       "How a day's focus time becomes a full day, a half day or absent, and what counts as a late start.",
     keys: ["fullDayPct", "halfDayPct", "lateStartGraceMin"],
+    bools: ["requireLateStartReason"],
   },
   {
     title: "Activity",
@@ -64,8 +75,9 @@ const GROUPS: {
   },
   {
     title: "Forgotten End Day",
-    description: "When a day nobody ended is closed for them.",
-    keys: ["autoCloseAfterShiftEndMin"],
+    description:
+      "When a day nobody ended is closed for them, and at what time. A live meeting keeps it open.",
+    keys: ["forgottenEndDayIdleMin", "autoCloseAfterShiftEndMin"],
   },
   {
     title: "Focus adjustments",
@@ -75,6 +87,8 @@ const GROUPS: {
     withAdjustments: true,
   },
 ];
+
+const BOOL_META = new Map(BOOLEAN_SETTINGS.map((m) => [m.key, m]));
 
 const META = new Map(NUMERIC_SETTINGS.map((m) => [m.key, m]));
 
@@ -227,6 +241,30 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
                 />
               ) : null;
             })}
+            {(group.bools ?? []).map((key) => {
+              const meta = BOOL_META.get(key);
+              if (!meta) return null;
+              return (
+                <div key={key} className="border-t border-slate-100 py-4">
+                  <label className="flex cursor-pointer items-start gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      className={`${checkboxBase} mt-0.5`}
+                      checked={draft[key]}
+                      disabled={pending}
+                      onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.checked }))}
+                      aria-describedby={`${key}-help`}
+                    />
+                    <span>
+                      <span className="font-semibold text-slate-800">{meta.label}</span>
+                      <span id={`${key}-help`} className="mt-0.5 block text-slate-500">
+                        {meta.help}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              );
+            })}
             {group.withBlock && (
               <div className="border-t border-slate-100 py-4">
                 <label className="flex cursor-pointer items-start gap-3 text-sm">
@@ -332,31 +370,57 @@ function SettingsForm({ settings }: { settings: AppSettingsView }) {
   );
 }
 
-/** Settings (Super Admin): the organisation rules in SPEC 1.10. */
+// 4.0: holidays live on the Calendar page; 3.x calendars arrive with the calendar merge.
+type SettingsTab = "rules" | "answers";
+
+const TABS: { value: SettingsTab; label: string }[] = [
+  { value: "rules", label: "Rules" },
+  { value: "answers", label: "Quick answers" },
+];
+
+/** Settings (the organisation's admins): the rules and the quick answers (3.2). */
 export function SettingsView() {
   const query = useAppSettings();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const asked = searchParams.get("tab");
+  const tab: SettingsTab = TABS.some((t) => t.value === asked) ? (asked as SettingsTab) : "rules";
   return (
     <div className="mx-auto max-w-4xl space-y-5">
       <PageHeader
         title="Settings"
-        subtitle="Rules for approvals, attendance and activity. They apply to everyone in the organisation."
+        subtitle="Rules for approvals, attendance, activity and pay; the quick answers offered in every comment box; holidays and working days. They apply to everyone."
       />
-      {query.isLoading ? (
-        <div className={cardBase}>
-          <LoadingState label="Loading settings…" />
-        </div>
-      ) : query.isError || !query.data ? (
-        <div className={cardBase}>
-          <ErrorState
-            title="Couldn't load the settings"
-            message={errorMessage(query.error)}
-            onRetry={() => query.refetch()}
-            retrying={query.isFetching}
-          />
-        </div>
-      ) : (
-        <SettingsForm settings={query.data} />
-      )}
+      <SegmentedTabs
+        label="Settings"
+        idPrefix="settings"
+        value={tab}
+        onChange={(next) =>
+          router.replace(next === "rules" ? pathname : `${pathname}?tab=${next}`, { scroll: false })
+        }
+        tabs={TABS}
+      />
+      <div id="settings-panel" role="tabpanel" aria-labelledby={`settings-tab-${tab}`}>
+        {tab === "answers" ? (
+          <ReasonPresetsEditor />
+        ) : query.isLoading ? (
+          <div className={cardBase}>
+            <LoadingState label="Loading settings…" />
+          </div>
+        ) : query.isError || !query.data ? (
+          <div className={cardBase}>
+            <ErrorState
+              title="Couldn't load the settings"
+              message={errorMessage(query.error)}
+              onRetry={() => query.refetch()}
+              retrying={query.isFetching}
+            />
+          </div>
+        ) : (
+          <SettingsForm settings={query.data} />
+        )}
+      </div>
     </div>
   );
 }

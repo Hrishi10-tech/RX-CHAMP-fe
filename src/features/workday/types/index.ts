@@ -62,8 +62,19 @@ export interface WorkdayTodayView {
   autoClosed: boolean;
   sessions: WorkSessionView[];
   focus: FocusView;
-  /** null = on time, or no shift. */
-  lateStart: { minutes: number } | null;
+  /**
+   * null = on time, or no shift. 3.2: the allowance, the reason once given, and
+   * whether one is still asked for.
+   */
+  lateStart: {
+    minutes: number;
+    graceMin?: number;
+    reason?: string | null;
+    reasonAt?: string | null;
+    needsReason?: boolean;
+  } | null;
+  /** 3.2: a holiday (with its name) or a weekly day off; null on a working day. */
+  dayOff?: { kind: "HOLIDAY" | "WEEKLY_OFF"; name: string | null } | null;
   shift: WorkdayShiftRef | null;
   expectedSec: number;
   /** Newest first, at most 31 days back. */
@@ -71,6 +82,19 @@ export interface WorkdayTodayView {
   /** MANAGER and SUPER_ADMIN: pending items routed to me past their due time. */
   overdueApprovals: number;
   endDayBlockedByOverdue: boolean;
-  settings: { approvalSlaHours: number; reasonMinChars: number };
+  settings: {
+    approvalSlaHours: number;
+    reasonMinChars: number;
+    lateStartGraceMin?: number;
+    requireLateStartReason?: boolean;
+    forgottenEndDayIdleMin?: number;
+    paidBreakBufferMin?: number;
+  };
   portalUrl: string | null;
+}
+
+/** GET /workday/guide (3.2): how RX Vision works, with the organisation's numbers. */
+export interface StaffGuideView {
+  items: { n: number; title: string; body: string }[];
+  numbers: Record<string, number>;
 }

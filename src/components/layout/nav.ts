@@ -14,6 +14,7 @@ import {
   MousePointerClick,
   Network,
   Settings,
+  FileArchive,
   SlidersHorizontal,
   UserCog,
   Users,
@@ -75,6 +76,8 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/dashboard/reports", label: "Reports", icon: FileChartColumn },
       { href: FOCUS_ADJUSTMENTS_HREF, label: "Focus adjustments", icon: SlidersHorizontal },
+      // 3.2: the monthly screenshot archive and deletion (the organisation's admins).
+      { href: "/dashboard/screenshots/archives", label: "Screenshot archive", icon: FileArchive },
     ],
   },
   {

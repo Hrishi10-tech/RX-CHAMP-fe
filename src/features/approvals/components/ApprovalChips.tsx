@@ -1,18 +1,19 @@
 "use client";
 
-import { Clock, Lock, Target } from "lucide-react";
+import { Clock, Keyboard, Lock, MousePointerClick, Target, WifiOff } from "lucide-react";
 
 import { Chip } from "@/components/ui/Chip";
 import { useNow } from "@/lib/hooks/useNow";
 import {
   STATUS_CHIP,
+  afterSkipChip,
   categoryChip,
   dueChip,
   effectChip,
   formatTimer,
   liveSeconds,
 } from "@/features/approvals/lib/labels";
-import type { ApprovalItemView } from "@/features/approvals/types";
+import type { AfterSkipActivity, ApprovalItemView } from "@/features/approvals/types";
 
 export function CategoryChip({
   category,
@@ -102,6 +103,26 @@ export function LockedChip() {
   return (
     <Chip tone="neutral" icon={Lock}>
       Locked for payroll
+    </Chip>
+  );
+}
+
+/**
+ * Keyboard and mouse in the 15 minutes after a skip (3.2): kept working, little
+ * input, none, or no data. Managers and Super Admins only (the API sends it only to them).
+ */
+export function AfterSkipChip({ activity }: { activity: AfterSkipActivity }) {
+  const chip = afterSkipChip(activity);
+  const Icon =
+    activity.verdict === "NO_DATA"
+      ? WifiOff
+      : activity.verdict === "NONE"
+        ? MousePointerClick
+        : Keyboard;
+  return (
+    <Chip tone={chip.tone} icon={Icon} title={chip.title} wrap>
+      {chip.label}
+      <span className="sr-only">. {chip.title}</span>
     </Chip>
   );
 }

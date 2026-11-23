@@ -1,11 +1,14 @@
 "use client";
 
+import { Suspense } from "react";
+
+import { LoadingOverlay } from "@/components/ui/Loader";
 import { isOrgAdmin } from "@/constants/roles";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { ApprovalsView } from "@/features/approvals/components/ApprovalsView";
 import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
 
-export default function ApprovalsPage() {
+function Approvals() {
   const { role, user } = useSession();
   const { mixed } = useOrgsInView();
   return (
@@ -16,5 +19,15 @@ export default function ApprovalsPage() {
       myId={user?.id}
       myName={user?.name}
     />
+  );
+}
+
+export default function ApprovalsPage() {
+  // The view reads its tab, scope and month from the address (links from the
+  // payroll lock), which needs a Suspense boundary.
+  return (
+    <Suspense fallback={<LoadingOverlay label="Loading…" />}>
+      <Approvals />
+    </Suspense>
   );
 }

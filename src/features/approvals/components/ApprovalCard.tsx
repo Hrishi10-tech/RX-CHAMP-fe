@@ -3,6 +3,7 @@
 import { useId, useRef, useState, type FormEvent } from "react";
 import { Check, Loader2, Lock, Mail, MessageSquarePlus, RotateCcw, Users, X } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   btnDanger,
@@ -28,12 +29,14 @@ import {
   reasonLabel,
 } from "@/features/approvals/lib/labels";
 import {
+  undoDecision,
   useApproveItem,
   useRejectItem,
   useReopenItem,
   type Decider,
 } from "@/features/approvals/hooks/useApprovals";
 import {
+  AfterSkipChip,
   CategoryChip,
   DueChip,
   EffectChip,
@@ -42,6 +45,8 @@ import {
   StatusChip,
 } from "@/features/approvals/components/ApprovalChips";
 import type { ApprovalItemView } from "@/features/approvals/types";
+import { usePresetsFor } from "@/features/settings/hooks/usePresets";
+import { reasonAccepted } from "@/features/settings/lib/presets";
 
 /** Rejection notes are shown to the person; the API wants at least this many characters. */
 export const MIN_REJECT_NOTE = 3;
@@ -103,9 +108,12 @@ export function ApprovalCard({
   const [mode, setMode] = useState<"approve" | "reject" | null>(null);
   const [note, setNote] = useState("");
   const [noteError, setNoteError] = useState<string | null>(null);
+  // 3.2: the Super Admin's quick answers for a decision note, once a note box is open.
+  const presets = usePresetsFor("DECISION_NOTE", mode !== null);
   const approve = useApproveItem(me);
   const reject = useRejectItem(me);
   const reopen = useReopenItem();
+  const queryClient = useQueryClient();
   // Set synchronously on the first click, so a fast double click (before the
   // buttons re-render as disabled) cannot send the same decision twice.
   const inFlight = useRef(false);
@@ -187,7 +195,10 @@ export function ApprovalCard({
     return once(async () => {
       try {
         await approve.mutateAsync({ ref, note: withNote?.trim() || undefined });
-        toast.success("Approved", { description: `${name}: ${item.title}.` });
+        toast.success("Approved", {
+          description: `${name}: ${item.title}.`,
+          action: canReopen ? { label: "Undo", onClick: () => void undo() } : undefined,
+        });
         closePanel();
       } catch (err) {
         failed(err, "approve");
@@ -197,19 +208,32 @@ export function ApprovalCard({
 
   function doReject() {
     const text = note.trim();
-    if (text.length < MIN_REJECT_NOTE) {
+    if (!reasonAccepted(text, MIN_REJECT_NOTE, presets)) {
       setNoteError(`Say why in at least ${MIN_REJECT_NOTE} characters. ${first} will see it.`);
       return Promise.resolve();
     }
     return once(async () => {
       try {
         await reject.mutateAsync({ ref, note: text });
-        toast.success("Rejected", { description: `${first} will see your note.` });
+        toast.success("Rejected", {
+          description: `${first} will see your note.`,
+          action: canReopen ? { label: "Undo", onClick: () => void undo() } : undefined,
+        });
         closePanel();
       } catch (err) {
         failed(err, "reject");
       }
     });
+  }
+
+  /** From the decision's toast, once the row has left the list. */
+  async function undo() {
+    try {
+      await undoDecision(queryClient, ref);
+      toast.success("Back to pending", { description: `${name}: ${item.title}.` });
+    } catch (err) {
+      failed(err, "undo");
+    }
   }
 
   function doReopen() {
@@ -297,6 +321,7 @@ export function ApprovalCard({
             <StatusChip status={item.status} />
             <EffectChip item={item} />
             <DueChip item={item} fetchedAt={clock} />
+            {item.afterSkip && <AfterSkipChip activity={item.afterSkip} />}
           </div>
 
           {/* Reason, comment or agenda */}
@@ -446,6 +471,24 @@ export function ApprovalCard({
               {mode === "reject" && (
                 <p className="text-xs text-slate-600">{rejectConsequence(item)}</p>
               )}
+              {presets.length > 0 && (
+                <div className="flex flex-wrap gap-1.5" aria-label="Quick answers">
+                  {presets.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => {
+                        setNote(p);
+                        setNoteError(null);
+                      }}
+                      disabled={busy}
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
               <textarea
                 id={noteId}
                 rows={2}
@@ -477,7 +520,9 @@ export function ApprovalCard({
                 </button>
                 <button
                   type="submit"
-                  disabled={busy || (mode === "reject" && note.trim().length < MIN_REJECT_NOTE)}
+                  disabled={
+                    busy || (mode === "reject" && !reasonAccepted(note, MIN_REJECT_NOTE, presets))
+                  }
                   className={mode === "reject" ? btnDanger : btnSuccess}
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

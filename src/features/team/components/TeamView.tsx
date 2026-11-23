@@ -89,6 +89,7 @@ function StatusCell({ person }: { person: TeamPerson }) {
       {person.lateStartMin > 0 && (
         <span className="text-xs font-medium text-orange-600">
           started {formatDuration(person.lateStartMin * 60)} late
+          {person.lateReason ? `: ${person.lateReason}` : ""}
         </span>
       )}
     </div>

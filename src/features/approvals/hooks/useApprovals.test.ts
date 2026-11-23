@@ -106,7 +106,7 @@ describe("approval summary keys (3.3)", () => {
     expect(approvalKeys.summary({ scope: "all", companyId: "org-b" })).toEqual([
       "approvals",
       "summary",
-      { scope: "all", companyId: "org-b" },
+      { scope: "all", companyId: "org-b", month: "" },
     ]);
     // Every summary still starts with the badge's key, so one invalidation refreshes them all.
     expect(approvalKeys.summary({ companyId: "org-b" }).slice(0, 2)).toEqual(

@@ -177,6 +177,8 @@ export const routeRoles: Record<string, Role[]> = {
   "/dashboard/agent-health": PORTAL,
   "/dashboard/focus-adjustments": PORTAL,
   "/dashboard/instructions": PORTAL,
+  // 3.2: the monthly screenshot archive and deletion, per organisation.
+  "/dashboard/screenshots/archives": ADMINS,
 };
 
 /**

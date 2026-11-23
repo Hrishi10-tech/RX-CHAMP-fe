@@ -126,6 +126,12 @@ export interface ApprovalItemView {
   canDecide: boolean;
   /** Dated in a month locked for payroll. */
   locked: boolean;
+  /**
+   * Skipped and auto-skipped breaks, for Managers and Super Admins (3.2): keyboard
+   * and mouse input in the 15 minutes after the skip (an auto-skip: after the
+   * break was due). Null on every other item.
+   */
+  afterSkip?: AfterSkipActivity | null;
   break: BreakRecordView | null;
   meeting: MeetingRecordView | null;
   /** 4.0: AWAY items. */
@@ -147,6 +153,20 @@ export interface ApprovalItemView {
   optimistic?: string;
 }
 
+export type AfterSkipVerdict = "ACTIVE" | "LOW" | "NONE" | "NO_DATA" | "PENDING";
+
+export interface AfterSkipActivity {
+  from: string;
+  to: string;
+  windowMin: number;
+  /** From the skip itself, or (auto-skip) from when the break was due. */
+  basis: "SKIPPED_AT" | "BREAK_START";
+  activeSec: number;
+  idleSec: number;
+  noDataSec: number;
+  verdict: AfterSkipVerdict;
+}
+
 export type ApprovalStatusFilter = "PENDING" | "APPROVED" | "REJECTED" | "DECIDED" | "ALL";
 
 export type ApprovalScope = "mine" | "all";
@@ -162,6 +182,8 @@ export interface GetApprovalsParams {
   overdue?: boolean;
   /** "YYYY-MM-DD". */
   date?: string;
+  /** "YYYY-MM": only items dated in that month (what the payroll lock counts). */
+  month?: string;
   userId?: string;
   /** 3.3: Super Admin or Super Manager on "All organisations": one organisation. */
   companyId?: string;
@@ -177,6 +199,10 @@ export interface ApprovalsSummary {
   approvedToday: number;
   rejectedToday: number;
   slaHours: number;
+  /** Which items the counts cover (3.2): the caller's queue, or the whole organisation. */
+  scope?: ApprovalScope;
+  /** The month the counts are limited to, or null for every month (3.2). */
+  month?: string | null;
 }
 
 export interface ApprovalRef {

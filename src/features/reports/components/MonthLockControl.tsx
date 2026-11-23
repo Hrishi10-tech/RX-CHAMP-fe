@@ -12,6 +12,9 @@ import { errorCode, errorDetails, errorMessage, errorStatus } from "@/lib/api";
 import { formatDayLong, formatMonth, monthOfDate } from "@/lib/time/months";
 import { dateKeyOf, todayKey } from "@/lib/time/businessTime";
 import { useMonthLock, useMonthLockMutation } from "@/features/reports/hooks/useReports";
+import { blockingApprovalsHref } from "@/features/approvals/lib/query";
+import { LockBlockers } from "@/features/reports/components/LockBlockers";
+import type { MonthLockBlockers } from "@/features/reports/types";
 
 /** "Locked for payroll by Neha Iyer on 2 Oct 2026". */
 function lockedLine(lockedByName: string | null, lockedAt: string | null): string {
@@ -71,7 +74,11 @@ export function MonthLockChip({ month, pending }: { month: string; pending?: num
 export function MonthLockControl({ month }: { month: string }) {
   const lock = useMonthLock(month);
   const mutation = useMonthLockMutation();
-  const [refusal, setRefusal] = useState<{ count: number | null; message: string } | null>(null);
+  const [refusal, setRefusal] = useState<{
+    count: number | null;
+    message: string;
+    blockers: MonthLockBlockers | null;
+  } | null>(null);
   const [confirmUnlock, setConfirmUnlock] = useState(false);
   const current = month >= monthOfDate(todayKey());
   const label = formatMonth(month);
@@ -84,12 +91,26 @@ export function MonthLockControl({ month }: { month: string }) {
         description: "Its reports are now fixed and its approvals can no longer change.",
       });
     } catch (err) {
-      if (errorCode(err) === "PENDING_APPROVALS") {
-        const raw = errorDetails(err)?.count;
+      const code = errorCode(err);
+      if (code === "PENDING_APPROVALS" || code === "OPEN_SESSIONS") {
+        const details = errorDetails(err) ?? {};
+        const raw = details.count;
+        const items = Array.isArray(details.items)
+          ? (details.items as MonthLockBlockers["items"])
+          : [];
+        const sessions = Array.isArray(details.sessions)
+          ? (details.sessions as MonthLockBlockers["openSessions"])
+          : [];
         setRefusal({
-          count: typeof raw === "number" ? raw : null,
-          message: errorMessage(err) ?? "Some approvals in this month are still pending.",
+          count: code === "PENDING_APPROVALS" && typeof raw === "number" ? raw : null,
+          message:
+            errorMessage(err) ??
+            (code === "OPEN_SESSIONS"
+              ? "Some working days in this month are still open."
+              : "Some approvals in this month are still pending."),
+          blockers: { items, moreItems: details.moreItems === true, openSessions: sessions },
         });
+        void lock.refetch();
       } else {
         toast.error(`Couldn't lock ${label}`, {
           description: errorMessage(err) ?? "Please try again.",
@@ -165,6 +186,18 @@ export function MonthLockControl({ month }: { month: string }) {
         </button>
       )}
 
+      {!refusal &&
+        !lock.data.locked &&
+        !current &&
+        (lock.data.pending > 0 || (lock.data.blockers?.openSessions.length ?? 0) > 0) && (
+          <LockBlockers
+            month={month}
+            pending={lock.data.pending}
+            blockers={lock.data.blockers}
+            isSuperAdmin
+          />
+        )}
+
       {refusal && (
         <div
           role="alert"
@@ -181,12 +214,22 @@ export function MonthLockControl({ month }: { month: string }) {
             <p className="mt-0.5">
               Decide them first, then lock the month.{" "}
               <Link
-                href="/dashboard/approvals"
+                href={blockingApprovalsHref(month, true)}
                 className="font-semibold text-amber-900 underline underline-offset-2"
               >
-                Go to Approvals
+                Open them in Approvals
               </Link>
             </p>
+            {refusal.blockers && (
+              <div className="mt-2">
+                <LockBlockers
+                  month={month}
+                  pending={refusal.count ?? 0}
+                  blockers={refusal.blockers}
+                  isSuperAdmin
+                />
+              </div>
+            )}
           </div>
           <button
             type="button"

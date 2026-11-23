@@ -41,7 +41,10 @@ export interface PersonDaySummary {
   extended?: boolean;
   /** 4.1: how long the extended day ran past the shift end. */
   extendedSec?: number;
-  lateStart: { minutes: number } | null;
+  /** Minutes after the shift start plus the grace, and why (3.2; null until given). */
+  lateStart: { minutes: number; reason?: string | null } | null;
+  /** 3.2: a holiday (with its name) or a weekly day off; null on a working day. */
+  dayOff?: { kind: "HOLIDAY" | "WEEKLY_OFF"; name: string | null } | null;
   focusSec: number;
   expectedSec: number;
   breakSec: number;
@@ -82,6 +85,10 @@ export interface PersonDaySummary {
    * focusSec and paidSec. 0 when not sent.
    */
   adjustedSec?: number;
+  /** 3.2 (fix 10): seconds with keyboard or mouse input inside the working day. */
+  activeSec?: number;
+  /** 3.2: seconds inside the working day not on a break or in a meeting. */
+  availableSec?: number;
 }
 
 export type TimelineKind = "WORK" | "BREAK" | "LUNCH" | "MEETING" | "OFF";
@@ -112,6 +119,12 @@ export interface PersonDayReport {
   hourly: HourActivity[];
   /** 3.3: the day's manual focus adjustments, newest first, undone ones included. */
   adjustments?: FocusAdjustmentView[];
+  /**
+   * 3.2 (fix 10): keyboard and mouse input inside the available time (sessions
+   * minus breaks and meetings): active, idle (nobody at the computer, or locked)
+   * and no data (the agent was not reporting). Null when it could not be read.
+   */
+  input?: { activeSec: number; idleSec: number; noDataSec: number; availableSec: number } | null;
 }
 
 export interface MonthTotals {
@@ -125,6 +138,10 @@ export interface MonthTotals {
   expectedSec: number;
   avgFocusSec: number;
   lateStarts: number;
+  /** 3.2: late starts still without a reason. */
+  lateWithoutReason?: number;
+  /** 3.2: holidays in the month. */
+  holidays?: number;
   skipped: number;
   autoSkipped: number;
   overruns: number;
@@ -133,6 +150,9 @@ export interface MonthTotals {
   rejectedMinusSec: number;
   pending: number;
   quietHours: number;
+  /** 3.2 (fix 10): keyboard and mouse input inside working days. */
+  activeSec?: number;
+  availableSec?: number;
   needsALook: boolean;
   /** 4.0: the month's focus target (working days from the join date), paid and unpaid breaks, away. */
   targetSec: number;
@@ -204,6 +224,38 @@ export interface ReportRun {
   summary: Record<string, unknown>;
 }
 
+/** One pending item that holds a month's payroll lock (3.2). */
+export interface PendingBlocker {
+  type: "BREAK" | "MEETING";
+  id: string;
+  date: string;
+  category: string;
+  userId: string;
+  userName: string;
+  approverId: string | null;
+  approverName: string | null;
+  approverRole: string | null;
+  /** False when the approver left (deactivated or deleted): a Super Admin decides it. */
+  approverActive: boolean;
+  dueAt: string | null;
+  escalated: boolean;
+}
+
+/** A working day still open in the month (no End Day yet). */
+export interface OpenSessionBlocker {
+  userId: string;
+  userName: string;
+  date: string;
+  startedAt: string;
+}
+
+export interface MonthLockBlockers {
+  items: PendingBlocker[];
+  /** More pending items exist than are listed. */
+  moreItems: boolean;
+  openSessions: OpenSessionBlocker[];
+}
+
 export interface MonthLockView {
   month: string;
   locked: boolean;
@@ -211,6 +263,8 @@ export interface MonthLockView {
   lockedByName: string | null;
   /** Items dated in the month that are still pending. */
   pending: number;
+  /** What holds the lock, by name (3.2). Empty once locked. */
+  blockers?: MonthLockBlockers;
 }
 
 /**

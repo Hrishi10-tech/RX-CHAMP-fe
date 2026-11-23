@@ -19,6 +19,18 @@ jest.mock("@/features/approvals/api/approvals", () => ({
 jest.mock("@/features/reports/hooks/useReports", () => ({
   useReportPeople: () => ({ data: [] }),
 }));
+// The page reads its tab, scope and month from the address (3.2).
+let searchString = "";
+const replace = jest.fn();
+jest.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(searchString),
+  useRouter: () => ({ replace, push: jest.fn() }),
+  usePathname: () => "/dashboard/approvals",
+}));
+// The quick answers for a note come from the settings API; none here.
+jest.mock("@/features/settings/hooks/usePresets", () => ({
+  usePresetsFor: () => [],
+}));
 jest.mock("sonner", () => ({
   toast: Object.assign(jest.fn(), { success: jest.fn(), error: jest.fn(), info: jest.fn() }),
 }));
@@ -67,19 +79,20 @@ const meta = (page: number, total: number) => ({
   totalPages: Math.max(1, Math.ceil(total / 50)),
 });
 
-function renderView() {
+function renderView(isSuperAdmin = false) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   render(
     <QueryClientProvider client={client}>
-      <ApprovalsView isSuperAdmin={false} myId="me-1" myName="Arjun Mehta" />
+      <ApprovalsView isSuperAdmin={isSuperAdmin} myId="me-1" myName="Arjun Mehta" />
     </QueryClientProvider>,
   );
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
+  searchString = "";
   mocked.getApprovalsSummary.mockResolvedValue({
     pending: 51,
     dueSoon: 0,
@@ -164,5 +177,35 @@ describe("ApprovalsView on All organisations (3.3)", () => {
     renderCombined(false);
     await screen.findByRole("article", { name: "Morning break skipped a" });
     expect(screen.queryByTitle("Organisation: Acme")).not.toBeInTheDocument();
+  });
+});
+
+describe("ApprovalsView links (3.2, fix 4)", () => {
+  it("opens on the whole organisation and one month from a payroll-lock link", async () => {
+    searchString = "tab=pending&scope=all&month=2026-10";
+    mocked.getApprovals.mockResolvedValue({ items: [item("a")], meta: meta(1, 1) });
+    renderView(true);
+
+    expect(await screen.findByRole("article", { name: "Morning break skipped a" })).toBeVisible();
+    expect(mocked.getApprovals).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "PENDING", scope: "all", month: "2026-10" }),
+      true,
+    );
+    // The counts cover the same items as the list.
+    expect(mocked.getApprovalsSummary).toHaveBeenCalledWith({ scope: "all", month: "2026-10" });
+    expect(screen.getByText("Whole organisation, October 2026")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Whole organisation/ })).toBeInTheDocument();
+  });
+
+  it("a Manager's link never asks for the whole organisation", async () => {
+    searchString = "scope=all&month=2026-10";
+    mocked.getApprovals.mockResolvedValue({ items: [], meta: meta(1, 0) });
+    renderView(false);
+    await waitFor(() => expect(mocked.getApprovals).toHaveBeenCalled());
+    expect(mocked.getApprovals).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: "mine", month: "2026-10" }),
+      false,
+    );
+    expect(mocked.getApprovalsSummary).toHaveBeenCalledWith({ scope: undefined, month: "2026-10" });
   });
 });

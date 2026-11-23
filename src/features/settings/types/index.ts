@@ -18,12 +18,18 @@ export interface AppSettingsView {
    * by hand. On by default; an older server leaves it out (read as on).
    */
   focusAdjustmentsEnabled: boolean;
+  /** 3.2: ask why when Start Day comes after the shift start plus the grace. */
+  requireLateStartReason: boolean;
+  /** 3.2: after the shift, end a forgotten day once there is no input for this long. */
+  forgottenEndDayIdleMin: number;
 }
 
-export type NumericSettingKey = Exclude<
-  keyof AppSettingsView,
-  "blockManagerEndDayWhenOverdue" | "focusAdjustmentsEnabled"
->;
+export type BooleanSettingKey =
+  | "blockManagerEndDayWhenOverdue"
+  | "focusAdjustmentsEnabled"
+  | "requireLateStartReason";
+
+export type NumericSettingKey = Exclude<keyof AppSettingsView, BooleanSettingKey>;
 
 /** `PATCH /settings` takes any subset. */
 export type AppSettingsPatch = Partial<AppSettingsView>;

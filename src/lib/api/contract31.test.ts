@@ -135,6 +135,11 @@ describe("3.4 Approvals", () => {
     client.get.mockImplementation(() => answer({ pending: 1 }));
     await getApprovalsSummary();
     expect(client.get).toHaveBeenLastCalledWith("/api/v1/approvals/summary");
+    // 3.2: the whole organisation for one month (the payroll lock's blockers).
+    await getApprovalsSummary({ scope: "all", month: "2026-10" });
+    expect(client.get).toHaveBeenLastCalledWith("/api/v1/approvals/summary", {
+      params: { scope: "all", month: "2026-10" },
+    });
     client.get.mockImplementation(() => answer({ items: [] }));
     await getMyApprovals(90);
     expect(client.get).toHaveBeenLastCalledWith("/api/v1/approvals/me", { params: { days: 31 } });

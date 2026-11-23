@@ -55,6 +55,7 @@ import type {
   TeamMonthRow,
   TeamMonthParams,
 } from "@/features/reports/types";
+import { blockingApprovalsHref } from "@/features/approvals/lib/query";
 
 type SortKey =
   | "name"
@@ -304,7 +305,9 @@ function RankingTable({
               </p>
               <p className="text-xs text-slate-600">
                 {attendanceDays(t)} days: {t.full} full, {t.half} half, {t.absent} absent ·{" "}
-                {t.lateStarts} late · {t.skipped + t.autoSkipped} skipped
+                {t.lateStarts} late
+                {t.lateWithoutReason ? ` (${t.lateWithoutReason} no reason)` : ""} ·{" "}
+                {t.skipped + t.autoSkipped} skipped
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {activity && t.quietHours > 0 && (
@@ -422,6 +425,11 @@ function RankingTable({
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
                     {t.lateStarts} · {t.skipped + t.autoSkipped}
+                    {t.lateWithoutReason ? (
+                      <span className="block text-xs font-semibold text-amber-700">
+                        {t.lateWithoutReason} late, no reason
+                      </span>
+                    ) : null}
                   </td>
                   {activity && (
                     <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">
@@ -631,7 +639,7 @@ export function TeamMonthView({
               : `Decide them so ${formatMonth(month)} can be locked for payroll.`}
           </p>
           <Link
-            href="/dashboard/approvals"
+            href={blockingApprovalsHref(month, isSuperAdmin)}
             className="shrink-0 font-semibold text-amber-900 underline underline-offset-2 print:hidden"
           >
             Review approvals
@@ -700,7 +708,9 @@ export function TeamMonthView({
               label="Late starts"
               value={String(t.lateStarts)}
               tone={t.lateStarts ? "warning" : "default"}
-              sub="Reported only, focus time is not changed"
+              sub={`${
+                t.lateWithoutReason ? `${t.lateWithoutReason} without a reason · ` : ""
+              }reported only, focus time is not changed`}
             />
             <Kpi
               label="Skipped breaks"

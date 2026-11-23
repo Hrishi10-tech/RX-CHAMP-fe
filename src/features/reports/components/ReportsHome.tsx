@@ -10,6 +10,7 @@ import { useAppSettings } from "@/features/settings/hooks/useSettings";
 import { useMonthLock, useReportRuns } from "@/features/reports/hooks/useReports";
 import { CreateReport } from "@/features/reports/components/CreateReport";
 import { MonthlyRuns } from "@/features/reports/components/MonthlyRuns";
+import { blockingApprovalsHref } from "@/features/approvals/lib/query";
 
 /** "Your September report is ready", while last month is built and not yet locked. */
 function ReadyBanner({ isSuperAdmin }: { isSuperAdmin: boolean }) {
@@ -50,7 +51,7 @@ function ReadyBanner({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         </Link>
         {pending > 0 && (
           <Link
-            href="/dashboard/approvals"
+            href={blockingApprovalsHref(lastMonth, isSuperAdmin)}
             className="font-semibold text-indigo-900 underline underline-offset-2"
           >
             Review approvals

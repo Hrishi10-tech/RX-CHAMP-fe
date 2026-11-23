@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckCheck, ClipboardCheck, Info, Loader2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +18,8 @@ import {
 import { btnGhost, btnSuccess, cardBase, checkboxBase } from "@/components/ui/classes";
 import type { SelectOption } from "@/components/ui/types";
 import { errorMessage } from "@/lib/api";
+import { todayKey } from "@/lib/time/businessTime";
+import { addMonths, formatMonth } from "@/lib/time/months";
 import { PageHeader } from "@/features/dashboard/components/DashboardWidgets";
 import { useReportPeople } from "@/features/reports/hooks/useReports";
 import {
@@ -27,7 +30,9 @@ import {
 import { ApprovalCard, isBulkSelectable } from "@/features/approvals/components/ApprovalCard";
 import { CATEGORY_FILTER_LABEL, atStakeText, mayReopen } from "@/features/approvals/lib/labels";
 import {
+  monthFromParam,
   paramsForFilters,
+  tabFromParam,
   type ApprovalsTab,
   type CategoryFilter,
   type DecisionFilter,
@@ -55,6 +60,16 @@ const CATEGORY_OPTIONS: SelectOption[] = [
   ...APPROVAL_CATEGORIES.map((c) => ({ value: c, label: CATEGORY_FILTER_LABEL[c] })),
 ];
 
+/** "Every month" and the last 13 months, newest first. */
+function monthOptions(today: string): SelectOption[] {
+  const current = today.slice(0, 7);
+  const months = Array.from({ length: 13 }, (_, i) => addMonths(current, -i));
+  return [
+    { value: ANY, label: "Every month" },
+    ...months.map((m) => ({ value: m, label: formatMonth(m) })),
+  ];
+}
+
 const DECISION_OPTIONS: SelectOption[] = [
   { value: "ALL", label: "Approved or rejected" },
   { value: "APPROVED", label: "Approved" },
@@ -79,7 +94,14 @@ function emptyCopy(tab: ApprovalsTab, slaHours: number, filtered: boolean) {
   }
 }
 
-function SummaryStrip({ summary }: { summary: ApprovalsSummary }) {
+function SummaryStrip({
+  summary,
+  heading,
+}: {
+  summary: ApprovalsSummary;
+  /** What the counts cover ("Your queue", "Whole organisation, October 2026"). */
+  heading: string;
+}) {
   const items: { label: string; value: number; tone?: string }[] = [
     { label: "Waiting", value: summary.pending },
     {
@@ -101,21 +123,23 @@ function SummaryStrip({ summary }: { summary: ApprovalsSummary }) {
     { label: "Rejected today", value: summary.rejectedToday },
   ];
   return (
-    <dl
-      aria-label="Approval counts"
-      className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-3 xl:grid-cols-6"
-    >
-      {items.map((item) => (
-        <div key={item.label} className="bg-white px-4 py-3">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {item.label}
-          </dt>
-          <dd className={`mt-0.5 text-xl font-bold tabular-nums ${item.tone ?? "text-slate-900"}`}>
-            {Number.isFinite(item.value) ? item.value : 0}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <section aria-label="Approval counts" className="space-y-1.5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{heading}</p>
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-3 xl:grid-cols-6">
+        {items.map((item) => (
+          <div key={item.label} className="bg-white px-4 py-3">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {item.label}
+            </dt>
+            <dd
+              className={`mt-0.5 text-xl font-bold tabular-nums ${item.tone ?? "text-slate-900"}`}
+            >
+              {Number.isFinite(item.value) ? item.value : 0}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -176,12 +200,40 @@ export function ApprovalsView({
   myId?: string;
   myName?: string;
 }) {
-  const [tab, setTab] = useState<ApprovalsTab>("pending");
+  // A link can open the page on a tab, the whole organisation and one month: the
+  // payroll lock links here with exactly the items that hold it (3.2, fix 4).
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [tab, setTab] = useState<ApprovalsTab>(
+    () =>
+      tabFromParam(searchParams.get("tab")) ??
+      (searchParams.get("overdue") === "true" ? "overdue" : "pending"),
+  );
   const [decision, setDecision] = useState<DecisionFilter>("ALL");
   const [category, setCategory] = useState<CategoryFilter>("");
-  const [userId, setUserId] = useState("");
-  const [scope, setScope] = useState<ApprovalScope>("mine");
+  const [userId, setUserId] = useState(() => searchParams.get("userId") ?? "");
+  const [scope, setScope] = useState<ApprovalScope>(() =>
+    searchParams.get("scope") === "all" ? "all" : "mine",
+  );
+  const [month, setMonth] = useState(() => monthFromParam(searchParams.get("month")));
   const [page, setPage] = useState(1);
+  const today = todayKey();
+  const months = useMemo(() => monthOptions(today), [today]);
+
+  // The scope and month stay in the address, so the view can be shared or reloaded.
+  useEffect(() => {
+    const q = new URLSearchParams(searchParams.toString());
+    const set = (k: string, v: string | null) => (v ? q.set(k, v) : q.delete(k));
+    set("tab", tab === "pending" ? null : tab);
+    set("scope", isSuperAdmin && scope === "all" ? "all" : null);
+    set("month", month || null);
+    const next = q.toString();
+    if (next !== searchParams.toString()) {
+      router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, scope, month, isSuperAdmin]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkResult, setBulkResult] = useState<BulkApproveResult | null>(null);
 
@@ -193,23 +245,25 @@ export function ApprovalsView({
         category,
         userId,
         scope: isSuperAdmin ? scope : "mine",
+        month,
         page,
         limit: PAGE_SIZE,
       }),
-    [tab, decision, category, userId, scope, page, isSuperAdmin],
+    [tab, decision, category, userId, scope, month, page, isSuperAdmin],
   );
 
   // A new filter is a new list: back to its first page, nothing selected.
   useEffect(() => {
     setPage(1);
-  }, [tab, decision, category, userId, scope]);
+  }, [tab, decision, category, userId, scope, month]);
   useEffect(() => {
     setSelected(new Set());
   }, [params]);
 
   const me = useMemo(() => ({ id: myId, name: myName }), [myId, myName]);
   const list = useApprovalsList(params, isSuperAdmin);
-  const summary = useApprovalsSummary(true);
+  const summaryScope = isSuperAdmin && scope === "all" ? "all" : "mine";
+  const summary = useApprovalsSummary(true, { scope: summaryScope, month });
   const people = useReportPeople();
   const bulk = useBulkApprove(me);
   // One bulk decision at a time: a fast double click must not send it twice.
@@ -228,8 +282,15 @@ export function ApprovalsView({
   const decidable = items.filter(isBulkSelectable);
   const chosen = decidable.filter((i) => selected.has(keyOf(i)));
   const allChosen = decidable.length > 0 && chosen.length === decidable.length;
-  const showBadges = !isSuperAdmin || scope === "mine";
-  const filtered = Boolean(category || userId || (tab === "decisions" && decision !== "ALL"));
+  // The counts follow the scope and the month (3.2), so they always match the list.
+  const showBadges = true;
+  const filtered = Boolean(
+    category || userId || month || (tab === "decisions" && decision !== "ALL"),
+  );
+  const countsHeading = [
+    summaryScope === "all" ? "Whole organisation" : isSuperAdmin ? "Your queue" : "Your team",
+    month ? formatMonth(month) : "every month",
+  ].join(", ");
 
   const personOptions = useMemo<SelectOption[]>(
     () => [
@@ -280,6 +341,7 @@ export function ApprovalsView({
     setCategory("");
     setUserId("");
     setDecision("ALL");
+    setMonth("");
   }
 
   const names = new Map(items.map((i) => [keyOf(i), `${i.user?.name ?? "Someone"}: ${i.title}`]));
@@ -294,11 +356,13 @@ export function ApprovalsView({
 
       <Banner slaHours={slaHours} isSuperAdmin={isSuperAdmin} />
 
-      {/* GET /approvals/summary counts the caller's own items ("mine"), so it is
-          left out while a Super Admin looks at every team, like the tab badges. */}
-      {summary.data && showBadges && <SummaryStrip summary={summary.data} />}
+      {/* The counts cover the same items as the list: the scope and month chosen. */}
+      {summary.data && showBadges && (
+        <SummaryStrip summary={summary.data} heading={countsHeading} />
+      )}
 
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      {/* Tabs on their own line: with the month and scope filters (3.2) a shared row cut them off. */}
+      <div className="flex flex-col gap-3">
         <SegmentedTabs
           label="Approvals"
           idPrefix="approvals"
@@ -336,6 +400,15 @@ export function ApprovalsView({
               options={personOptions}
               searchable
               searchPlaceholder="Search people…"
+              className="!mt-0 h-11 !py-0"
+            />
+          </FilterField>
+          <FilterField label="Month">
+            <Select
+              aria-label="Month"
+              value={month || ANY}
+              onValueChange={(v) => setMonth(v === ANY ? "" : v)}
+              options={months}
               className="!mt-0 h-11 !py-0"
             />
           </FilterField>

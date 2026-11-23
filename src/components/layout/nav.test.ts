@@ -22,6 +22,7 @@ describe("navFor", () => {
       "Calendar",
       "Input tracking",
       "Reports",
+      "Screenshot archive",
       "Sign-out keys",
       "Settings",
       "Instructions",
@@ -53,6 +54,7 @@ describe("navFor", () => {
         "Settings",
         "Input tracking",
         "Team",
+        "Screenshot archive",
       ]),
     );
   });

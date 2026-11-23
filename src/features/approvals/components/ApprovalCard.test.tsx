@@ -19,6 +19,11 @@ jest.mock("@/features/approvals/api/approvals", () => ({
   getMyApprovals: jest.fn(),
 }));
 
+// The quick answers for a note come from the settings API (3.2); none unless a test sets them.
+let mockPresets: string[] = [];
+jest.mock("@/features/settings/hooks/usePresets", () => ({
+  usePresetsFor: () => mockPresets,
+}));
 jest.mock("sonner", () => ({
   toast: Object.assign(jest.fn(), {
     success: jest.fn(),
@@ -82,17 +87,25 @@ function conflict(code: string, status = 409, message = "Someone was quicker"): 
   return new AxiosError(message, "ERR_BAD_REQUEST", undefined, null, response);
 }
 
+/**
+ * What the server's Pending list holds now: the tests set it after a decision, as
+ * a re-read would find it (null: the row as first read).
+ */
+let serverPending: ApprovalItemView[] | null = null;
+
 /** Reads the row from the query cache, like the page does, so optimistic changes show. */
 function Row({ initial, read }: { initial: ApprovalItemView; read: jest.Mock }) {
   const { data } = useQuery({
     queryKey: approvalKeys.list({ status: "PENDING" }),
     queryFn: async () => {
       read();
-      return { items: [initial] };
+      return { items: serverPending ?? [initial] };
     },
     initialData: { items: [initial] },
     staleTime: Number.POSITIVE_INFINITY,
   });
+  // 3.2: a decided row leaves the Pending list at once.
+  if (!data.items[0]) return <p>Left the Pending list</p>;
   return (
     <ApprovalCard
       item={data.items[0]}
@@ -127,6 +140,7 @@ function networkDown(): AxiosError {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  serverPending = null;
 });
 
 describe("ApprovalCard", () => {
@@ -242,14 +256,34 @@ describe("ApprovalCard", () => {
     expect(submit).toBeEnabled();
     await user.clear(box);
     await user.type(box, "Please take your break");
+    serverPending = [];
     await user.click(submit);
 
     expect(mocked.rejectItem).toHaveBeenCalledWith(
       { type: "BREAK", id: "b-1" },
       "Please take your break",
     );
-    expect(await screen.findByText("−15 min taken off")).toBeInTheDocument();
-    expect(screen.getByText(/Note: Please take your break/)).toBeInTheDocument();
+    // 3.2 (fix 4): once the server confirms, the decided row leaves the Pending list.
+    expect(await screen.findByText("Left the Pending list")).toBeInTheDocument();
+  });
+
+  it("offers the quick answers and takes a short one as the note (3.2)", async () => {
+    mockPresets = ["OK", "Please take breaks on time"];
+    mocked.rejectItem.mockResolvedValue(makeItem({ status: "REJECTED", decisionNote: "OK" }));
+    try {
+      const { user } = renderRow(makeItem());
+      await user.click(screen.getByRole("button", { name: /^Reject Asha Kumar/ }));
+      const answers = screen.getByLabelText("Quick answers");
+      await user.click(within(answers).getByRole("button", { name: "OK" }));
+      expect(screen.getByLabelText(/Why are you rejecting it/)).toHaveValue("OK");
+      const submit = screen.getByRole("button", { name: "Reject" });
+      expect(submit).toBeEnabled();
+      serverPending = [];
+      await user.click(submit);
+      expect(mocked.rejectItem).toHaveBeenCalledWith({ type: "BREAK", id: "b-1" }, "OK");
+    } finally {
+      mockPresets = [];
+    }
   });
 
   it("shows the server's reason when it still wants a note", async () => {
@@ -319,6 +353,7 @@ describe("ApprovalCard", () => {
 
   it("reopens a decided item", async () => {
     mocked.reopenItem.mockResolvedValue(makeItem());
+    serverPending = [makeItem()];
     const { user } = renderRow(
       makeItem({
         status: "APPROVED",

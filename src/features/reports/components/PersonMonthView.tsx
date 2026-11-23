@@ -49,6 +49,8 @@ import {
   type Crumb,
 } from "@/features/reports/components/ReportShell";
 import type { PersonDaySummary, PersonMonthReport } from "@/features/reports/types";
+import { blockingApprovalsHref } from "@/features/approvals/lib/query";
+import { holidayText, lateText } from "@/features/reports/lib/dayNotes";
 
 function personLine(r: PersonMonthReport): string {
   const p = r.person;
@@ -130,12 +132,15 @@ function DaysTable({
                 </span>
               )}
             </div>
+            {holidayText(d) && (
+              <p className="text-xs font-semibold text-sky-700">{holidayText(d)}</p>
+            )}
             {worked(d) && (
               <p className="text-xs text-slate-600">
                 {d.startedAt
                   ? `${formatTime12(d.startedAt)} to ${d.endedAt ? formatTime12(d.endedAt) : "now"}`
                   : ""}
-                {d.lateStart && d.lateStart.minutes > 0 ? ` · ${d.lateStart.minutes} min late` : ""}
+                {lateText(d) ? ` · ${lateText(d)}` : ""}
                 {` · paid time ${formatDuration(d.paidSec)}`}
                 {unverifiedNote(d.unverifiedSec) ? ` · ${unverifiedNote(d.unverifiedSec)}` : ""}
                 {` · breaks ${breaksText(d).toLowerCase()}`}
@@ -205,14 +210,19 @@ function DaysTable({
                 </th>
                 <td className="px-4 py-2.5">
                   <DayClassChip dayClass={d.dayClass} />
+                  {holidayText(d) && (
+                    <span className="mt-1 block text-xs font-semibold text-sky-700">
+                      {holidayText(d)}
+                    </span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-slate-700">
                   {d.startedAt
                     ? `${formatTime12(d.startedAt)} to ${d.endedAt ? formatTime12(d.endedAt) : "now"}`
                     : ""}
-                  {d.lateStart && d.lateStart.minutes > 0 && (
-                    <span className="block text-xs font-semibold text-amber-700">
-                      {d.lateStart.minutes} min late
+                  {lateText(d) && (
+                    <span className="block max-w-[16rem] whitespace-normal text-xs font-semibold text-amber-700">
+                      {lateText(d)}
                     </span>
                   )}
                   {d.autoClosed && (
@@ -266,7 +276,13 @@ function DaysTable({
                 </td>
                 {activity && (
                   <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums text-slate-700">
-                    {worked(d) ? `${formatDuration(d.activeMin * 60)}` : ""}
+                    {worked(d) ? `${formatDuration(d.activeSec ?? d.activeMin * 60)}` : ""}
+                    {worked(d) && d.availableSec ? (
+                      <span className="block text-xs text-slate-500">
+                        {Math.round(((d.activeSec ?? d.activeMin * 60) / d.availableSec) * 100)}% of
+                        available
+                      </span>
+                    ) : null}
                     {d.quietHours > 0 && (
                       <span className="block text-xs font-semibold text-amber-700">
                         {d.quietHours} quiet
@@ -440,7 +456,7 @@ export function PersonMonthView({
             payroll.
           </p>
           <Link
-            href="/dashboard/approvals"
+            href={`${blockingApprovalsHref(month, isSuperAdmin)}&userId=${encodeURIComponent(userId)}`}
             className="shrink-0 font-semibold text-amber-900 underline underline-offset-2 print:hidden"
           >
             Review approvals
@@ -501,8 +517,17 @@ export function PersonMonthView({
           value={`${attendanceDays} ${attendanceDays === 1 ? "day" : "days"}`}
           sub={`of ${t.workdays} working days: ${t.full} full, ${t.half} half, ${t.absent} absent${
             t.extra ? `, ${t.extra} extra` : ""
-          } · ${t.lateStarts} late ${t.lateStarts === 1 ? "start" : "starts"}`}
+          } · ${t.lateStarts} late ${t.lateStarts === 1 ? "start" : "starts"}${
+            t.lateWithoutReason ? ` (${t.lateWithoutReason} without a reason)` : ""
+          }${t.holidays ? ` · ${t.holidays} ${t.holidays === 1 ? "holiday" : "holidays"}` : ""}`}
         />
+        {typeof t.paidSec === "number" && (
+          <Kpi
+            label="Paid time"
+            value={formatDuration(t.paidSec)}
+            sub="Focus time plus breaks up to the scheduled breaks and the buffer"
+          />
+        )}
         <Kpi
           label="Approvals changed focus by"
           value={formatSignedDuration(net)}
@@ -524,7 +549,11 @@ export function PersonMonthView({
           managersOnly
           value={String(t.quietHours)}
           tone={t.needsALook ? "warning" : "default"}
-          sub={t.needsALook ? `Needs a look (${flagAt} or more)` : `Flagged from ${flagAt}`}
+          sub={`${t.needsALook ? `Needs a look (${flagAt} or more)` : `Flagged from ${flagAt}`}${
+            t.availableSec && typeof t.activeSec === "number"
+              ? ` · active ${Math.round((t.activeSec / t.availableSec) * 100)}% of available time`
+              : ""
+          }`}
         />
       </KpiGrid>
 

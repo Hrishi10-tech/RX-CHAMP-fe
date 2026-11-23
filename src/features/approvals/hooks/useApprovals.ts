@@ -48,17 +48,19 @@ export function useApprovalsList(
 /**
  * Counts behind the Approvals badge and the summary strip. Polled once a minute
  * and on focus; a new request (notification) refreshes it at once. 3.3: the whole
- * organisation (`scope: "all"`) or one organisation of the combined view.
+ * organisation (`scope: "all"`) or one organisation of the combined view; 3.2: any
+ * month (what the payroll lock counts).
  */
 export function useApprovalsSummary(
   enabled: boolean,
-  opts: { scope?: "mine" | "all"; companyId?: string } = {},
+  opts: { scope?: "mine" | "all"; companyId?: string; month?: string } = {},
 ) {
   const scope = opts.scope === "all" ? "all" : undefined;
   const companyId = opts.companyId || undefined;
+  const month = opts.month || undefined;
   return useQuery({
-    queryKey: approvalKeys.summary({ scope, companyId }),
-    queryFn: () => getApprovalsSummary({ scope, companyId }),
+    queryKey: approvalKeys.summary({ scope, companyId, month }),
+    queryFn: () => getApprovalsSummary({ scope, companyId, month }),
     enabled,
     staleTime: 15_000,
     refetchInterval: 60_000,
@@ -94,16 +96,6 @@ let optimisticSeq = 0;
 
 interface Context {
   swaps: RowSwap[];
-}
-
-/** Changes the cached copy of some rows in every list, in place. */
-function patchLists(
-  queryClient: QueryClient,
-  change: (item: ApprovalItemView) => ApprovalItemView,
-): void {
-  queryClient.setQueriesData<ApprovalsPage>({ queryKey: approvalKeys.lists() }, (old) =>
-    old ? { ...old, items: old.items.map(change) } : old,
-  );
 }
 
 /**
@@ -151,14 +143,54 @@ export function rollbackRows(queryClient: QueryClient, swaps: RowSwap[] | undefi
   }
 }
 
+/** The status filter a cached list was read with (lists without one are pending). */
+function listStatus(key: QueryKey): string {
+  const params = (key as readonly unknown[])[2] as GetApprovalsParams | undefined;
+  return params?.status ?? "PENDING";
+}
+
 /**
- * After any decision: the badge, Team today and the person's focus time move,
- * so they are re-read now. The lists are only marked stale: a decided row stays
- * where it was (showing its new state, with Reopen) instead of vanishing under
- * the cursor, and goes at the next poll or visit.
+ * Puts the server's copy of a decided (or reopened) item into every cached list:
+ * a list it no longer belongs to (a decided item in Pending, a reopened one in
+ * the decisions) drops it at once, so the count and the payroll lock never wait
+ * for a poll (3.2, fix 4).
+ */
+export function settleLists(
+  queryClient: QueryClient,
+  ref: ApprovalRef,
+  item: ApprovalItemView,
+): void {
+  for (const [key, page] of queryClient.getQueriesData<ApprovalsPage>({
+    queryKey: approvalKeys.lists(),
+  })) {
+    if (!page || !page.items.some((i) => sameRef(i, ref))) continue;
+    const status = listStatus(key);
+    const belongs =
+      status === "ALL" ||
+      status === item.status ||
+      (status === "DECIDED" && item.status !== "PENDING");
+    const items = belongs
+      ? page.items.map((i) => (sameRef(i, ref) ? item : i))
+      : page.items.filter((i) => !sameRef(i, ref));
+    const removed = page.items.length - items.length;
+    queryClient.setQueryData<ApprovalsPage>(key, {
+      ...page,
+      items,
+      meta:
+        page.meta && removed
+          ? { ...page.meta, total: Math.max(0, page.meta.total - removed) }
+          : page.meta,
+    });
+  }
+}
+
+/**
+ * After any decision: the badge, Team today, the person's focus time and the
+ * lists move, so they are re-read now. The decided row has already left the
+ * Pending list (settleLists); the toast offers Undo.
  */
 function refreshAfterDecision(queryClient: QueryClient): void {
-  void queryClient.invalidateQueries({ queryKey: approvalKeys.lists(), refetchType: "none" });
+  void queryClient.invalidateQueries({ queryKey: approvalKeys.lists() });
   void queryClient.invalidateQueries({ queryKey: approvalKeys.summary() });
   void queryClient.invalidateQueries({ queryKey: [...approvalKeys.all, "me"] });
   void queryClient.invalidateQueries({ queryKey: teamTodayKeys.all });
@@ -228,7 +260,7 @@ export function useApproveItem(me?: Decider) {
       swaps: await applyOptimistic(queryClient, [ref], (i) => decidedCopy(i, "APPROVED", note, me)),
     }),
     onError: (_err, _vars, ctx) => recoverFromFailure(queryClient, ctx?.swaps),
-    onSuccess: (item, { ref }) => patchLists(queryClient, (i) => (sameRef(i, ref) ? item : i)),
+    onSuccess: (item, { ref }) => settleLists(queryClient, ref, item),
     onSettled: () => refreshAfterDecision(queryClient),
   });
 }
@@ -241,7 +273,7 @@ export function useRejectItem(me?: Decider) {
       swaps: await applyOptimistic(queryClient, [ref], (i) => decidedCopy(i, "REJECTED", note, me)),
     }),
     onError: (_err, _vars, ctx) => recoverFromFailure(queryClient, ctx?.swaps),
-    onSuccess: (item, { ref }) => patchLists(queryClient, (i) => (sameRef(i, ref) ? item : i)),
+    onSuccess: (item, { ref }) => settleLists(queryClient, ref, item),
     onSettled: () => refreshAfterDecision(queryClient),
   });
 }
@@ -254,9 +286,19 @@ export function useReopenItem() {
       swaps: await applyOptimistic(queryClient, [ref], reopenedCopy),
     }),
     onError: (_err, _vars, ctx) => recoverFromFailure(queryClient, ctx?.swaps),
-    onSuccess: (item, { ref }) => patchLists(queryClient, (i) => (sameRef(i, ref) ? item : i)),
+    onSuccess: (item, { ref }) => settleLists(queryClient, ref, item),
     onSettled: () => refreshAfterDecision(queryClient),
   });
+}
+
+/**
+ * Undo a decision from its toast, after its row has left the list: reopens the
+ * item and re-reads everything. Plain functions, so it works once the row is gone.
+ */
+export async function undoDecision(queryClient: QueryClient, ref: ApprovalRef): Promise<void> {
+  await reopenItem(ref);
+  void queryClient.invalidateQueries({ queryKey: approvalKeys.all });
+  refreshAfterDecision(queryClient);
 }
 
 /**
@@ -277,6 +319,16 @@ export function useBulkApprove(me?: Decider) {
         queryClient,
         ctx?.swaps.filter((s) => result.skipped.some((k) => sameRef(s.before, k))),
       );
+      // The approved ones leave the Pending lists at once.
+      for (const swap of ctx?.swaps ?? []) {
+        if (result.approved.some((a) => sameRef(swap.before, a))) {
+          settleLists(queryClient, swap.before, {
+            ...swap.after,
+            status: "APPROVED",
+            optimistic: undefined,
+          });
+        }
+      }
     },
     onSettled: () => {
       refreshAfterDecision(queryClient);

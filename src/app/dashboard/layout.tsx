@@ -16,6 +16,7 @@ import { useChatNotifier } from "@/features/chat/hooks/useChatNotifier";
 import { useApprovalsSummary } from "@/features/approvals/hooks/useApprovals";
 import { OrgSwitcher } from "@/features/organisations/components/OrgSwitcher";
 import { PickOrganisation } from "@/features/organisations/components/PickOrganisation";
+import { useArchiveNudge } from "@/features/screenshots/hooks/useArchiveNudge";
 import { useAppSelector } from "@/store/hooks";
 import {
   ROLE_LABEL,
@@ -100,6 +101,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { data: approvalSummary } = useApprovalsSummary(live && approver);
   const approvalsWaiting = Math.max(0, approvalSummary?.pending ?? 0);
   const approvalsOverdue = Math.max(0, approvalSummary?.overdue ?? 0);
+  // 3.2: once a day, remind a Super Admin which month's screenshots to archive and delete.
+  // 3.2, per organisation in 4.0: the organisation's admins, inside one organisation.
+  useArchiveNudge(live && (role === "ADMIN" || (role === "SUPER_ADMIN" && !!org)));
 
   // Signed out here (Sign out, or another tab). Plain sign-in, no way back: the
   // next person to sign in on this tab starts at their own home. An expired

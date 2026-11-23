@@ -20,6 +20,7 @@ export function buildApprovalsQuery(
     category: params.category,
     overdue: params.overdue === true ? true : undefined,
     date: params.date,
+    month: params.month,
     userId: params.userId,
     companyId: params.companyId,
     page: params.page,
@@ -68,6 +69,8 @@ export interface ApprovalsFilters {
   scope: "mine" | "all";
   /** 3.3: one organisation on the combined view ("" or absent: every one). */
   companyId?: string;
+  /** "YYYY-MM", or "" for every month. */
+  month?: string;
   page: number;
   limit: number;
 }
@@ -84,6 +87,7 @@ export function paramsForFilters(filters: ApprovalsFilters): GetApprovalsParams 
         : "PENDING",
     overdue: filters.tab === "overdue" ? true : undefined,
     scope: filters.scope,
+    month: filters.month || undefined,
     userId: filters.userId || undefined,
     companyId: filters.companyId || undefined,
     page: filters.page,
@@ -94,4 +98,27 @@ export function paramsForFilters(filters: ApprovalsFilters): GetApprovalsParams 
   else if (filters.category === "TYPE_AWAY") params.type = "AWAY";
   else if (filters.category) params.category = filters.category;
   return params;
+}
+
+/** The tabs a link can open: `?tab=pending|overdue|decisions` (also `status=PENDING`). */
+export function tabFromParam(value: string | null | undefined): ApprovalsTab | null {
+  const v = (value ?? "").trim().toLowerCase();
+  if (v === "pending" || v === "overdue" || v === "decisions") return v;
+  return null;
+}
+
+/** A month in a link (`?month=2026-10`), or "". */
+export function monthFromParam(value: string | null | undefined): string {
+  const v = (value ?? "").trim();
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(v) ? v : "";
+}
+
+/**
+ * The link to the items that hold a month's payroll lock (3.2): every pending
+ * item dated in it, across the whole organisation for a Super Admin.
+ */
+export function blockingApprovalsHref(month: string, isSuperAdmin: boolean): string {
+  const q = new URLSearchParams({ tab: "pending", month });
+  if (isSuperAdmin) q.set("scope", "all");
+  return `/dashboard/approvals?${q.toString()}`;
 }

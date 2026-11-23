@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, ChevronLeft, ChevronRight, Loader2, Maximize2 } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, FileText, Loader2, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { getScreenshots } from "@/features/screenshots/api/getScreenshots";
@@ -10,6 +10,7 @@ import type { Screenshot } from "@/features/screenshots/types";
 import { ScreenshotLightbox } from "@/features/screenshots/components/ScreenshotLightbox";
 import { indexOfScreenshot } from "@/features/screenshots/lib/sameScreenshot";
 import { TimePicker } from "@/components/ui/TimePicker";
+import { ScreenshotReportDialog } from "@/features/screenshots/components/ScreenshotReportDialog";
 import { businessHourOf, formatTime12, twelveHour } from "@/lib/time/format";
 import { BUSINESS_TIMEZONE, todayKey, zoneOffsetMs } from "@/lib/time/businessTime";
 
@@ -130,6 +131,8 @@ export function ScreenshotsWidget({
   const [range, setRange] = useState(FULL_DAY);
   const [dragging, setDragging] = useState(false);
   const [activeHour, setActiveHour] = useState<number | null>(null);
+  // 3.2: a PDF of this person's screenshots (the day and window on screen to start with).
+  const [reporting, setReporting] = useState(false);
 
   const mounted = useRef(true);
   const stripRef = useRef<HTMLDivElement>(null);
@@ -334,6 +337,14 @@ export function ScreenshotsWidget({
               {capturing ? "Capturing…" : "Capture "}
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setReporting(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <FileText className="h-4 w-4" aria-hidden />
+            PDF report
+          </button>
         </div>
       </div>
 
@@ -540,6 +551,17 @@ export function ScreenshotsWidget({
           }
         />
       )}
+      <ScreenshotReportDialog
+        open={reporting}
+        onClose={() => setReporting(false)}
+        userId={userId}
+        initial={{
+          date,
+          ...(range.start !== FULL_DAY.start || range.end !== FULL_DAY.end
+            ? { mode: "TIME_WINDOW" as const, fromTime: range.start, toTime: range.end }
+            : {}),
+        }}
+      />
     </section>
   );
 }
