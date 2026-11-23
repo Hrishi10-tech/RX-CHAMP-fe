@@ -9,6 +9,7 @@ import type {
   PersonDaySummary,
   PersonDayReport,
   PersonMonthReport,
+  PersonPayroll,
   ReportPerson,
   ReportRun,
   TeamDayParams,
@@ -77,6 +78,11 @@ const EMPTY_TOTALS: MonthTotals = {
   unverifiedSec: 0,
   paidSec: 0,
 };
+
+/** 3.6: a person's payroll standing, its counted totals read like any other. */
+function payrollOf(p: PersonPayroll | null | undefined): PersonPayroll | undefined {
+  return p ? { ...p, totals: totalsOf(p.totals) } : undefined;
+}
 
 function totalsOf(value: Partial<MonthTotals> | null | undefined): MonthTotals {
   // A figure the server redacts for a viewer without the grant comes as null:
@@ -152,6 +158,7 @@ export async function getPersonMonthReport(
   return {
     ...r,
     totals: totalsOf(r.totals),
+    payroll: payrollOf(r.payroll),
     days: list(r.days).map(daySummaryOf),
     heatmap: list(r.heatmap).map((d) => ({ ...d, hours: list(d.hours) })),
   };
@@ -179,9 +186,14 @@ export async function getTeamMonthReport(params: TeamMonthParams): Promise<TeamM
   return {
     ...r,
     totals: { ...totalsOf(r.totals), people: r.totals?.people ?? rows.length },
+    trackedTotals: {
+      ...totalsOf(r.trackedTotals ?? r.totals),
+      people: r.trackedTotals?.people ?? rows.length,
+    },
     rows: rows.map((row) => ({
       ...row,
       totals: totalsOf(row.totals),
+      payroll: payrollOf(row.payroll),
       days: list(row.days),
     })),
   };

@@ -23,9 +23,11 @@ import { ExcelButton } from "@/features/reports/components/ReportShell";
 import type { MonthLockView, ReportRun } from "@/features/reports/types";
 
 function scopeText(run: ReportRun): string {
-  const { people } = runFigures(run.summary);
+  const { people, payrollPaused } = runFigures(run.summary);
   const count = people !== null ? ` · ${people} ${people === 1 ? "person" : "people"}` : "";
-  return `${run.scope === "ALL" ? "Everyone" : "My departments"}${count}`;
+  // 3.6: biometric staff left out of the run while the integration is off.
+  const left = payrollPaused ? ` · ${payrollPaused} payroll paused` : "";
+  return `${run.scope === "ALL" ? "Everyone" : "My departments"}${count}${left}`;
 }
 
 function builtText(run: ReportRun): string {

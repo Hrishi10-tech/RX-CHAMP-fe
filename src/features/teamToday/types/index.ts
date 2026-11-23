@@ -83,6 +83,8 @@ export interface TeamTodayRow {
   } | null;
   focus: FocusView;
   expectedSec: number;
+  /** 3.6: seconds nobody was at the computer, outside breaks and meetings; null if unread. */
+  idleSec?: number | null;
   breaks: TeamTodayBreakCell[];
   meetings: { count: number; sec: number };
   pending: number;

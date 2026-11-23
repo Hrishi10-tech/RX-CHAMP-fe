@@ -184,6 +184,10 @@ export function useSaveBiometricSettings() {
     onSuccess: (res) => {
       queryClient.setQueryData(attendanceKeys.settings(), res.settings);
       void queryClient.invalidateQueries({ queryKey: attendanceKeys.status() });
+      // 3.6: the integration switch decides which days of biometric staff payroll counts.
+      if (res.changed.includes("integrationOn")) {
+        void queryClient.invalidateQueries({ queryKey: reportKeys.all });
+      }
     },
   });
 }

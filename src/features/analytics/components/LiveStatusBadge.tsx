@@ -36,7 +36,7 @@ const STYLES: Record<LiveStatus, { dot: string; text: string; bg: string; label:
     dot: "bg-indigo-500",
     text: "text-indigo-700",
     bg: "bg-indigo-50 ring-indigo-200",
-    label: "Meeting",
+    label: "In a meeting",
   },
   NOT_STARTED: {
     dot: "bg-slate-300",

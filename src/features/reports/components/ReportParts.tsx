@@ -55,8 +55,8 @@ export function BreakRulesItems({
         full day needs {fullDayPct ?? 80}% of it, a half day {halfDayPct ?? 40}%.
       </li>
       <li>
-        Meetings and skipped breaks count until they are rejected. Away time with a reason counts
-        once it is approved.
+        Meetings and skipped breaks count until they are rejected. Time marked In a meeting needs no
+        approval and always counts. Away time with a reason counts once it is approved.
       </li>
     </>
   );

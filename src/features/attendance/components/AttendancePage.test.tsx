@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 
 import { AttendancePage } from "./AttendancePage";
 import * as api from "@/features/attendance/api/attendance";
@@ -18,6 +18,17 @@ jest.mock("@/features/attendance/api/attendance", () => ({
   getDevices: jest.fn(),
   getKeys: jest.fn(),
   getBiometricSettings: jest.fn(),
+  patchBiometricSettings: jest.fn(),
+}));
+
+/** The organisation in view (4.0): a Super Admin acts in one she picked. */
+const inView = {
+  canChoose: false,
+  org: null as { id: string; name: string } | null,
+  mixed: false,
+};
+jest.mock("@/features/organisations/hooks/useOrgsInView", () => ({
+  useOrgsInView: () => inView,
 }));
 
 const session = { role: "SUPER_MANAGER" as string, me: null as unknown };
@@ -125,6 +136,8 @@ const SETTINGS: BiometricSettingsView = {
   secretSet: false,
   passwordSet: false,
   bounds: { duplicateWindowSec: { min: 0, max: 600 } },
+  integrationOn: false,
+  integrationPeriods: [],
 };
 
 function renderPage(role: string, tab?: string) {
@@ -140,6 +153,7 @@ function renderPage(role: string, tab?: string) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  Object.assign(inView, { canChoose: false, org: null, mixed: false });
   mocked.getAttendanceStatus.mockResolvedValue(STATUS);
   mocked.getAttendancePeople.mockResolvedValue(PEOPLE);
   mocked.getPunches.mockResolvedValue({ items: [PUNCH], total: 1 });
@@ -213,5 +227,39 @@ describe("4.0 Attendance: the organisation admin changes", () => {
     expect(
       screen.getByText(`POST ${window.location.origin}/api/v1/biometric/punches`),
     ).toBeInTheDocument();
+  });
+});
+
+describe("3.6 the integration switch, by role", () => {
+  it("the organisation admin has the switch", async () => {
+    renderPage("ADMIN", "integration");
+    expect(await screen.findByRole("button", { name: "Switch on" })).toBeInTheDocument();
+  });
+
+  it("a Super Admin acting in an organisation has its switch", async () => {
+    Object.assign(inView, { canChoose: true, org: { id: "c1", name: "Acme" }, mixed: false });
+    renderPage("SUPER_ADMIN", "integration");
+    expect(await screen.findByRole("button", { name: "Switch on" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /biometric integration/i })).toHaveTextContent(
+      "Off for Acme.",
+    );
+  });
+
+  it("the Super Manager reads it and has no switch", async () => {
+    Object.assign(inView, { canChoose: true, org: { id: "c1", name: "Acme" }, mixed: false });
+    renderPage("SUPER_MANAGER", "integration");
+    await waitFor(() => expect(mocked.getBiometricSettings).toHaveBeenCalled());
+    expect(
+      await screen.findByRole("region", { name: /biometric integration/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /switch o/i })).not.toBeInTheDocument();
+  });
+
+  it("a Manager has no switch", async () => {
+    renderPage("MANAGER", "integration");
+    expect(
+      await screen.findByRole("region", { name: /biometric integration/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /switch o/i })).not.toBeInTheDocument();
   });
 });

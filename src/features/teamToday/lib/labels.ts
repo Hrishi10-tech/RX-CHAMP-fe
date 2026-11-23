@@ -7,7 +7,7 @@ export const PRESENCE_STATUS: Record<TeamTodayStatus, { label: string; tone: Chi
   WORKING: { label: "Working", tone: "success" },
   BREAK: { label: "Break", tone: "warning" },
   LUNCH: { label: "Lunch", tone: "info" },
-  MEETING: { label: "Meeting", tone: "brand" },
+  MEETING: { label: "In a meeting", tone: "brand" },
   DAY_ENDED: { label: "Day ended", tone: "neutral" },
   ON_LEAVE: { label: "On leave", tone: "violet" },
 };

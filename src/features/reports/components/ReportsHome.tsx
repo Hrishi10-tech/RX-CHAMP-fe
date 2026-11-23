@@ -89,7 +89,7 @@ function HowNumbersWork() {
     ],
     [
       "Approvals",
-      "Meetings and skipped breaks count until rejected. Away time with a reason counts once approved.",
+      "Meetings and skipped breaks count until rejected. Time marked In a meeting needs no approval and always counts. Away time with a reason counts once approved.",
     ],
     [
       "Attendance",

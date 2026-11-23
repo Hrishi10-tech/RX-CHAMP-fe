@@ -11,6 +11,11 @@ describe("presence status badges", () => {
     expect(screen.getByText("Not started")).toBeInTheDocument();
   });
 
+  it("reads a meeting as Team today does", () => {
+    render(<LiveStatusBadge status="MEETING" />);
+    expect(screen.getByText("In a meeting")).toBeInTheDocument();
+  });
+
   it("still renders a status it does not know", () => {
     render(<LiveStatusBadge status={"ON_LEAVE" as LiveStatus} />);
     expect(screen.getByText("On leave")).toBeInTheDocument();

@@ -107,6 +107,7 @@ describe("report run summaries", () => {
       unverifiedSec: 0,
       quietHours: null,
       needsALook: null,
+      payrollPaused: null,
     });
     expect(runFiguresText({ summary })).toBe("Focus 10h 00m · paid time 11h 00m");
   });
@@ -120,5 +121,10 @@ describe("report run summaries", () => {
     );
     expect(runFiguresText({ summary: {} })).toBe("");
     expect(runFigures(null).people).toBeNull();
+  });
+
+  it("3.6: counts the biometric staff left out while the integration is off", () => {
+    expect(runFigures({ people: 3, payrollPaused: 2 }).payrollPaused).toBe(2);
+    expect(runFigures({ people: 3 }).payrollPaused).toBeNull();
   });
 });

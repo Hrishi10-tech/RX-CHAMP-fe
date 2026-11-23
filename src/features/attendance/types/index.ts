@@ -137,6 +137,17 @@ export interface PullConfig {
   overlapMin: number;
 }
 
+/** One stretch of days the integration was on (3.6). */
+export interface IntegrationPeriodView {
+  fromDate: string;
+  /** Null while it is on. */
+  toDate: string | null;
+  startedAt: string;
+  endedAt: string | null;
+  startedByName: string | null;
+  endedByName: string | null;
+}
+
 export interface BiometricSettingsView {
   gapRule: GapRule;
   missingCheckout: MissingCheckoutRule;
@@ -147,6 +158,9 @@ export interface BiometricSettingsView {
   secretSet: boolean;
   passwordSet: boolean;
   bounds: Record<string, { min: number; max: number }>;
+  /** 3.6: while off, biometric staff's payroll is paused. Newest period first. */
+  integrationOn: boolean;
+  integrationPeriods: IntegrationPeriodView[];
 }
 
 export interface BiometricSettingsPatch {
@@ -158,6 +172,7 @@ export interface BiometricSettingsPatch {
   pull?: Partial<Omit<PullConfig, "fields">> & { fields?: Partial<PullConfig["fields"]> };
   secret?: string | null;
   password?: string | null;
+  integrationOn?: boolean;
 }
 
 export interface PullState {
@@ -169,6 +184,8 @@ export interface PullState {
 }
 
 export interface BiometricStatusView {
+  /** 3.6 */
+  integrationOn?: boolean;
   keys: { active: number; total: number };
   lastPunchAt: string | null;
   lastReceivedAt: string | null;

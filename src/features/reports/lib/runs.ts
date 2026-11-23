@@ -14,6 +14,8 @@ export interface RunFigures {
   unverifiedSec: number | null;
   quietHours: number | null;
   needsALook: number | null;
+  /** 3.6: biometric staff left out of the run while the integration is off. */
+  payrollPaused: number | null;
 }
 
 export function runFigures(summary: Record<string, unknown> | null | undefined): RunFigures {
@@ -28,6 +30,7 @@ export function runFigures(summary: Record<string, unknown> | null | undefined):
     unverifiedSec: n("unverifiedSec"),
     quietHours: n("quietHours"),
     needsALook: n("needsALook"),
+    payrollPaused: n("payrollPaused"),
   };
 }
 

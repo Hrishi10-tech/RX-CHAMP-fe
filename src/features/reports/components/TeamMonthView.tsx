@@ -4,7 +4,7 @@ import { isOrgAdmin } from "@/constants/roles";
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowDown, ArrowUp, Info, Users } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Fingerprint, Info, Users } from "lucide-react";
 
 import { Chip } from "@/components/ui/Chip";
 import {
@@ -31,6 +31,13 @@ import { useTeamMonthReport } from "@/features/reports/hooks/useReports";
 import { downloadTeamMonthXlsx } from "@/features/reports/api/reports";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
 import { dayClassLook } from "@/features/reports/lib/labels";
+import {
+  figureText,
+  monthFigures,
+  monthIdleSec,
+  workingSec,
+} from "@/features/reports/lib/timeFigures";
+import { PayrollStanding, TimeFigures } from "@/features/reports/components/TimeFigures";
 import {
   ActivityGate,
   BreakRulesItems,
@@ -295,6 +302,7 @@ function RankingTable({
                 </span>
               </div>
               <p className="text-xs text-slate-500">{personLine(r)}</p>
+              {r.payroll && <PayrollStanding payroll={r.payroll} />}
               <Meter pct={pctOf(t)} />
               <p className="text-xs text-slate-600">
                 Month target {formatDuration(t.targetSec)} · paid time{" "}
@@ -384,6 +392,11 @@ function RankingTable({
                       {r.person.name}
                     </Link>
                     <span className="block text-xs text-slate-500">{personLine(r)}</span>
+                    {r.payroll && (
+                      <span className="mt-1 block">
+                        <PayrollStanding payroll={r.payroll} />
+                      </span>
+                    )}
                   </th>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums text-slate-900">
                     {formatDuration(t.focusSec)}
@@ -470,6 +483,116 @@ function RankingTable({
 }
 
 /**
+ * Where each person's time went (3.6): working, focus, idle, break and meeting, side by side.
+ * Cards under 768 px, a table from there.
+ */
+function TimeTable({
+  rows,
+  month,
+  activity,
+}: {
+  rows: TeamMonthRow[];
+  month: string;
+  /** Whether the viewer sees keyboard and mouse activity, which idle is (SPEC 2.2). */
+  activity: boolean;
+}) {
+  const labels = activity
+    ? ["Working", "Focus", "Idle", "Break", "Meeting"]
+    : ["Working", "Focus", "Break", "Meeting"];
+  const sorted = useMemo(() => sortRows(rows, "name", 1), [rows]);
+  const personHref = (id: string) =>
+    withReturnTo(
+      `/dashboard/reports/person/${encodeURIComponent(id)}?month=${month}`,
+      `/dashboard/reports/team?month=${month}`,
+      `${formatMonth(month)} team report`,
+    );
+  const nameOf = (r: TeamMonthRow) => (
+    <Link
+      href={personHref(r.person.id)}
+      className="min-w-0 break-words font-semibold text-[rgb(34_34_204)] underline-offset-2 hover:underline"
+    >
+      {r.person.name}
+    </Link>
+  );
+  return (
+    <>
+      <ul className="divide-y divide-slate-100 border-t border-slate-100 md:hidden print:hidden">
+        {sorted.map((r) => (
+          <li key={r.person.id} className="space-y-1.5 px-4 py-3 sm:px-6">
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">{nameOf(r)}</p>
+            {r.payroll && <PayrollStanding payroll={r.payroll} />}
+            <TimeFigures compact figures={monthFigures(r.totals)} showIdle={activity} />
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto md:block print:block">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-y border-slate-200 bg-slate-50/70">
+              <th scope="col" className={`${thBase} pl-6`}>
+                Person
+              </th>
+              {labels.map((label, i) => (
+                <th
+                  key={label}
+                  scope="col"
+                  className={`${thBase} text-right ${i === labels.length - 1 ? "pr-6" : ""}`}
+                >
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((r) => {
+              const t = r.totals;
+              return (
+                <tr
+                  key={r.person.id}
+                  className="border-b border-slate-100 align-top last:border-b-0"
+                >
+                  <th scope="row" className="py-2.5 pl-6 pr-4 text-left font-normal">
+                    {nameOf(r)}
+                    <span className="block text-xs text-slate-500">{personLine(r)}</span>
+                    {r.payroll && (
+                      <span className="mt-1 block">
+                        <PayrollStanding payroll={r.payroll} />
+                      </span>
+                    )}
+                  </th>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                    {figureText(workingSec(t))}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold tabular-nums text-slate-900">
+                    {formatDuration(t.focusSec)}
+                  </td>
+                  {activity && (
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                      {figureText(monthIdleSec(t))}
+                    </td>
+                  )}
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                    {formatDuration(t.breakSec ?? 0)}
+                  </td>
+                  <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right tabular-nums text-slate-700">
+                    {formatDuration(t.meetingSec ?? 0)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:px-6">
+        {activity
+          ? "Idle is time in the working day with nobody at the keyboard or mouse, breaks and meetings left out. No data means no agent reported that month."
+          : "A meeting counts as working and focus time."}
+      </p>
+    </>
+  );
+}
+
+/**
  * A team (or everyone) for one month: totals for payroll, the attendance mix,
  * a sortable ranking with each person a click away, and who needs a look.
  */
@@ -534,14 +657,14 @@ export function TeamMonthView({
           <span>
             {scopeName}
             {report
-              ? ` · ${report.totals.people} ${report.totals.people === 1 ? "person" : "people"}`
+              ? ` · ${report.rows.length} ${report.rows.length === 1 ? "person" : "people"}`
               : ""}{" "}
             · {label}
           </span>
           {report && (
             <span className="print:hidden">
               {/* The open approvals of the people in this report, as in the banner. */}
-              <MonthLockChip month={month} pending={report.totals.pending} />
+              <MonthLockChip month={month} pending={report.trackedTotals.pending} />
             </span>
           )}
         </span>
@@ -606,7 +729,9 @@ export function TeamMonthView({
     );
   }
 
-  const t = report.totals;
+  // 3.6: only paid time for payroll leaves paused staff out. Everything else is tracking.
+  const t = report.trackedTotals;
+  const forPayroll = report.totals;
   const expected = Math.max(0, t.expectedSec);
   const pct = expected ? Math.round((t.focusSec / expected) * 100) : 0;
   const net = t.approvedPlusSec - t.rejectedMinusSec;
@@ -615,6 +740,8 @@ export function TeamMonthView({
   const personDays = t.full + t.half + t.absent;
   const attendancePct = personDays ? ((t.full + t.half / 2) / personDays) * 100 : 0;
   const s = settings.data;
+  // 3.6: biometric staff while the integration is off: shown below, left out of payroll's figure.
+  const pausedRows = report.rows.filter((r) => r.payroll);
 
   return shell(
     <div className={`space-y-5 ${query.isPlaceholderData ? "opacity-60 transition-opacity" : ""}`}>
@@ -648,6 +775,23 @@ export function TeamMonthView({
         </div>
       )}
 
+      {pausedRows.length > 0 && (
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+        >
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <span>
+            <span className="block font-semibold">{pausedRows[0].payroll?.label}</span>
+            {pausedRows.length === 1
+              ? "1 person is listed with this label."
+              : `${pausedRows.length} people are listed with this label.`}{" "}
+            Their paused days are tracked as usual and left out of Paid time, for payroll, and of
+            the Excel, which names them on a sheet of its own.
+          </span>
+        </div>
+      )}
+
       {report.rows.length === 0 ? (
         <div className={cardBase}>
           <EmptyState
@@ -658,6 +802,8 @@ export function TeamMonthView({
         </div>
       ) : (
         <>
+          <TimeFigures figures={monthFigures(t)} showIdle={activityAllowed} />
+
           <KpiGrid wide>
             <Kpi
               label="Focus time"
@@ -675,8 +821,10 @@ export function TeamMonthView({
             />
             <Kpi
               label="Paid time, for payroll"
-              value={formatDuration(t.paidSec)}
-              sub={paidTimeSub(t.paidBreakSec)}
+              value={formatDuration(forPayroll.paidSec)}
+              sub={`${paidTimeSub(forPayroll.paidBreakSec)}${
+                pausedRows.length ? " · payroll paused days left out" : ""
+              }`}
             />
             <Kpi
               label="Breaks"
@@ -789,6 +937,14 @@ export function TeamMonthView({
               flagAt={flagAt}
               activity={activityAllowed}
             />
+          </ReportSection>
+
+          <ReportSection
+            title="Time per person"
+            subtitle="Working, focus, idle, break and meeting time over the month. A meeting counts as working and focus time."
+            flush
+          >
+            <TimeTable rows={report.rows} month={month} activity={activityAllowed} />
           </ReportSection>
 
           <ReportSection title="How the numbers work">

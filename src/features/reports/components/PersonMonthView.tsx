@@ -4,7 +4,7 @@ import { isOrgAdmin } from "@/constants/roles";
 import { type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Info } from "lucide-react";
+import { AlertTriangle, Fingerprint, Info } from "lucide-react";
 
 import {
   EmptyState,
@@ -29,6 +29,8 @@ import { useAppSettings } from "@/features/settings/hooks/useSettings";
 import { usePersonMonthReport } from "@/features/reports/hooks/useReports";
 import { downloadPersonMonthXlsx } from "@/features/reports/api/reports";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
+import { monthFigures, pausedDaysText } from "@/features/reports/lib/timeFigures";
+import { TimeFigures } from "@/features/reports/components/TimeFigures";
 import { FocusByDayChart, MonthHeatmap } from "@/features/reports/components/MonthCharts";
 import {
   ActivityGate,
@@ -471,6 +473,8 @@ export function PersonMonthView({
   const flagAt = settings.data?.quietHoursFlag ?? 4;
   const canSeeActivity = activityAllowed;
   const sorted = [...report.days].sort((a, b) => a.date.localeCompare(b.date));
+  // 3.6: biometric staff while the integration is off. Tracking stays; payroll counts this.
+  const payroll = report.payroll;
 
   return shell(
     <div className={`space-y-5 ${query.isPlaceholderData ? "opacity-60 transition-opacity" : ""}`}>
@@ -481,6 +485,20 @@ export function PersonMonthView({
           onRetry={() => query.refetch()}
           retrying={query.isFetching}
         />
+      )}
+      {payroll && (
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+        >
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <span>
+            <span className="block font-semibold">{payroll.label}</span>
+            {payroll.paused
+              ? "Their days are tracked as usual and left out of payroll this month."
+              : `${pausedDaysText(payroll.pausedDays)} of this month ${payroll.pausedDays === 1 ? "is" : "are"} left out of payroll, ${formatDayWithWeekday(payroll.pausedFrom)} to ${formatDayWithWeekday(payroll.pausedTo)}. The other days count.`}
+          </span>
+        </div>
       )}
       {t.pending > 0 && (
         <div
@@ -516,6 +534,8 @@ export function PersonMonthView({
         </div>
       )}
 
+      <TimeFigures figures={monthFigures(t)} showIdle={canSeeActivity} />
+
       <KpiGrid wide>
         <Kpi
           label="Focus time"
@@ -530,10 +550,17 @@ export function PersonMonthView({
             .filter(Boolean)
             .join(" · ")}
         />
+        {/* 3.6: payroll is paid time; a paused day's is not calculated. */}
         <Kpi
-          label="Paid time, for payroll"
-          value={formatDuration(t.paidSec)}
-          sub={paidTimeSub(t.paidBreakSec)}
+          label={payroll ? "Paid time" : "Paid time, for payroll"}
+          value={payroll?.paused ? "Paused" : formatDuration(t.paidSec)}
+          sub={
+            payroll?.paused
+              ? payroll.label
+              : payroll
+                ? `${formatDuration(payroll.totals.paidSec)} counted for payroll · ${paidTimeSub(t.paidBreakSec)}`
+                : paidTimeSub(t.paidBreakSec)
+          }
         />
         <Kpi
           label="Breaks"
@@ -596,8 +623,12 @@ export function PersonMonthView({
         {typeof t.paidSec === "number" && (
           <Kpi
             label="Paid time"
-            value={formatDuration(t.paidSec)}
-            sub="Focus time plus breaks up to the scheduled breaks and the buffer"
+            value={payroll?.paused ? "Paused" : formatDuration(t.paidSec)}
+            sub={
+              payroll?.paused
+                ? payroll.label
+                : "Focus time plus breaks up to the scheduled breaks and the buffer"
+            }
           />
         )}
         <Kpi

@@ -27,6 +27,11 @@ export interface MeetingRecordView {
   decidedAt: string | null;
   decisionNote: string | null;
   decidedByName: string | null;
+  /** 3.6: STATUS is "In a meeting": only its start and end, and never decided. */
+  kind?: "DECLARED" | "STATUS";
+  startSource?: "BUTTON" | "SUGGESTION" | null;
+  confirmedAt?: string | null;
+  endReason?: "USER" | "BREAK" | "END_DAY" | "NO_ANSWER" | "AUTO_CLOSED" | null;
 }
 
 export interface ParticipantOption {

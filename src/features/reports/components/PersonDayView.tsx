@@ -38,6 +38,8 @@ import {
   lateMinutes,
   lateReason,
   leaveText,
+  meetingsCountNote,
+  statusMeetingLine,
   wfhText,
 } from "@/features/reports/lib/dayNotes";
 import { InputBreakdown } from "@/features/reports/components/InputBreakdown";
@@ -46,6 +48,8 @@ import { usePersonDayReport } from "@/features/reports/hooks/useReports";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
 import { dayClassLook } from "@/features/reports/lib/labels";
 import { focusSum } from "@/features/reports/lib/focusSum";
+import { PAYROLL_PAUSED_LABEL, dayFigures, idleOfInput } from "@/features/reports/lib/timeFigures";
+import { TimeFigures } from "@/features/reports/components/TimeFigures";
 import {
   APPROVAL_LABEL,
   APPROVAL_TONE,
@@ -73,6 +77,7 @@ import {
   TimelineGate,
   paidTimeSub,
   unverifiedNote,
+  useCanSeeActivity,
 } from "@/features/reports/components/ReportParts";
 import { PrintButton, ReportShell, type Crumb } from "@/features/reports/components/ReportShell";
 import type { ApprovalItemView } from "@/features/approvals/types";
@@ -309,9 +314,18 @@ function MeetingsList({
               <p className="text-xs text-slate-500">{formatDuration(m.durationSec)}</p>
             </div>
             <div className="min-w-0">
-              <p className="break-words text-sm text-slate-900">{m.agenda}</p>
+              {m.kind !== "STATUS" && (
+                <p className="break-words text-sm text-slate-900">{m.agenda}</p>
+              )}
               <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
-                <Chip tone="neutral">{m.mode === "PAST" ? "Logged after" : "Started live"}</Chip>
+                <Chip tone="neutral">
+                  {m.kind === "STATUS"
+                    ? "In a meeting"
+                    : m.mode === "PAST"
+                      ? "Logged after"
+                      : "Started live"}
+                </Chip>
+                {statusMeetingLine(m) && <span>{statusMeetingLine(m)}</span>}
                 {people.length > 0 && (
                   <span className="inline-flex items-start gap-1 break-words">
                     <Users className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -394,6 +408,7 @@ export function PersonDayView({
   const today = todayKey();
   const query = usePersonDayReport(userId, date);
   const settings = useAppSettings();
+  const canSeeActivity = useCanSeeActivity();
   const report = query.data;
   const name = report?.person.name ?? "Day report";
   // 3.3: the Super Manager corrects a day's focus time by hand from here, while
@@ -507,6 +522,7 @@ export function PersonDayView({
   const reason = lateReason(s);
   const input = report.input;
   const activeSec = input ? input.activeSec : s.activeMin * 60;
+  const meetingsNote = meetingsCountNote(report.meetings);
 
   return shell(
     <div className={`space-y-5 ${query.isPlaceholderData ? "opacity-60 transition-opacity" : ""}`}>
@@ -531,6 +547,18 @@ export function PersonDayView({
               : s.leave && s.leave.days > 0
                 ? "The day is judged on the rest of the shift, and a late start counts from the end of the leave."
                 : ""}
+          </span>
+        </div>
+      )}
+      {s.payrollPaused && (
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+        >
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <span>
+            <span className="block font-semibold">{PAYROLL_PAUSED_LABEL}</span>
+            The day is tracked as usual; its paid time is not calculated.
           </span>
         </div>
       )}
@@ -649,6 +677,8 @@ export function PersonDayView({
         </div>
       ) : null}
 
+      <TimeFigures figures={dayFigures(s, idleOfInput(input))} showIdle={canSeeActivity} />
+
       <KpiGrid wide>
         <Kpi
           label="Focus time"
@@ -665,10 +695,11 @@ export function PersonDayView({
             .filter(Boolean)
             .join(" · ")}
         />
+        {/* 3.6: a paused day's payroll (its paid time) is not calculated. */}
         <Kpi
-          label="Paid time, for payroll"
-          value={formatDuration(s.paidSec)}
-          sub={paidTimeSub(s.paidBreakSec)}
+          label={s.payrollPaused ? "Paid time" : "Paid time, for payroll"}
+          value={s.payrollPaused ? "Paused" : formatDuration(s.paidSec)}
+          sub={s.payrollPaused ? PAYROLL_PAUSED_LABEL : paidTimeSub(s.paidBreakSec)}
         />
         <Kpi
           label="Attendance"
@@ -700,7 +731,7 @@ export function PersonDayView({
         <Kpi
           label="Meetings"
           value={formatDuration(s.meetingSec)}
-          sub={`${s.meetings} logged · counted as focus time unless rejected`}
+          sub={`${s.meetings} logged · ${meetingsNote}`}
         />
         <Kpi
           label="Breaks"
@@ -741,7 +772,7 @@ export function PersonDayView({
 
       <ReportSection
         title="The day, start to end"
-        subtitle={`Focus time: ${focusSum(s)}. Paid time adds the paid breaks: ${formatDuration(s.paidSec)}. Meetings count as focus time unless rejected.`}
+        subtitle={`Focus time: ${focusSum(s)}. ${s.payrollPaused ? `${PAYROLL_PAUSED_LABEL}: no paid time.` : `Paid time adds the paid breaks: ${formatDuration(s.paidSec)}.`} Meetings are ${meetingsNote}.`}
       >
         {/* The work and break spans are the timeline grant's (SPEC 1.2). */}
         <TimelineGate>
@@ -759,7 +790,7 @@ export function PersonDayView({
 
       <ReportSection
         title="Meetings"
-        subtitle={`${report.meetings.length} logged · ${formatDuration(s.meetingSec)} · counted as focus time unless rejected`}
+        subtitle={`${report.meetings.length} logged · ${formatDuration(s.meetingSec)} · ${meetingsNote}`}
       >
         <MeetingsList meetings={report.meetings} approvals={report.approvals} />
       </ReportSection>

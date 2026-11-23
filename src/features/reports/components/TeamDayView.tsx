@@ -23,6 +23,8 @@ import { useTeamDayReport } from "@/features/reports/hooks/useReports";
 import { useDepartments } from "@/features/departments/hooks/useDepartments";
 import { periodLabel, stepPeriod } from "@/features/reports/lib/period";
 import { dayOffText, holidayText, lateText } from "@/features/reports/lib/dayNotes";
+import { dayFigures, figureText, workingSec } from "@/features/reports/lib/timeFigures";
+import { PayrollPausedChip, TimeFigures } from "@/features/reports/components/TimeFigures";
 import {
   DayClassChip,
   Kpi,
@@ -30,6 +32,7 @@ import {
   ReportSection,
   paidTimeSub,
   unverifiedNote,
+  useCanSeeActivity,
 } from "@/features/reports/components/ReportParts";
 import { PrintButton, ReportShell, type Crumb } from "@/features/reports/components/ReportShell";
 import type { PersonDaySummary, ReportPerson, TeamDayParams } from "@/features/reports/types";
@@ -90,6 +93,8 @@ export function TeamDayView({
   const router = useRouter();
   const today = todayKey();
   const query = useTeamDayReport(params);
+  // 4.0: idle is activity, the activity grant's (SPEC 2.2).
+  const canSeeActivity = useCanSeeActivity();
   const departments = useDepartments(Boolean(params.departmentId));
   const department = params.departmentId
     ? departments.data?.find((d) => d.id === params.departmentId)
@@ -314,20 +319,27 @@ export function TeamDayView({
                     </Link>
                     <DayClassChip dayClass={s.dayClass} />
                   </div>
+                  {s.payrollPaused && <PayrollPausedChip />}
                   <p className="text-xs text-slate-600">
                     {span(s) || (dayOffText(s) ?? "Did not start")}
-                    {lateText(s) ? ` · ${lateText(s)}` : ""} · focus{" "}
-                    <span className="font-semibold text-slate-900">
-                      {formatDuration(s.focusSec)}
-                    </span>{" "}
-                    {unverifiedNote(s.unverifiedSec) ? `(${unverifiedNote(s.unverifiedSec)}) ` : ""}
+                    {lateText(s) ? ` · ${lateText(s)}` : ""}
+                    {unverifiedNote(s.unverifiedSec)
+                      ? ` · ${unverifiedNote(s.unverifiedSec)}`
+                      : ""}{" "}
                     · paid time{" "}
                     <span className="font-semibold text-slate-900">
-                      {formatDuration(s.paidSec)}
+                      {s.payrollPaused ? "paused" : formatDuration(s.paidSec)}
                     </span>{" "}
                     · {breaks(s)} · {breakPay(s)}
                     {away(s) ? ` · away ${away(s)}` : ""}
                   </p>
+                  {(s.startedAt || s.focusSec > 0) && (
+                    <TimeFigures
+                      compact
+                      figures={dayFigures(s, s.idleSec)}
+                      showIdle={canSeeActivity}
+                    />
+                  )}
                   {pending(s) && (
                     <p className="text-xs font-semibold text-amber-700">{pending(s)}</p>
                   )}
@@ -348,19 +360,27 @@ export function TeamDayView({
                       Day
                     </th>
                     <th scope="col" className={`${thBase} text-right`}>
+                      Working
+                    </th>
+                    <th scope="col" className={`${thBase} text-right`}>
                       Focus
                     </th>
                     <th scope="col" className={`${thBase} text-right`}>
                       Paid time
                     </th>
-                    <th scope="col" className={thBase}>
-                      Breaks
+                    {canSeeActivity && (
+                      <th scope="col" className={`${thBase} text-right`}>
+                        Idle
+                      </th>
+                    )}
+                    <th scope="col" className={`${thBase} text-right`}>
+                      Break
                     </th>
                     <th scope="col" className={`${thBase} text-right`}>
                       Away
                     </th>
                     <th scope="col" className={`${thBase} text-right`}>
-                      Meetings
+                      Meeting
                     </th>
                     <th scope="col" className={`${thBase} pr-6 text-right`}>
                       Open
@@ -383,6 +403,11 @@ export function TeamDayView({
                         {person.department && (
                           <span className="block text-xs text-slate-500">{person.department}</span>
                         )}
+                        {s.payrollPaused && (
+                          <span className="mt-1 block">
+                            <PayrollPausedChip />
+                          </span>
+                        )}
                       </th>
                       <td className="px-4 py-2.5">
                         <DayClassChip dayClass={s.dayClass} />
@@ -400,6 +425,9 @@ export function TeamDayView({
                             {lateText(s)}
                           </span>
                         )}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                        {figureText(workingSec(s))}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
                         <span className="font-semibold text-slate-900">
@@ -423,17 +451,32 @@ export function TeamDayView({
                         )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
-                        {formatDuration(s.paidSec)}
+                        {s.payrollPaused ? "Paused" : formatDuration(s.paidSec)}
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-600">
-                        {breaks(s)}
-                        <span className="block">{breakPay(s)}</span>
+                      {canSeeActivity && (
+                        <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
+                          {figureText(s.idleSec ?? null)}
+                        </td>
+                      )}
+                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
+                        {formatDuration(s.breakSec)}
+                        <span className="block whitespace-nowrap text-xs text-slate-500">
+                          {breaks(s)}
+                        </span>
+                        <span className="block whitespace-nowrap text-xs text-slate-500">
+                          {breakPay(s)}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs tabular-nums text-slate-600">
                         {away(s) ?? <span className="text-slate-400">None</span>}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-700">
-                        {s.meetings ? `${s.meetings} · ${formatDuration(s.meetingSec)}` : "None"}
+                        {formatDuration(s.meetingSec)}
+                        <span className="block text-xs text-slate-500">
+                          {s.meetings
+                            ? `${s.meetings} ${s.meetings === 1 ? "meeting" : "meetings"}`
+                            : "None"}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap py-2.5 pl-4 pr-6 text-right">
                         {s.pending > 0 ? (

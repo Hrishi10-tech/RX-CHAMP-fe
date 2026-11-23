@@ -10,6 +10,7 @@ import {
   Loader2,
   Play,
   Plug,
+  Power,
   RefreshCw,
   XCircle,
 } from "lucide-react";
@@ -31,8 +32,12 @@ import {
   inputBase,
   labelBase,
   textareaBase,
+  thBase,
 } from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
+import { formatDayWithWeekday } from "@/lib/time/businessTime";
+import { PAYROLL_PAUSED_LABEL } from "@/features/reports/lib/timeFigures";
+import { useOrgsInView } from "@/features/organisations/hooks/useOrgsInView";
 import {
   useAttendanceStatus,
   useBiometricSettings,
@@ -123,6 +128,178 @@ export function StatusStrip() {
         </div>
       ))}
     </dl>
+  );
+}
+
+// ---- The integration switch (3.6) --------------------------------------------------------------
+
+/**
+ * The switch behind the payroll pause: while it is off, biometric staff's payroll is not
+ * calculated. The organisation admin turns it on when the device is connected, and each
+ * stretch it was on stays in the history, which decides the days calculated. 4.0: each
+ * organisation runs its own integration, so the switch is the organisation's in view: its
+ * admin (or a Super Admin acting in it) changes it, the Super Manager reads it. On "All
+ * organisations" there is no one switch to show.
+ */
+export function IntegrationSwitchSection({
+  settings,
+  canEdit,
+}: {
+  settings: BiometricSettingsView;
+  canEdit: boolean;
+}) {
+  const save = useSaveBiometricSettings();
+  const { org, mixed } = useOrgsInView();
+  const [asking, setAsking] = useState(false);
+  const on = settings.integrationOn;
+  const periods = settings.integrationPeriods ?? [];
+  const current = periods.find((p) => p.toDate === null);
+
+  async function confirm() {
+    try {
+      await save.mutateAsync({ integrationOn: !on });
+      toast.success(on ? "Integration switched off" : "Integration switched on", {
+        description: on
+          ? "Biometric staff's payroll is paused from tomorrow."
+          : "Biometric staff's payroll is calculated from today.",
+      });
+      setAsking(false);
+    } catch (err) {
+      toast.error("Couldn't change it", { description: errorMessage(err) });
+    }
+  }
+
+  if (mixed) {
+    return (
+      <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="integration-title">
+        <h2
+          id="integration-title"
+          className="flex items-center gap-2 text-base font-bold text-slate-900"
+        >
+          <Power className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+          Biometric integration
+        </h2>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Each organisation runs its own integration. Pick an organisation to see whether its
+          integration is on.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className={`${cardBase} px-4 py-4 sm:px-6`} aria-labelledby="integration-title">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2
+            id="integration-title"
+            className="flex flex-wrap items-center gap-2 text-base font-bold text-slate-900"
+          >
+            <Power className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+            Biometric integration
+            <Chip tone={on ? "success" : "neutral"} dot={on}>
+              {on ? "On" : "Off"}
+            </Chip>
+          </h2>
+          <p className="mt-0.5 text-sm text-slate-500">
+            {on && current
+              ? `On since ${formatDayWithWeekday(current.fromDate)}${org?.name ? ` for ${org.name}` : ""}. Payroll is calculated for biometric staff on the days it is on.`
+              : `Off${org?.name ? ` for ${org.name}` : ""}. Biometric staff's payroll shows "${PAYROLL_PAUSED_LABEL}" and is left out of payroll runs and exports. Their days, punches and focus time are tracked as usual.`}
+          </p>
+          {!canEdit && (
+            <p className="mt-1 text-xs text-slate-500">
+              The organisation admin switches it on once the device is connected.
+            </p>
+          )}
+        </div>
+        {canEdit && (
+          <button
+            type="button"
+            className={on ? btnSecondary : btnPrimary}
+            onClick={() => setAsking(true)}
+          >
+            {on ? "Switch off" : "Switch on"}
+          </button>
+        )}
+      </div>
+      <div className="mt-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          When it has been on
+        </p>
+        {periods.length === 0 ? (
+          <p className="mt-1 text-sm text-slate-500">It has not been on yet.</p>
+        ) : (
+          <>
+            <ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200 md:hidden">
+              {periods.map((p) => (
+                <li key={p.startedAt} className="px-3 py-2 text-sm">
+                  <p className="font-semibold text-slate-900">
+                    {formatDayWithWeekday(p.fromDate)} to{" "}
+                    {p.toDate ? formatDayWithWeekday(p.toDate) : "now"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {[
+                      p.startedByName ? `On by ${p.startedByName}` : null,
+                      p.endedByName ? `off by ${p.endedByName}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-2 hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/70">
+                    <th scope="col" className={thBase}>
+                      From
+                    </th>
+                    <th scope="col" className={thBase}>
+                      To
+                    </th>
+                    <th scope="col" className={thBase}>
+                      Switched on by
+                    </th>
+                    <th scope="col" className={thBase}>
+                      Switched off by
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {periods.map((p) => (
+                    <tr key={p.startedAt} className="border-b border-slate-100 last:border-b-0">
+                      <td className="px-4 py-2 tabular-nums text-slate-900">
+                        {formatDayWithWeekday(p.fromDate)}
+                      </td>
+                      <td className="px-4 py-2 tabular-nums text-slate-700">
+                        {p.toDate ? formatDayWithWeekday(p.toDate) : "Still on"}
+                      </td>
+                      <td className="px-4 py-2 text-slate-700">{p.startedByName ?? ""}</td>
+                      <td className="px-4 py-2 text-slate-700">{p.endedByName ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+      <ConfirmDialog
+        open={asking}
+        onClose={() => setAsking(false)}
+        onConfirm={() => void confirm()}
+        loading={save.isPending}
+        icon={Power}
+        title={on ? "Switch the integration off?" : "Switch the integration on?"}
+        description={
+          on
+            ? "Biometric staff's payroll is paused from tomorrow. Days already calculated stay as they are."
+            : "Biometric staff's payroll is calculated from today. Earlier days stay paused: nothing is worked out again by itself."
+        }
+        confirmLabel={on ? "Switch off" : "Switch on"}
+      />
+    </section>
   );
 }
 
@@ -1068,9 +1245,10 @@ function ImportSection() {
 }
 
 /**
- * Integration (3.5): the status, keys and the push, the pull adapter, a CSV import.
- * 4.0: the organisation's own; keys, changes, tests, pulls and imports are its admin's
- * (the Super Manager sees the status and the pull settings, read only).
+ * Integration (3.5): the status, the switch behind the payroll pause (3.6), keys and the
+ * push, the pull adapter, a CSV import. 4.0: the organisation's own; the switch, keys,
+ * changes, tests, pulls and imports are its admin's (the Super Manager sees the status, the
+ * switch and the pull settings, read only).
  */
 export function IntegrationPanel({ canEdit }: { canEdit: boolean }) {
   const status = useAttendanceStatus();
@@ -1078,6 +1256,7 @@ export function IntegrationPanel({ canEdit }: { canEdit: boolean }) {
   return (
     <div className="space-y-5">
       <StatusStrip />
+      {settings.data && <IntegrationSwitchSection settings={settings.data} canEdit={canEdit} />}
       <PushSection
         canEdit={canEdit}
         pushPath={status.data?.pushPath ?? "/api/v1/biometric/punches"}

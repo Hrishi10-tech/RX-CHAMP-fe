@@ -111,6 +111,13 @@ export interface PersonDaySummary {
   wfhOverSec?: number;
   compOffEarnedDays?: number;
   noCheckout?: boolean;
+  /**
+   * 3.6: seconds nobody was at the computer, outside breaks and meetings; null when no agent
+   * reported. The team day and a month's worked days; the person day has `input`.
+   */
+  idleSec?: number | null;
+  /** 3.6: this day's payroll is not calculated (biometric staff, the integration off). */
+  payrollPaused?: boolean;
 }
 
 export type TimelineKind = "WORK" | "BREAK" | "LUNCH" | "MEETING" | "OFF";
@@ -198,6 +205,8 @@ export interface MonthTotals {
   clslDays?: number;
   elplDays?: number;
   leaveSec?: number;
+  /** 3.6: idle over the month, day by day; null when no agent reported, absent on an old lock. */
+  idleSec?: number | null;
   needsALook: boolean;
   /** 4.0: the month's focus target (working days from the join date), paid and unpaid breaks, away. */
   targetSec: number;
@@ -215,6 +224,19 @@ export interface MonthTotals {
   adjustedSec?: number;
 }
 
+/** 3.6: a person's payroll standing for the month; only when some day of it is paused. */
+export interface PersonPayroll {
+  /** Every day so far is paused: left out of payroll altogether. */
+  paused: boolean;
+  /** "Payroll paused · biometric integration pending". */
+  label: string;
+  pausedDays: number;
+  pausedFrom: string;
+  pausedTo: string;
+  /** What payroll counts: the days calculated. */
+  totals: MonthTotals;
+}
+
 export interface HeatmapDay {
   date: string;
   /** Active minutes in each hour, 0..23. */
@@ -229,6 +251,8 @@ export interface PersonMonthReport {
   totals: MonthTotals;
   days: PersonDaySummary[];
   heatmap: HeatmapDay[];
+  /** 3.6: set when some day of the month is paused. */
+  payroll?: PersonPayroll;
 }
 
 export interface TeamMonthDay {
@@ -241,6 +265,8 @@ export interface TeamMonthRow {
   person: ReportPerson;
   totals: MonthTotals;
   days: TeamMonthDay[];
+  /** 3.6: set when some day of the month is paused. */
+  payroll?: PersonPayroll;
 }
 
 export interface TeamMonthReport {
@@ -248,7 +274,10 @@ export interface TeamMonthReport {
   scope: "TEAM" | "ALL";
   locked: boolean;
   generatedAt: string;
+  /** What payroll counts (3.6: paused days and people left out); `rows` shows everyone. */
   totals: MonthTotals & { people: number };
+  /** Everyone in `rows` as tracked, paused days and people included (3.6). */
+  trackedTotals: MonthTotals & { people: number };
   rows: TeamMonthRow[];
 }
 

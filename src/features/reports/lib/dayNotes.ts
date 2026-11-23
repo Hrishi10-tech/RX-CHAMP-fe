@@ -1,5 +1,17 @@
 import { formatMinutesShort } from "@/lib/format/duration";
+import type { MeetingRecordView } from "@/features/meetings/types";
 import type { PersonDaySummary } from "@/features/reports/types";
+
+/**
+ * What a day's meetings count as. A meeting can be rejected unless it was marked In a meeting,
+ * which needs no approval and always counts (3.6).
+ */
+export function meetingsCountNote(meetings: Pick<MeetingRecordView, "kind">[]): string {
+  const marked = meetings.filter((m) => m.kind === "STATUS").length;
+  if (!marked) return "counted as focus time unless rejected";
+  if (marked === meetings.length) return "counted as focus time, no approval needed";
+  return "counted as focus time unless rejected; time marked In a meeting always counts";
+}
 
 /** "Holiday: Diwali", "Holiday", "Weekly day off", or null on a working day (3.2). */
 export function dayOffText(d: Pick<PersonDaySummary, "dayOff">): string | null {
@@ -53,6 +65,28 @@ export function wfhText(
 export function compOffEarnedText(d: Pick<PersonDaySummary, "compOffEarnedDays">): string | null {
   if (!d.compOffEarnedDays) return null;
   return `Comp off earned: ${d.compOffEarnedDays} ${d.compOffEarnedDays === 1 || d.compOffEarnedDays < 1 ? "day" : "days"}`;
+}
+
+const STATUS_SOURCE: Record<string, string> = {
+  BUTTON: "Started with the button",
+  SUGGESTION: "Started from a suggestion",
+};
+const STATUS_END: Record<string, string> = {
+  USER: "ended by them",
+  BREAK: "ended by a break",
+  END_DAY: "ended with the day",
+  NO_ANSWER: "ended with no answer to the 2 hour check",
+  AUTO_CLOSED: "ended when the day closed automatically",
+};
+
+/** How an In a meeting status began and ended (3.6); null for any other meeting. */
+export function statusMeetingLine(
+  m: Pick<MeetingRecordView, "kind" | "startSource" | "endReason">,
+): string | null {
+  if (m.kind !== "STATUS") return null;
+  const parts = [m.startSource ? STATUS_SOURCE[m.startSource] : null];
+  if (m.endReason) parts.push(STATUS_END[m.endReason]);
+  return parts.filter(Boolean).join(", ") || null;
 }
 
 /** Minutes late, or 0. */
