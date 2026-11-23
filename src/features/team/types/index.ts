@@ -31,6 +31,8 @@ export interface TeamPerson {
   lateStartMin: number;
   /** 3.2: why the day started late, once given (absent from an older API). */
   lateReason?: string | null;
+  /** 3.4: leave that day, or null (absent from an older API). */
+  leave?: { label: string; categories: string; full: boolean; pendingDays: number } | null;
 }
 
 export interface TeamCounts {

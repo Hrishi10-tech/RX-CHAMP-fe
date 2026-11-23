@@ -23,7 +23,7 @@ import { hourLabel } from "@/features/teamToday/lib/hourly";
 import type { DayClass, HeatmapDay, PersonDaySummary } from "@/features/reports/types";
 
 /** The day classes the focus chart's legend names (the others rarely carry focus). */
-export const FOCUS_LEGEND: DayClass[] = ["FULL", "HALF", "ABSENT", "EXTRA"];
+export const FOCUS_LEGEND: DayClass[] = ["FULL", "HALF", "ABSENT", "LEAVE", "EXTRA"];
 
 interface DayPoint {
   day: string;

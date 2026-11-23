@@ -4,6 +4,9 @@ export const REPORTS_PAGE = "/dashboard/reports";
 export const TEAM_PAGE = "/dashboard/team";
 export const OVERVIEW_PAGE = "/dashboard/overview";
 export const CALENDAR_PAGE = "/dashboard/calendar";
+/** 3.4 */
+export const LEAVE_PAGE = "/dashboard/leave";
+export const LEAVE_REQUESTS_PAGE = "/dashboard/leave?tab=requests";
 
 /** @deprecated 3.1 name, kept for older imports. */
 export const APPROVALS_PAGE_31 = APPROVALS_PAGE;
@@ -29,6 +32,13 @@ export const NOTIFICATION_TYPES_40 = {
   CALENDAR_CHANGED: "CALENDAR_CHANGED",
   /** 3.3: the Super Manager changed the reader's focus time by hand (or undid it). */
   FOCUS_ADJUSTED: "FOCUS_ADJUSTED",
+  /** 3.4: leave. Requests and cancellations go to the approver; the rest to the person. */
+  LEAVE_REQUESTED: "LEAVE_REQUESTED",
+  LEAVE_DECIDED: "LEAVE_DECIDED",
+  LEAVE_CANCELLED: "LEAVE_CANCELLED",
+  LEAVE_REVOKED: "LEAVE_REVOKED",
+  LEAVE_ADJUSTED: "LEAVE_ADJUSTED",
+  LEAVE_UPDATED: "LEAVE_UPDATED",
 } as const;
 
 const T = NOTIFICATION_TYPES_31;
@@ -55,6 +65,13 @@ const LINKS: Record<string, string> = {
   // Vision app's History (4.0 has no personal page in the portal), so
   // BREAK_DECIDED, MEETING_DECIDED and AWAY_DECIDED have nowhere to go here.
   // FOCUS_ADJUSTED (3.3) likewise: the notice itself says what changed and why.
+  // 3.4: leave.
+  [T4.LEAVE_REQUESTED]: LEAVE_REQUESTS_PAGE,
+  [T4.LEAVE_CANCELLED]: LEAVE_REQUESTS_PAGE,
+  [T4.LEAVE_DECIDED]: LEAVE_PAGE,
+  [T4.LEAVE_REVOKED]: LEAVE_PAGE,
+  [T4.LEAVE_ADJUSTED]: LEAVE_PAGE,
+  [T4.LEAVE_UPDATED]: LEAVE_PAGE,
 };
 
 /** The page a notification opens, or null for types that have nowhere to go. */

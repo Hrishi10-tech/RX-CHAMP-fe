@@ -50,7 +50,7 @@ import {
 } from "@/features/reports/components/ReportShell";
 import type { PersonDaySummary, PersonMonthReport } from "@/features/reports/types";
 import { blockingApprovalsHref } from "@/features/approvals/lib/query";
-import { holidayText, lateText } from "@/features/reports/lib/dayNotes";
+import { holidayText, lateText, leaveText } from "@/features/reports/lib/dayNotes";
 
 function personLine(r: PersonMonthReport): string {
   const p = r.person;
@@ -135,6 +135,9 @@ function DaysTable({
             {holidayText(d) && (
               <p className="text-xs font-semibold text-sky-700">{holidayText(d)}</p>
             )}
+            {leaveText(d) && (
+              <p className="text-xs font-semibold text-violet-700">{leaveText(d)}</p>
+            )}
             {worked(d) && (
               <p className="text-xs text-slate-600">
                 {d.startedAt
@@ -213,6 +216,11 @@ function DaysTable({
                   {holidayText(d) && (
                     <span className="mt-1 block text-xs font-semibold text-sky-700">
                       {holidayText(d)}
+                    </span>
+                  )}
+                  {leaveText(d) && (
+                    <span className="mt-1 block max-w-[14rem] text-xs font-semibold text-violet-700">
+                      {leaveText(d)}
                     </span>
                   )}
                 </td>
@@ -516,11 +524,18 @@ export function PersonMonthView({
           label="Attendance"
           value={`${attendanceDays} ${attendanceDays === 1 ? "day" : "days"}`}
           sub={`of ${t.workdays} working days: ${t.full} full, ${t.half} half, ${t.absent} absent${
-            t.extra ? `, ${t.extra} extra` : ""
-          } · ${t.lateStarts} late ${t.lateStarts === 1 ? "start" : "starts"}${
+            t.leave ? `, ${t.leave} on leave` : ""
+          }${t.extra ? `, ${t.extra} extra` : ""} · ${t.lateStarts} late ${t.lateStarts === 1 ? "start" : "starts"}${
             t.lateWithoutReason ? ` (${t.lateWithoutReason} without a reason)` : ""
           }${t.holidays ? ` · ${t.holidays} ${t.holidays === 1 ? "holiday" : "holidays"}` : ""}`}
         />
+        {(t.leaveDays ?? 0) > 0 && (
+          <Kpi
+            label="Leave"
+            value={`${t.leaveDays} ${t.leaveDays === 1 || (t.leaveDays ?? 0) < 1 ? "day" : "days"}`}
+            sub={`${t.clslDays ?? 0} CL/SL · ${t.elplDays ?? 0} EL/PL · ${formatDuration(t.leaveSec ?? 0)} paid as leave`}
+          />
+        )}
         {typeof t.paidSec === "number" && (
           <Kpi
             label="Paid time"

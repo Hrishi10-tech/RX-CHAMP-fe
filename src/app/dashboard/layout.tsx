@@ -16,6 +16,7 @@ import { useChatNotifier } from "@/features/chat/hooks/useChatNotifier";
 import { useApprovalsSummary } from "@/features/approvals/hooks/useApprovals";
 import { OrgSwitcher } from "@/features/organisations/components/OrgSwitcher";
 import { PickOrganisation } from "@/features/organisations/components/PickOrganisation";
+import { useLeaveSummary } from "@/features/leave/hooks/useLeave";
 import { useArchiveNudge } from "@/features/screenshots/hooks/useArchiveNudge";
 import { useAppSelector } from "@/store/hooks";
 import {
@@ -32,7 +33,13 @@ import PageWrapper from "@/components/layout/PageWrapper";
 import { NotificationPanel } from "@/components/layout/NotificationPanel";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { NavLinks, type NavBadge } from "@/components/layout/NavLinks";
-import { APPROVALS_HREF, CHAT_HREF, activeHrefFor, navFor } from "@/components/layout/nav";
+import {
+  APPROVALS_HREF,
+  CHAT_HREF,
+  LEAVE_HREF,
+  activeHrefFor,
+  navFor,
+} from "@/components/layout/nav";
 import { ErrorState } from "@/components/ui/StatePanel";
 import { clearSession } from "@/lib/auth/session";
 import { errorMessage } from "@/lib/api";
@@ -100,6 +107,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Admin and the Super Manager get the combined count.
   const { data: approvalSummary } = useApprovalsSummary(live && approver);
   const approvalsWaiting = Math.max(0, approvalSummary?.pending ?? 0);
+  // 3.4: leave requests waiting on the caller (the organisation in view).
+  const { data: leaveSummary } = useLeaveSummary(undefined, live && approver);
+  const leaveWaiting = Math.max(0, leaveSummary?.needsMe ?? 0);
   const approvalsOverdue = Math.max(0, approvalSummary?.overdue ?? 0);
   // 3.2: once a day, remind a Super Admin which month's screenshots to archive and delete.
   // 3.2, per organisation in 4.0: the organisation's admins, inside one organisation.
@@ -190,6 +200,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       count: chatUnread,
       label: `${chatUnread} unread ${chatUnread === 1 ? "message" : "messages"}`,
     },
+    [LEAVE_HREF]: approver
+      ? {
+          count: leaveWaiting,
+          tone: "info",
+          label: `${leaveWaiting} leave ${leaveWaiting === 1 ? "request waits" : "requests wait"} on you`,
+        }
+      : undefined,
     [APPROVALS_HREF]: approver
       ? {
           count: approvalsWaiting,
@@ -286,7 +303,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(34,34,204,0.35)]"
             >
               <Menu className="h-5 w-5" />
-              {approvalsWaiting + chatUnread > 0 && (
+              {approvalsWaiting + chatUnread + leaveWaiting > 0 && (
                 <span
                   aria-hidden
                   className={`absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-slate-100 ${

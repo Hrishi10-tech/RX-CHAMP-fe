@@ -10,7 +10,9 @@ export type PresetKind =
   | "SKIP_COMMENT"
   | "BREAK_OVERRUN"
   | "MEETING_AGENDA"
-  | "DECISION_NOTE";
+  | "DECISION_NOTE"
+  /** 3.4: the reason for a leave request. */
+  | "LEAVE_REASON";
 
 export interface ReasonPresetsView {
   presets: Record<PresetKind, string[]>;

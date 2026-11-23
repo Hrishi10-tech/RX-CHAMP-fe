@@ -30,7 +30,7 @@ import { useSession } from "@/features/auth/hooks/useSession";
 import { AdjustFocusDialog } from "@/features/adjustments/components/AdjustFocusDialog";
 import { AdjustmentsList } from "@/features/adjustments/components/AdjustmentsList";
 import { blockingApprovalsHref } from "@/features/approvals/lib/query";
-import { dayOffText, lateMinutes, lateReason } from "@/features/reports/lib/dayNotes";
+import { dayOffText, lateMinutes, lateReason, leaveText } from "@/features/reports/lib/dayNotes";
 import { InputBreakdown } from "@/features/reports/components/InputBreakdown";
 import { useAppSettings } from "@/features/settings/hooks/useSettings";
 import { usePersonDayReport } from "@/features/reports/hooks/useReports";
@@ -507,6 +507,22 @@ export function PersonDayView({
           onRetry={() => query.refetch()}
           retrying={query.isFetching}
         />
+      )}
+      {leaveText(s) && (
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900"
+        >
+          <CalendarOff className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" aria-hidden />
+          <span>
+            <span className="font-semibold">{leaveText(s)}.</span>{" "}
+            {s.leave?.full
+              ? "Nothing is expected this day; work done anyway counts as an extra day."
+              : s.leave && s.leave.days > 0
+                ? "The day is judged on the rest of the shift, and a late start counts from the end of the leave."
+                : ""}
+          </span>
+        </div>
       )}
       {offText && (
         <div

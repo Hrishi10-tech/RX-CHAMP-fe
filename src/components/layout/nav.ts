@@ -3,6 +3,7 @@ import {
   Building2,
   CalendarClock,
   CalendarDays,
+  CalendarHeart,
   ClipboardCheck,
   Clock3,
   Coffee,
@@ -25,6 +26,8 @@ import type { MePermissions } from "@/features/auth/types";
 import type { NavSection } from "./types";
 
 export const APPROVALS_HREF = "/dashboard/approvals";
+/** 3.4 */
+export const LEAVE_HREF = "/dashboard/leave";
 export const CHAT_HREF = "/dashboard/chat";
 export const AGENT_HEALTH_HREF = "/dashboard/agent-health";
 export const FOCUS_ADJUSTMENTS_HREF = "/dashboard/focus-adjustments";
@@ -51,6 +54,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard/team", label: "Team", icon: Users },
       { href: AGENT_HEALTH_HREF, label: "Agent health", icon: HeartPulse },
       { href: APPROVALS_HREF, label: "Approvals", icon: ClipboardCheck },
+      // 3.4: requests, balances and the policy.
+      { href: LEAVE_HREF, label: "Leave", icon: CalendarHeart },
       { href: CHAT_HREF, label: "Messages", icon: MessageSquare },
     ],
   },

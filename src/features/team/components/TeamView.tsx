@@ -86,6 +86,13 @@ function StatusCell({ person }: { person: TeamPerson }) {
         {look.label}
       </Chip>
       {since && <span className="text-xs text-slate-500">{since}</span>}
+      {person.leave && (
+        <span className="text-xs font-medium text-sky-700">
+          {person.leave.pendingDays > 0 && !person.leave.label
+            ? "leave waiting for a decision"
+            : `on leave: ${person.leave.label.toLowerCase()}, ${person.leave.categories}`}
+        </span>
+      )}
       {person.lateStartMin > 0 && (
         <span className="text-xs font-medium text-orange-600">
           started {formatDuration(person.lateStartMin * 60)} late

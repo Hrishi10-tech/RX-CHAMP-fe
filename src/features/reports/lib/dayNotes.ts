@@ -13,6 +13,20 @@ export function holidayText(d: Pick<PersonDaySummary, "dayOff">): string | null 
   return d.dayOff?.kind === "HOLIDAY" ? dayOffText(d) : null;
 }
 
+/**
+ * "CL/SL leave: half day (first half)", "EL/PL leave, full day", or "Leave asked
+ * for, waiting" (3.4); null on a day without leave.
+ */
+export function leaveText(d: Pick<PersonDaySummary, "leave">): string | null {
+  const l = d.leave;
+  if (!l) return null;
+  if (l.days > 0) {
+    const what = l.full ? "full day" : l.label.charAt(0).toLowerCase() + l.label.slice(1);
+    return `${l.categories || "Leave"} leave, ${what}${l.pendingDays > 0 ? " (more waiting)" : ""}`;
+  }
+  return l.pendingDays > 0 ? "Leave asked for, waiting for a decision" : null;
+}
+
 /** Minutes late, or 0. */
 export function lateMinutes(d: Pick<PersonDaySummary, "lateStart">): number {
   return d.lateStart && d.lateStart.minutes > 0 ? d.lateStart.minutes : 0;

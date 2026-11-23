@@ -8,8 +8,18 @@ import type { BreakRecordView } from "@/features/breaks/types";
 import type { MeetingRecordView } from "@/features/meetings/types";
 import type { FocusAdjustmentView } from "@/features/adjustments/types";
 import type { BreakKind, ShiftRef } from "@/features/shifts/types";
+import type { DayLeaveView } from "@/features/leave/types";
 
-export type DayClass = "FULL" | "HALF" | "ABSENT" | "OFF" | "EXTRA" | "IN_PROGRESS" | "UPCOMING";
+export type DayClass =
+  | "FULL"
+  | "HALF"
+  | "ABSENT"
+  | "OFF"
+  | "EXTRA"
+  /** 3.4: a full day of approved leave, not worked. */
+  | "LEAVE"
+  | "IN_PROGRESS"
+  | "UPCOMING";
 
 export interface ReportPerson {
   id: string;
@@ -89,6 +99,10 @@ export interface PersonDaySummary {
   activeSec?: number;
   /** 3.2: seconds inside the working day not on a break or in a meeting. */
   availableSec?: number;
+  /** 3.4: leave that day (approved, and any still waiting). */
+  leave?: DayLeaveView | null;
+  /** 3.4: the expected time the approved leave covers (paid leave time). */
+  leaveSec?: number;
 }
 
 export type TimelineKind = "WORK" | "BREAK" | "LUNCH" | "MEETING" | "OFF";
@@ -153,6 +167,12 @@ export interface MonthTotals {
   /** 3.2 (fix 10): keyboard and mouse input inside working days. */
   activeSec?: number;
   availableSec?: number;
+  /** 3.4: full days of leave, days of leave by pool (part days included), paid leave time. */
+  leave?: number;
+  leaveDays?: number;
+  clslDays?: number;
+  elplDays?: number;
+  leaveSec?: number;
   needsALook: boolean;
   /** 4.0: the month's focus target (working days from the join date), paid and unpaid breaks, away. */
   targetSec: number;
@@ -249,11 +269,25 @@ export interface OpenSessionBlocker {
   startedAt: string;
 }
 
+/** A leave request with a day in the month, still waiting for a decision (3.4). */
+export interface PendingLeaveBlocker {
+  id: string;
+  userId: string;
+  userName: string;
+  category: "CLSL" | "ELPL";
+  startDate: string;
+  endDate: string;
+  days: number;
+}
+
 export interface MonthLockBlockers {
   items: PendingBlocker[];
   /** More pending items exist than are listed. */
   moreItems: boolean;
   openSessions: OpenSessionBlocker[];
+  /** 3.4: leave waiting for a decision, and how many there are. */
+  leave?: PendingLeaveBlocker[];
+  pendingLeave?: number;
 }
 
 export interface MonthLockView {

@@ -92,7 +92,7 @@ export function MonthLockControl({ month }: { month: string }) {
       });
     } catch (err) {
       const code = errorCode(err);
-      if (code === "PENDING_APPROVALS" || code === "OPEN_SESSIONS") {
+      if (code === "PENDING_APPROVALS" || code === "OPEN_SESSIONS" || code === "PENDING_LEAVE") {
         const details = errorDetails(err) ?? {};
         const raw = details.count;
         const items = Array.isArray(details.items)
@@ -101,6 +101,9 @@ export function MonthLockControl({ month }: { month: string }) {
         const sessions = Array.isArray(details.sessions)
           ? (details.sessions as MonthLockBlockers["openSessions"])
           : [];
+        const leave = Array.isArray(details.leave)
+          ? (details.leave as NonNullable<MonthLockBlockers["leave"]>)
+          : [];
         setRefusal({
           count: code === "PENDING_APPROVALS" && typeof raw === "number" ? raw : null,
           message:
@@ -108,7 +111,13 @@ export function MonthLockControl({ month }: { month: string }) {
             (code === "OPEN_SESSIONS"
               ? "Some working days in this month are still open."
               : "Some approvals in this month are still pending."),
-          blockers: { items, moreItems: details.moreItems === true, openSessions: sessions },
+          blockers: {
+            items,
+            moreItems: details.moreItems === true,
+            openSessions: sessions,
+            leave,
+            pendingLeave: code === "PENDING_LEAVE" && typeof raw === "number" ? raw : leave.length,
+          },
         });
         void lock.refetch();
       } else {
@@ -189,7 +198,9 @@ export function MonthLockControl({ month }: { month: string }) {
       {!refusal &&
         !lock.data.locked &&
         !current &&
-        (lock.data.pending > 0 || (lock.data.blockers?.openSessions.length ?? 0) > 0) && (
+        (lock.data.pending > 0 ||
+          (lock.data.blockers?.openSessions.length ?? 0) > 0 ||
+          (lock.data.blockers?.pendingLeave ?? 0) > 0) && (
           <LockBlockers
             month={month}
             pending={lock.data.pending}

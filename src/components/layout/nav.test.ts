@@ -13,6 +13,7 @@ describe("navFor", () => {
       "Overview",
       "Team",
       "Approvals",
+      "Leave",
       "Messages",
       "Team management",
       "Departments",
@@ -36,6 +37,7 @@ describe("navFor", () => {
       // 3.3: combined approvals and team breaks, and Team management listing everyone
       // in every organisation (and the Super Managers).
       "Approvals",
+      "Leave",
       "Messages",
       "Team management",
       "Team breaks",
@@ -64,6 +66,7 @@ describe("navFor", () => {
       "Overview",
       "Team",
       "Approvals",
+      "Leave",
       "Messages",
       "Team breaks",
       "Calendar",
@@ -78,6 +81,7 @@ describe("navFor", () => {
     expect(items).toEqual([
       "Overview",
       "Approvals",
+      "Leave",
       "Messages",
       "Team breaks",
       "Calendar",

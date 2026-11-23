@@ -9,6 +9,7 @@ export const PRESENCE_STATUS: Record<TeamTodayStatus, { label: string; tone: Chi
   LUNCH: { label: "Lunch", tone: "info" },
   MEETING: { label: "Meeting", tone: "brand" },
   DAY_ENDED: { label: "Day ended", tone: "neutral" },
+  ON_LEAVE: { label: "On leave", tone: "violet" },
 };
 
 export function presenceLook(status: string): { label: string; tone: ChipTone } {

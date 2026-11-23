@@ -1,3 +1,4 @@
+import type { DayLeaveView } from "@/features/leave/types";
 /**
  * Mirrors SPEC 3.1 section 3.1 (Work day). Every `date` is a business-zone day key
  * "YYYY-MM-DD"; every other timestamp is an ISO instant; durations are seconds.
@@ -77,6 +78,11 @@ export interface WorkdayTodayView {
   dayOff?: { kind: "HOLIDAY" | "WEEKLY_OFF"; name: string | null } | null;
   shift: WorkdayShiftRef | null;
   expectedSec: number;
+  /** 3.4: leave today (approved, and any still waiting); a part day leaves the rest to work. */
+  leave?: DayLeaveView | null;
+  /** 3.4: with part-day leave, the part of the shift still to work. */
+  workingFrom?: string | null;
+  workingUntil?: string | null;
   /** Newest first, at most 31 days back. */
   skipsNeedingComment: SkipNeedingComment[];
   /** MANAGER and SUPER_ADMIN: pending items routed to me past their due time. */

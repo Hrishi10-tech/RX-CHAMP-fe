@@ -123,7 +123,7 @@ export function sortRows(rows: TeamMonthRow[], key: SortKey, dir: 1 | -1): TeamM
   );
 }
 
-const MIX: DayClass[] = ["FULL", "HALF", "ABSENT", "EXTRA"];
+const MIX: DayClass[] = ["FULL", "HALF", "ABSENT", "LEAVE", "EXTRA"];
 
 /** Person-days across the team by attendance class, as one stacked bar. */
 function AttendanceMix({ totals }: { totals: MonthTotals }) {
@@ -131,6 +131,7 @@ function AttendanceMix({ totals }: { totals: MonthTotals }) {
     FULL: totals.full,
     HALF: totals.half,
     ABSENT: totals.absent,
+    LEAVE: totals.leave ?? 0,
     EXTRA: totals.extra,
   };
   const total = MIX.reduce((s, c) => s + Math.max(0, counts[c]), 0);
@@ -304,8 +305,8 @@ function RankingTable({
                 {t.awayPendingSec > 0 ? `, ${formatDuration(t.awayPendingSec)} pending` : ""}
               </p>
               <p className="text-xs text-slate-600">
-                {attendanceDays(t)} days: {t.full} full, {t.half} half, {t.absent} absent ·{" "}
-                {t.lateStarts} late
+                {attendanceDays(t)} days: {t.full} full, {t.half} half, {t.absent} absent
+                {t.leave ? `, ${t.leave} on leave` : ""} · {t.lateStarts} late
                 {t.lateWithoutReason ? ` (${t.lateWithoutReason} no reason)` : ""} ·{" "}
                 {t.skipped + t.autoSkipped} skipped
               </p>
@@ -696,7 +697,9 @@ export function TeamMonthView({
             <Kpi
               label="Attendance"
               value={`${attendancePct.toFixed(1)}%`}
-              sub={`${t.full + t.half / 2} of ${personDays} person-days · ${t.half} half, ${t.absent} absent`}
+              sub={`${t.full + t.half / 2} of ${personDays} person-days · ${t.half} half, ${t.absent} absent${
+                t.leave ? `, ${t.leave} on leave` : ""
+              }`}
             />
             <Kpi
               label="Approvals changed focus by"

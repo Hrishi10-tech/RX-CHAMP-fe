@@ -179,6 +179,8 @@ export const routeRoles: Record<string, Role[]> = {
   "/dashboard/instructions": PORTAL,
   // 3.2: the monthly screenshot archive and deletion, per organisation.
   "/dashboard/screenshots/archives": ADMINS,
+  // 3.4: approvers see requests and balances; the policy is the admins' (the page decides).
+  "/dashboard/leave": PORTAL,
 };
 
 /**
@@ -197,6 +199,8 @@ export const ORG_FREE_ROUTES = [
   "/dashboard/people",
   // 3.3: combined approvals and team breaks (an organisation chip on every row).
   "/dashboard/approvals",
+  // 3.4: leave requests and balances of every organisation, each row tagged.
+  "/dashboard/leave",
   "/dashboard/breaks/team",
   "/dashboard/chat",
   "/dashboard/instructions",

@@ -163,7 +163,7 @@ export function AdjustFocusDialog({
       description="Adds or takes off minutes by hand, with a reason the person sees. Only the Super Manager can do this, and every adjustment stays on record."
       className="max-w-lg"
     >
-      <form onSubmit={submit} noValidate className="space-y-5">
+      <form onSubmit={submit} noValidate className="space-y-5 px-5 py-5 sm:px-6">
         {person ? (
           <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[rgb(34_34_204)] shadow-sm">

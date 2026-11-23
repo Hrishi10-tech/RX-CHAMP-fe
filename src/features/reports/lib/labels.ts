@@ -40,6 +40,13 @@ export const DAY_CLASS: Record<
     cell: "bg-indigo-500",
     fill: "#6366f1",
   },
+  LEAVE: {
+    label: "On leave",
+    short: "Leave",
+    tone: "violet",
+    cell: "bg-violet-400",
+    fill: "#a78bfa",
+  },
   IN_PROGRESS: {
     label: "In progress",
     short: "Today",

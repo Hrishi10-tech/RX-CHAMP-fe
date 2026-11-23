@@ -6,6 +6,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   AlarmClock,
   Bell,
+  CalendarCheck,
+  CalendarDays,
+  CalendarX,
   Building2,
   ChevronRight,
   ClipboardCheck,
@@ -16,6 +19,7 @@ import {
   MessageSquareText,
   Moon,
   SkipForward,
+  SlidersHorizontal,
   TriangleAlert,
   UserPlus,
   Users,
@@ -82,6 +86,17 @@ const TYPE_STYLE: Record<string, { icon: LucideIcon; tint: string }> = {
     tint: "bg-violet-50 text-violet-600 ring-violet-100",
   },
   DAY_AUTO_CLOSED: { icon: Moon, tint: "bg-slate-50 text-slate-600 ring-slate-100" },
+  FOCUS_ADJUSTED: {
+    icon: SlidersHorizontal,
+    tint: "bg-indigo-50 text-indigo-600 ring-indigo-100",
+  },
+  // 3.4: leave.
+  LEAVE_REQUESTED: { icon: CalendarDays, tint: "bg-sky-50 text-sky-600 ring-sky-100" },
+  LEAVE_DECIDED: { icon: CalendarCheck, tint: "bg-emerald-50 text-emerald-600 ring-emerald-100" },
+  LEAVE_CANCELLED: { icon: CalendarX, tint: "bg-slate-50 text-slate-600 ring-slate-100" },
+  LEAVE_REVOKED: { icon: CalendarX, tint: "bg-rose-50 text-rose-600 ring-rose-100" },
+  LEAVE_ADJUSTED: { icon: SlidersHorizontal, tint: "bg-violet-50 text-violet-600 ring-violet-100" },
+  LEAVE_UPDATED: { icon: CalendarDays, tint: "bg-amber-50 text-amber-600 ring-amber-100" },
 };
 const DEFAULT_STYLE = {
   icon: Bell,

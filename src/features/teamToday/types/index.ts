@@ -3,6 +3,7 @@ import type { HourActivity } from "@/features/activity/types/hourly";
 import type { BreakRecordView } from "@/features/breaks/types";
 import type { BreakKind } from "@/features/shifts/types";
 import type { FocusView } from "@/features/workday/types";
+import type { DayLeaveView } from "@/features/leave/types";
 
 export type TeamTodayStatus =
   | "NOT_STARTED"
@@ -10,7 +11,9 @@ export type TeamTodayStatus =
   | "BREAK"
   | "LUNCH"
   | "MEETING"
-  | "DAY_ENDED";
+  | "DAY_ENDED"
+  /** 3.4: a full day of approved leave, not started. */
+  | "ON_LEAVE";
 
 export type TeamTodayBreakStatus =
   | "UPCOMING"
@@ -66,6 +69,8 @@ export interface TeamTodayRow {
   } | null;
   /** 3.2: a holiday (with its name) or a weekly day off by the calendar; null on a working day. */
   dayOff?: { kind: "HOLIDAY" | "WEEKLY_OFF"; name: string | null } | null;
+  /** 3.4: leave that day (approved, and any still waiting). */
+  leave?: DayLeaveView | null;
   focus: FocusView;
   expectedSec: number;
   breaks: TeamTodayBreakCell[];
@@ -83,6 +88,9 @@ export interface TeamTodayTotals {
   onBreak: number;
   inMeeting: number;
   ended: number;
+  /** 3.4: on a full day of leave, and with part of the day on leave. */
+  onLeave?: number;
+  partLeave?: number;
   lateStarts: number;
   /** Pending items dated on each row's day, for these people (the sum of the rows' `pending`). */
   pendingApprovals: number;

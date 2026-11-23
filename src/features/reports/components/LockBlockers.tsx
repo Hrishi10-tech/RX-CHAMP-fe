@@ -48,7 +48,9 @@ export function LockBlockers({
 }) {
   const items = blockers?.items ?? [];
   const open = blockers?.openSessions ?? [];
-  if (pending <= 0 && open.length === 0) return null;
+  const leave = blockers?.leave ?? [];
+  const pendingLeave = blockers?.pendingLeave ?? leave.length;
+  if (pending <= 0 && open.length === 0 && pendingLeave <= 0) return null;
   const label = formatMonth(month);
   return (
     <div className="w-full space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-3 text-sm text-amber-950 sm:basis-full">
@@ -100,6 +102,42 @@ export function LockBlockers({
             </p>
           )}
         </>
+      )}
+      {pendingLeave > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-semibold">
+              {pendingLeave} leave {pendingLeave === 1 ? "request" : "requests"} with days in{" "}
+              {label} {pendingLeave === 1 ? "waits" : "wait"} for a decision
+            </p>
+            <Link
+              href="/dashboard/leave?tab=requests"
+              className="inline-flex items-center gap-1 font-semibold text-amber-900 underline underline-offset-2"
+            >
+              Open Leave requests
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </div>
+          {leave.length > 0 && (
+            <ul className="divide-y divide-amber-200/70 overflow-hidden rounded-lg border border-amber-200 bg-white">
+              {leave.map((l) => (
+                <li
+                  key={l.id}
+                  className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:gap-3"
+                >
+                  <span className="min-w-0 font-semibold text-slate-900 sm:w-44 sm:shrink-0 sm:truncate">
+                    {l.userName}
+                  </span>
+                  <span className="min-w-0 flex-1 text-slate-700">
+                    {l.category === "CLSL" ? "CL/SL" : "EL/PL"} · {formatDay(l.startDate)}
+                    {l.endDate !== l.startDate ? ` to ${formatDay(l.endDate)}` : ""} · {l.days}{" "}
+                    {l.days === 1 || l.days < 1 ? "day" : "days"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
       {open.length > 0 && (
         <div className="space-y-1">
