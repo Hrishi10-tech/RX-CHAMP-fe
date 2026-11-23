@@ -17,7 +17,14 @@ import {
 import { createNotificationsSocket } from "@/features/notifications/socket";
 import { notificationHref } from "@/features/notifications/lib/links";
 import { refreshForNotification } from "@/features/breaks/lib/notificationEffects";
-import { refreshFor31Notification } from "@/features/approvals/lib/notificationEffects";
+import {
+  APPROVAL_KINDS,
+  createApprovalsRefresher,
+  isApproverNotice,
+  refreshFor31Notification,
+  refreshForApprovalChange,
+  type ApprovalsChanged,
+} from "@/features/approvals/lib/notificationEffects";
 import type { NotificationView, UseNotificationsResult } from "@/features/notifications/types";
 
 export function useNotifications(enabled: boolean): UseNotificationsResult {
@@ -78,6 +85,10 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
     const socket = createNotificationsSocket();
     socketRef.current = socket;
 
+    // 3.6: an approval item changed on another device or for another person, so
+    // what shows it is re-read at once, here and in every other open tab.
+    const approvals = createApprovalsRefresher(() => queryClientRef.current);
+
     socket.on("notification", (n: NotificationView) => {
       if (!active) return;
       setNotifications((prev) => (prev.some((x) => x.id === n.id) ? prev : [n, ...prev]));
@@ -85,8 +96,10 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
 
       // Break events change cached break data (the approvals badge, My breaks);
       // 3.1 events change approvals, Team today, focus time and the reports list.
+      // An approver's notice shares one refresh with the event that comes with it.
       refreshForNotification(queryClientRef.current, n.type);
-      refreshFor31Notification(queryClientRef.current, n.type);
+      if (isApproverNotice(n.type)) approvals.add("BREAK");
+      else refreshFor31Notification(queryClientRef.current, n.type);
 
       const href = notificationHref(n.type);
       toast(n.title, {
@@ -115,6 +128,10 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
       if (kind !== "IDLE") void qc.invalidateQueries({ queryKey: ["reports"] });
     });
 
+    socket.on("approvals:changed", (change: ApprovalsChanged) => {
+      if (active) approvals.add(change.what);
+    });
+
     // A Super Admin hears the selected organisation: reconnect when it changes.
     const detachOrg = attachOrgReconnect(socket);
 
@@ -124,13 +141,17 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
     attachSocketReauth(socket);
 
     socket.io.on("reconnect", () => {
-      if (active) refresh();
+      if (!active) return;
+      refresh();
+      // Whatever changed while the socket was down was not heard.
+      refreshForApprovalChange(queryClientRef.current, APPROVAL_KINDS);
     });
 
     socket.connect();
 
     return () => {
       active = false;
+      approvals.cancel();
       detachOrg();
       socket.off();
       socket.io.off("reconnect");
