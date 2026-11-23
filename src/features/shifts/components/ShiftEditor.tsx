@@ -606,16 +606,6 @@ export function ShiftEditor({ shiftId }: { shiftId?: string }) {
               <input
                 type="checkbox"
                 className={`${checkboxBase} mt-0.5`}
-                checked={draft.ringSound}
-                onChange={(e) => update({ ringSound: e.target.checked })}
-                disabled={pending}
-              />
-              Play a sound while it rings
-            </label>
-            <label className="flex cursor-pointer items-start gap-2.5 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                className={`${checkboxBase} mt-0.5`}
                 checked={draft.reasonOnEarly}
                 onChange={(e) => update({ reasonOnEarly: e.target.checked })}
                 disabled={pending}

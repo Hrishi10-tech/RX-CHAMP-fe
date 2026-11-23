@@ -9,17 +9,14 @@ import type {
 } from "@/features/auth/types";
 
 /**
- * Blocked accounts are detected defensively: an explicit code is preferred, then
- * 403, then the message text — so this keeps working whichever way the backend
- * signals it.
+ * A blocked account is told by the code, then by 403, never by the words: the API's wording
+ * changes (brief 1.5), and its message for a blocked account no longer says "blocked".
  */
 const BLOCKED_CODES = ["ACCOUNT_DISABLED", "ACCOUNT_BLOCKED", "USER_DISABLED"];
-const BLOCKED_PATTERN = /disabl|block|deactivat|suspend/i;
 
-function looksBlocked(status: number | undefined, code?: string, message?: string): boolean {
+function looksBlocked(status: number | undefined, code?: string): boolean {
   if (code && BLOCKED_CODES.includes(code)) return true;
-  if (status === 403) return true;
-  return Boolean(message && BLOCKED_PATTERN.test(message));
+  return status === 403;
 }
 
 function readBody(data: unknown): { message?: string; code?: string } {
@@ -50,13 +47,13 @@ function classify(error: unknown): { reason: LoginFailureReason; message?: strin
   const status = error.response.status;
   const { message, code } = readBody(error.response.data);
 
-  // 429 TOO_MANY_ATTEMPTS: this account had too many wrong passwords and sign-in
-  // is paused ("... paused for 15 minutes"), worth showing as it came. Any other
-  // 429 is the per-network limit, whose message is not for people.
+  // 429 TOO_MANY_ATTEMPTS: this account or network had too many wrong passwords and
+  // sign-in is paused ("Try again in 15 minutes. ..."), worth showing as it came. Any
+  // other 429 is the throttler: the sign-in form has its own, fuller line for that.
   if (status === 429) {
     return { reason: "rate_limited", message: code === "TOO_MANY_ATTEMPTS" ? message : undefined };
   }
-  if (looksBlocked(status, code, message)) return { reason: "account_blocked", message };
+  if (looksBlocked(status, code)) return { reason: "account_blocked", message };
   if (status === 401 || status === 400 || status === 404) {
     return { reason: "invalid_credentials", message };
   }
@@ -72,9 +69,9 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
     });
 
     if (!data.success || !data.data) {
-      // 200 with success:false — classify off the message alone.
+      // 200 with success:false: the code decides.
       const { message, code } = readBody(data);
-      return looksBlocked(undefined, code, message)
+      return looksBlocked(undefined, code)
         ? { ok: false, reason: "account_blocked", message }
         : { ok: false, reason: "invalid_credentials", message };
     }

@@ -27,7 +27,7 @@ const credentials = { email: "asha@example.test", password: "x", remember: false
 
 describe("login failures, as the API sends them", () => {
   it("shows the pause from too many wrong passwords (429 TOO_MANY_ATTEMPTS) as it came", async () => {
-    const text = "Too many wrong passwords. Sign-in is paused for 15 minutes.";
+    const text = "Try again in 15 minutes. Sign-in is paused for now.";
     post.mockRejectedValueOnce(failure(429, "TOO_MANY_ATTEMPTS", text));
     const result = await login(credentials);
     expect(result).toEqual({ ok: false, reason: "rate_limited", message: text });
@@ -39,10 +39,8 @@ describe("login failures, as the API sends them", () => {
     }
   });
 
-  it("keeps the throttler's own wording (429 RATE_LIMITED) away from people", async () => {
-    post.mockRejectedValueOnce(
-      failure(429, "RATE_LIMITED", "ThrottlerException: Too Many Requests"),
-    );
+  it("answers the throttler (429 RATE_LIMITED) with the form's own line", async () => {
+    post.mockRejectedValueOnce(failure(429, "RATE_LIMITED", "Try again in a minute."));
     const result = await login(credentials);
     expect(result).toEqual({ ok: false, reason: "rate_limited", message: undefined });
     if (!result.ok) {
@@ -53,10 +51,31 @@ describe("login failures, as the API sends them", () => {
   });
 
   it("still reads a wrong password and a disabled account", async () => {
-    post.mockRejectedValueOnce(failure(401, "UNAUTHORIZED", "Invalid email or password"));
+    post.mockRejectedValueOnce(
+      failure(401, "INVALID_CREDENTIALS", "Check your email and password, then try again."),
+    );
     expect(await login(credentials)).toMatchObject({ ok: false, reason: "invalid_credentials" });
-    post.mockRejectedValueOnce(failure(403, "ACCOUNT_DISABLED", "This account is disabled"));
-    expect(await login(credentials)).toMatchObject({ ok: false, reason: "account_blocked" });
+    const off = "Ask your manager or an administrator to turn your account back on.";
+    post.mockRejectedValueOnce(failure(403, "ACCOUNT_DISABLED", off));
+    expect(await login(credentials)).toEqual({
+      ok: false,
+      reason: "account_blocked",
+      message: off,
+    });
     expect(loginErrorCopy("account_blocked").title).toBe("Account blocked");
+    expect(loginErrorCopy("account_blocked", off).description).toBe(off);
+  });
+
+  it("branches on the code, never on the words", async () => {
+    // Words that once meant blocked, on a wrong password.
+    post.mockRejectedValueOnce(failure(401, "INVALID_CREDENTIALS", "Your account is blocked"));
+    expect(await login(credentials)).toMatchObject({ ok: false, reason: "invalid_credentials" });
+    // A 200 with success:false: no code, no blocked account, whatever it says.
+    post.mockResolvedValueOnce({ data: { success: false, message: "This account is disabled" } });
+    expect(await login(credentials)).toMatchObject({ ok: false, reason: "invalid_credentials" });
+    post.mockResolvedValueOnce({
+      data: { success: false, message: "Ask your manager", error: { code: "ACCOUNT_DISABLED" } },
+    });
+    expect(await login(credentials)).toMatchObject({ ok: false, reason: "account_blocked" });
   });
 });

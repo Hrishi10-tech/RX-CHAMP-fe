@@ -34,7 +34,6 @@ export interface ShiftDraft {
   breaks: BreakDraft[];
   ringLeadMin: string;
   ringDurationMin: string;
-  ringSound: boolean;
   reasonOnEarly: boolean;
   reasonOnLate: boolean;
   reasonMinChars: string;
@@ -73,7 +72,6 @@ export const BREAK_SHORT_LABEL: Record<BreakKind, string> = {
 export const DEFAULT_RULES: ShiftRules = {
   ringLeadMin: 1,
   ringDurationMin: 5,
-  ringSound: true,
   reasonOnEarly: true,
   reasonOnLate: true,
   reasonMinChars: 10,
@@ -145,7 +143,6 @@ export function newShiftDraft(): ShiftDraft {
     breaks: BREAK_KINDS.map((k) => breakToDraft(DEFAULT_BREAKS[k])),
     ringLeadMin: String(DEFAULT_RULES.ringLeadMin),
     ringDurationMin: String(DEFAULT_RULES.ringDurationMin),
-    ringSound: DEFAULT_RULES.ringSound,
     reasonOnEarly: DEFAULT_RULES.reasonOnEarly,
     reasonOnLate: DEFAULT_RULES.reasonOnLate,
     reasonMinChars: String(DEFAULT_RULES.reasonMinChars),
@@ -170,7 +167,6 @@ export function draftFromShift(shift: ShiftView): ShiftDraft {
     }),
     ringLeadMin: String(shift.rules.ringLeadMin),
     ringDurationMin: String(shift.rules.ringDurationMin),
-    ringSound: shift.rules.ringSound,
     reasonOnEarly: shift.rules.reasonOnEarly,
     reasonOnLate: shift.rules.reasonOnLate,
     reasonMinChars: String(shift.rules.reasonMinChars),
@@ -271,7 +267,6 @@ export function checkDraft(draft: ShiftDraft): DraftCheck {
     workDays: [...draft.workDays].sort((a, b) => a - b),
     ringLeadMin,
     ringDurationMin,
-    ringSound: draft.ringSound,
     reasonOnEarly: draft.reasonOnEarly,
     reasonOnLate: draft.reasonOnLate,
     reasonMinChars,

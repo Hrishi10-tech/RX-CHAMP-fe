@@ -13,7 +13,6 @@ export type ShiftSource = "OVERRIDE" | "DEPARTMENT" | "DEFAULT" | "NONE";
 export interface ShiftRules {
   ringLeadMin: number;
   ringDurationMin: number;
-  ringSound: boolean;
   reasonOnEarly: boolean;
   reasonOnLate: boolean;
   reasonMinChars: number;

@@ -28,7 +28,6 @@ const general: ShiftView = {
   rules: {
     ringLeadMin: 1,
     ringDurationMin: 5,
-    ringSound: true,
     reasonOnEarly: true,
     reasonOnLate: false,
     reasonMinChars: 10,
@@ -126,6 +125,19 @@ describe("checkDraft", () => {
     expect(
       checkDraft({ ...newShiftDraft(), overrunGraceMin: "-1" }).errors.overrunGraceMin,
     ).toBeDefined();
+  });
+});
+
+describe("no sound (brief 1.2)", () => {
+  it("never sends ringSound: the API answers false and ignores it", () => {
+    const { body } = checkDraft(newShiftDraft());
+    expect(body).not.toHaveProperty("ringSound");
+    const fromOldAnswer = {
+      ...general,
+      rules: { ...general.rules, ringSound: true },
+    } as ShiftView;
+    expect(draftFromShift(fromOldAnswer)).not.toHaveProperty("ringSound");
+    expect(checkDraft(draftFromShift(fromOldAnswer)).body).not.toHaveProperty("ringSound");
   });
 });
 

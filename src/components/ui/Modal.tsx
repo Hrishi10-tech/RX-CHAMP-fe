@@ -54,6 +54,9 @@ export function Modal({
     const frame = requestAnimationFrame(() => {
       const root = dialogRef.current;
       if (!root) return;
+      // A late frame must not pull someone out of a field they are already in: the
+      // rest of what they type would go to the dialog, not the field.
+      if (root.contains(document.activeElement)) return;
       const preferred = root.querySelector<HTMLElement>("[data-autofocus]");
       const first = preferred ?? focusablesIn(root).find((el) => !el.dataset.modalClose);
       (first ?? root).focus();

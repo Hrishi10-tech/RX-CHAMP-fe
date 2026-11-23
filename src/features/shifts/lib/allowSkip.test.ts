@@ -52,7 +52,6 @@ describe("allowSkip in the shift editor", () => {
       rules: {
         ringLeadMin: 1,
         ringDurationMin: 5,
-        ringSound: true,
         reasonOnEarly: true,
         reasonOnLate: true,
         reasonMinChars: 10,
