@@ -101,7 +101,7 @@ export function ScreenshotLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-950/90 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-scrim/90 p-4 backdrop-blur-sm"
       onClick={onClose}
       onWheel={onWheel}
     >
@@ -110,20 +110,20 @@ export function ScreenshotLightbox({
         onClick={(e) => e.stopPropagation()}
       >
         {badge}
-        <span className="text-sm font-medium text-white/90">{label}</span>
+        <span className="text-sm font-medium text-primary/90">{label}</span>
       </div>
 
       <div
         className="absolute right-4 top-4 z-10 flex items-center gap-1.5"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-1 rounded-full bg-white/10 p-1 text-white">
+        <div className="flex items-center gap-1 rounded-full bg-primary/10 p-1 text-primary">
           <button
             type="button"
             onClick={zoomOut}
             disabled={zoom <= MIN_ZOOM}
             aria-label="Zoom out"
-            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/20 disabled:opacity-40"
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-primary/20 disabled:opacity-40"
           >
             <Minus className="h-4 w-4" />
           </button>
@@ -131,7 +131,7 @@ export function ScreenshotLightbox({
             type="button"
             onClick={reset}
             aria-label="Reset zoom"
-            className="min-w-[52px] rounded-full px-2 py-1 text-xs font-semibold tabular-nums transition-colors hover:bg-white/20"
+            className="min-w-[52px] rounded-full px-2 py-1 text-xs font-semibold tabular-nums transition-colors hover:bg-primary/20"
           >
             {Math.round(zoom * 100)}%
           </button>
@@ -140,7 +140,7 @@ export function ScreenshotLightbox({
             onClick={zoomIn}
             disabled={zoom >= MAX_ZOOM}
             aria-label="Zoom in"
-            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/20 disabled:opacity-40"
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-primary/20 disabled:opacity-40"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -149,7 +149,7 @@ export function ScreenshotLightbox({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20"
         >
           <X className="h-5 w-5" />
         </button>
@@ -165,7 +165,7 @@ export function ScreenshotLightbox({
             }}
             disabled={!onPrev}
             aria-label="Previous screenshot"
-            className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25 disabled:pointer-events-none disabled:opacity-30 sm:left-5"
+            className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-30 sm:left-5"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -177,7 +177,7 @@ export function ScreenshotLightbox({
             }}
             disabled={!onNext}
             aria-label="Next screenshot"
-            className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25 disabled:pointer-events-none disabled:opacity-30 sm:right-5"
+            className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-30 sm:right-5"
           >
             <ChevronRight className="h-6 w-6" />
           </button>

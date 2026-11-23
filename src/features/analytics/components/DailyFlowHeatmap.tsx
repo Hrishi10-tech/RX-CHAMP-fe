@@ -1,5 +1,7 @@
 import { formatHour12 } from "@/lib/time/format";
 import type { DailyFlowCell } from "@/features/analytics/types";
+import { hex } from "@/styles/tokens";
+import { tokenColor } from "@/components/charts/chartTheme";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOUR_TICKS: Record<number, string> = {
@@ -14,8 +16,8 @@ const HOUR_TICKS: Record<number, string> = {
 };
 
 function cellColor(value: number): string {
-  if (value < 0.04) return "#f1f5f9";
-  return `rgba(79, 70, 229, ${(0.12 + value * 0.88).toFixed(3)})`;
+  if (value < 0.04) return hex.fill;
+  return tokenColor("brand", Number((0.12 + value * 0.88).toFixed(3)));
 }
 
 export function DailyFlowHeatmap({
@@ -37,7 +39,7 @@ export function DailyFlowHeatmap({
           const label = DAYS[day] ?? "";
           return (
             <div key={label} className="flex items-center gap-2">
-              <span className="w-8 shrink-0 text-[11px] font-medium text-slate-400">{label}</span>
+              <span className="w-8 shrink-0 text-[0.6875rem] font-medium text-quiet">{label}</span>
               <div
                 className="grid flex-1 gap-1"
                 style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}
@@ -49,7 +51,7 @@ export function DailyFlowHeatmap({
                       key={hour}
                       className="aspect-square rounded-[3px]"
                       style={{ backgroundColor: cellColor(v) }}
-                      title={`${label} ${formatHour12(hour)} — ${Math.round(v * 100)}%`}
+                      title={`${label} ${formatHour12(hour)}: ${Math.round(v * 100)}%`}
                     />
                   );
                 })}
@@ -63,19 +65,19 @@ export function DailyFlowHeatmap({
         <span className="w-8 shrink-0" />
         <div className="grid flex-1" style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}>
           {Array.from({ length: 24 }, (_, hour) => (
-            <span key={hour} className="text-[9px] text-slate-400">
+            <span key={hour} className="text-[0.6875rem] text-quiet">
               {HOUR_TICKS[hour] ?? ""}
             </span>
           ))}
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-end gap-2 text-[11px] text-slate-400">
+      <div className="mt-4 flex items-center justify-end gap-2 text-[0.6875rem] text-quiet">
         <span>Low</span>
         <span
           className="h-2.5 w-24 rounded-full"
           style={{
-            background: "linear-gradient(to right, #f1f5f9, rgba(79,70,229,0.5), #4f46e5)",
+            background: `linear-gradient(to right, ${hex.fill}, ${tokenColor("brand", 0.5)}, ${hex.brand})`,
           }}
         />
         <span>High</span>

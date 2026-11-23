@@ -14,11 +14,18 @@ import {
 } from "recharts";
 
 import type { OnlineHoursPoint } from "@/features/analytics/types";
-import { C, TOOLTIP_STYLE } from "@/features/analytics/lib/palette";
+import {
+  axisLine,
+  axisTick,
+  chartGrid,
+  tokenColor,
+  tooltipStyle,
+} from "@/components/charts/chartTheme";
+import { hex } from "@/styles/tokens";
 
-const BRAND = "rgb(34 34 204)";
-const BRAND_MUTED = "rgba(34,34,204,0.28)";
-const TEAL = "#2dd4bf";
+const BRAND = hex.brand;
+const BRAND_MUTED = tokenColor("brand", 0.28);
+const TEAL = hex.brand;
 
 const toHours = (sec: number) => +(sec / 3600).toFixed(2);
 const dayLabel = (iso: string) => {
@@ -43,15 +50,10 @@ export function OnlineHoursChart({ data }: { data: OnlineHoursPoint[] }) {
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 11, fill: C.axis }}
-            tickLine={false}
-            axisLine={{ stroke: C.track }}
-          />
+          <CartesianGrid strokeDasharray="3 3" {...chartGrid} />
+          <XAxis dataKey="label" tick={axisTick(11)} tickLine={false} axisLine={axisLine} />
           <YAxis
-            tick={{ fontSize: 11, fill: C.axis }}
+            tick={axisTick(11)}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}
@@ -59,9 +61,9 @@ export function OnlineHoursChart({ data }: { data: OnlineHoursPoint[] }) {
             width={40}
           />
           <Tooltip
-            cursor={{ fill: "rgba(34,34,204,0.06)" }}
+            cursor={{ fill: tokenColor("brand", 0.06) }}
             formatter={(v: number) => [`${v} h`, "Online"]}
-            contentStyle={TOOLTIP_STYLE}
+            {...tooltipStyle}
           />
           {avg > 0 && <ReferenceLine y={avg} stroke={TEAL} strokeWidth={2} strokeDasharray="5 4" />}
           <Bar dataKey="hours" radius={[6, 6, 0, 0]} maxBarSize={48}>

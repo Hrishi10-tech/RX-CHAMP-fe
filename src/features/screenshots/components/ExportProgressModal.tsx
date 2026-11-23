@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
-import { btnPrimary, btnSecondary } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import {
   cancelExport,
@@ -19,10 +18,11 @@ import { etaText, sizeText } from "@/features/screenshots/lib/progress";
 import { formatDayLong } from "@/lib/time/months";
 import { dateKeyOf } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
+import { Button } from "@/components/ui/Button";
 
 const POLL_MS = 1_500;
 
-/** "9 Nov 2026, 14:05" in the business zone. */
+/** "9 Nov 2026, 2:05 PM" in the business zone. */
 function keptUntil(iso: string): string {
   return `${formatDayLong(dateKeyOf(new Date(iso)))}, ${formatTime12(iso)}`;
 }
@@ -130,7 +130,7 @@ export function ExportProgressModal({
     >
       <div className="space-y-4 px-6 pb-6">
         {!job ? (
-          <p className="flex items-center gap-2 text-sm text-slate-600">
+          <p className="flex items-center gap-2 text-sm text-soft">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             Starting…
           </p>
@@ -138,8 +138,8 @@ export function ExportProgressModal({
           <>
             <div>
               <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="font-semibold text-slate-800">{job.stage}</span>
-                <span className="tabular-nums text-slate-500">{pct}%</span>
+                <span className="font-semibold text-strong">{job.stage}</span>
+                <span className="tabular-nums text-quiet">{pct}%</span>
               </div>
               <div
                 role="progressbar"
@@ -147,20 +147,20 @@ export function ExportProgressModal({
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={pct}
-                className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
+                className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-panel"
               >
                 <div
                   className={`h-full rounded-full transition-[width] duration-500 ${
                     job.status === "FAILED" || job.status === "CANCELLED"
-                      ? "bg-slate-400"
+                      ? "bg-neutral"
                       : job.status === "DONE"
-                        ? "bg-emerald-600"
-                        : "bg-[rgb(34_34_204)]"
+                        ? "bg-working"
+                        : "bg-brand"
                   }`}
                   style={{ width: `${Math.max(job.status === "RUNNING" ? 2 : 0, pct)}%` }}
                 />
               </div>
-              <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-xs text-slate-500">
+              <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-xs text-quiet">
                 <span className="tabular-nums">
                   {job.done} of {job.total} screenshots
                 </span>
@@ -169,7 +169,7 @@ export function ExportProgressModal({
             </div>
 
             {job.status === "DONE" && (
-              <p className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3.5 py-2.5 text-sm text-emerald-900">
+              <p className="flex items-start gap-2 rounded-xl bg-working-wash px-3.5 py-2.5 text-sm text-working-ink">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 {purge
                   ? `Deleted ${job.done} screenshots.`
@@ -184,7 +184,7 @@ export function ExportProgressModal({
               </p>
             )}
             {(job.status === "FAILED" || job.status === "CANCELLED") && (
-              <p className="flex items-start gap-2 rounded-xl bg-rose-50 px-3.5 py-2.5 text-sm text-rose-900">
+              <p className="flex items-start gap-2 rounded-xl bg-attention-wash px-3.5 py-2.5 text-sm text-attention-ink">
                 <XCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 {job.error ??
                   (job.status === "CANCELLED" ? "Cancelled." : "Something went wrong.")}{" "}
@@ -192,22 +192,22 @@ export function ExportProgressModal({
               </p>
             )}
             {running(job) && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-quiet">
                 Keep this window open. Closing it cancels the {purge ? "deletion" : "file"}, and it
                 has to be started again.
               </p>
             )}
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => void close()} className={btnSecondary}>
+              <Button variant="secondary" type="button" onClick={() => void close()}>
                 {running(job) ? `Cancel ${purge ? "deletion" : "and close"}` : "Close"}
-              </button>
+              </Button>
               {job.status === "DONE" && job.downloadable && (
-                <button
+                <Button
+                  variant="primary"
                   type="button"
                   onClick={() => void download()}
                   disabled={downloading}
-                  className={btnPrimary}
                 >
                   {downloading ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -215,7 +215,7 @@ export function ExportProgressModal({
                     <Download className="h-4 w-4" aria-hidden />
                   )}
                   Download
-                </button>
+                </Button>
               )}
             </div>
           </>

@@ -15,7 +15,8 @@ import {
   RefreshFailedNotice,
 } from "@/components/ui/StatePanel";
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
-import { cardBase } from "@/components/ui/classes";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Field";
 import type { SelectOption } from "@/components/ui/types";
 import { errorCode, errorMessage } from "@/lib/api";
 import { formatDuration } from "@/lib/format/duration";
@@ -47,20 +48,18 @@ export function FocusBar({ focusSec, targetSec }: { focusSec: number; targetSec:
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-2 text-xs">
-        <span className="font-semibold tabular-nums text-slate-800">
-          {formatDuration(focusSec)}
-        </span>
-        <span className="tabular-nums text-slate-400">
+        <span className="font-semibold tabular-nums text-strong">{formatDuration(focusSec)}</span>
+        <span className="tabular-nums text-quiet">
           {targetSec > 0 ? `of ${formatDuration(targetSec)}` : "no target"}
         </span>
       </div>
       <div
-        className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100"
+        className="mt-1 h-1.5 overflow-hidden rounded-full bg-panel"
         role="img"
         aria-label={`${formatDuration(focusSec)} focus of ${formatDuration(targetSec)} target`}
       >
         <div
-          className={`h-full rounded-full ${met ? "bg-emerald-500" : "bg-[rgb(34_34_204)]"}`}
+          className={`h-full rounded-full ${met ? "bg-working" : "bg-brand"}`}
           style={{ width: `${share}%` }}
         />
       </div>
@@ -85,22 +84,22 @@ function StatusCell({ person }: { person: TeamPerson }) {
       <Chip tone={look.tone} dot pulse={person.status === "WORKING"}>
         {look.label}
       </Chip>
-      {since && <span className="text-xs text-slate-500">{since}</span>}
+      {since && <span className="text-xs text-quiet">{since}</span>}
       {person.leave && (
-        <span className="text-xs font-medium text-sky-700">
+        <span className="text-xs font-medium text-meeting">
           {person.leave.pendingDays > 0 && !person.leave.label
             ? "leave waiting for a decision"
             : `on leave: ${person.leave.label.toLowerCase()}, ${person.leave.categories}`}
         </span>
       )}
       {(person.wfhDays ?? 0) > 0 && (
-        <span className="text-xs font-medium text-[rgb(34_34_204)]">
+        <span className="text-xs font-medium text-brand">
           {(person.wfhDays ?? 0) >= 1 ? "from home" : "from home, half day"}
         </span>
       )}
       {person.attendance === "BIOMETRIC" && (
         <span
-          className="text-xs font-medium text-slate-600"
+          className="text-xs font-medium text-soft"
           title="Their day comes from the biometric device"
         >
           biometric
@@ -108,14 +107,14 @@ function StatusCell({ person }: { person: TeamPerson }) {
       )}
       {person.noCheckout && (
         <span
-          className="text-xs font-medium text-amber-700"
+          className="text-xs font-medium text-attention"
           title="No check-out was recorded; the day was closed at the last punch"
         >
           no check-out
         </span>
       )}
       {person.lateStartMin > 0 && (
-        <span className="text-xs font-medium text-orange-600">
+        <span className="text-xs font-medium text-attention">
           started {formatDuration(person.lateStartMin * 60)} late
           {person.lateReason ? `: ${person.lateReason}` : ""}
         </span>
@@ -130,7 +129,7 @@ function PersonRow({ person }: { person: TeamPerson }) {
     <li>
       <Link
         href={href}
-        className={`group block px-4 py-3.5 transition hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none sm:px-5 ${ROW_GRID}`}
+        className={`group block px-4 py-3.5 transition hover:bg-fill focus-visible:bg-fill focus-visible:outline-none sm:px-5 ${ROW_GRID}`}
       >
         <div className="flex min-w-0 items-center gap-3">
           <span className="relative flex shrink-0">
@@ -142,30 +141,30 @@ function PersonRow({ person }: { person: TeamPerson }) {
             />
             <span
               aria-hidden
-              className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white ${
-                person.online ? "bg-emerald-500" : "bg-slate-300"
+              className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-card ${
+                person.online ? "bg-working" : "bg-edge-strong"
               }`}
             />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-slate-900">{person.name}</p>
-            <p className="truncate text-xs text-slate-500">
+            <p className="truncate font-semibold text-primary">{person.name}</p>
+            <p className="truncate text-xs text-quiet">
               {[person.designation, person.role !== "USER" ? roleLabel(person.role) : null]
                 .filter(Boolean)
                 .join(" · ") || "Staff"}
             </p>
           </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 md:hidden" aria-hidden />
+          <ChevronRight className="h-4 w-4 shrink-0 text-faint md:hidden" aria-hidden />
         </div>
 
         <div className="mt-2 flex min-w-0 items-center gap-2 md:mt-0">
           {person.department ? (
             <>
               <DepartmentIcon icon={person.department.icon} size="xs" />
-              <span className="truncate text-sm text-slate-600">{person.department.name}</span>
+              <span className="truncate text-sm text-soft">{person.department.name}</span>
             </>
           ) : (
-            <span className="text-sm text-slate-400">No department</span>
+            <span className="text-sm text-quiet">No department</span>
           )}
         </div>
 
@@ -175,9 +174,9 @@ function PersonRow({ person }: { person: TeamPerson }) {
 
         <div className="mt-2 md:mt-0">
           <FocusBar focusSec={person.focusSec} targetSec={person.targetSec} />
-          <p className="mt-1 text-[11px] leading-snug text-slate-500">
+          <p className="mt-1 text-[0.6875rem] leading-snug text-quiet">
             Paid time{" "}
-            <span className="font-semibold tabular-nums text-slate-700">
+            <span className="font-semibold tabular-nums text-body">
               {formatDuration(person.paidSec)}
             </span>
             {offlineText(person.unverifiedSec) && (
@@ -191,9 +190,9 @@ function PersonRow({ person }: { person: TeamPerson }) {
           title={person.online ? "Agent online" : "Agent offline"}
         >
           {person.online ? (
-            <Wifi className="h-4 w-4 text-emerald-500" aria-label="Agent online" />
+            <Wifi className="h-4 w-4 text-working" aria-label="Agent online" />
           ) : (
-            <WifiOff className="h-4 w-4 text-slate-300" aria-label="Agent offline" />
+            <WifiOff className="h-4 w-4 text-neutral" aria-label="Agent offline" />
           )}
         </span>
       </Link>
@@ -271,12 +270,12 @@ export function TeamView() {
   const total = meta?.total ?? rows.length;
 
   const tiles: { label: string; value: number; dot: string }[] = [
-    { label: "Working", value: counts.working, dot: "bg-emerald-500" },
-    { label: "On a break", value: counts.onBreak, dot: "bg-amber-500" },
-    { label: "In a meeting", value: counts.inMeeting, dot: "bg-[rgb(34_34_204)]" },
-    { label: "Away", value: counts.away, dot: "bg-rose-500" },
-    { label: "Not started", value: counts.notStarted, dot: "bg-slate-300" },
-    { label: "Day ended", value: counts.ended, dot: "bg-sky-500" },
+    { label: "Working", value: counts.working, dot: "bg-working" },
+    { label: "On a break", value: counts.onBreak, dot: "bg-attention" },
+    { label: "In a meeting", value: counts.inMeeting, dot: "bg-meeting" },
+    { label: "Away", value: counts.away, dot: "bg-attention" },
+    { label: "Not started", value: counts.notStarted, dot: "bg-edge-strong" },
+    { label: "Day ended", value: counts.ended, dot: "bg-neutral" },
   ];
 
   return (
@@ -299,16 +298,16 @@ export function TeamView() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative sm:w-64">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral"
               aria-hidden
             />
-            <input
+            <Input
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search people"
               aria-label="Search people"
-              className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-[rgb(34_34_204)]"
+              className="pl-9 font-normal"
             />
           </div>
           <div className="sm:w-60 [&>button]:mt-0">
@@ -322,14 +321,14 @@ export function TeamView() {
         </div>
       </div>
 
-      <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-6">
+      <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-card bg-edge shadow-sm sm:grid-cols-6">
         {tiles.map((t) => (
-          <div key={t.label} className="min-w-0 bg-white px-3 py-2.5 sm:px-4">
-            <dt className="flex items-center gap-1.5 truncate text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          <div key={t.label} className="min-w-0 bg-card px-3 py-2.5 sm:px-4">
+            <dt className="flex items-center gap-1.5 truncate text-[0.6875rem] font-semibold uppercase tracking-wide text-quiet">
               <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${t.dot}`} />
               {t.label}
             </dt>
-            <dd className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">{t.value}</dd>
+            <dd className="mt-0.5 text-xl font-bold tabular-nums text-primary">{t.value}</dd>
           </div>
         ))}
       </dl>
@@ -343,9 +342,9 @@ export function TeamView() {
         />
       )}
 
-      <section className={`${cardBase} overflow-hidden`} aria-label="People">
+      <Card as="section" className="overflow-hidden" aria-label="People">
         <div
-          className={`hidden border-b border-slate-100 bg-slate-50/70 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500 ${ROW_GRID}`}
+          className={`hidden border-b border-divider bg-fill/70 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-quiet ${ROW_GRID}`}
           aria-hidden
         >
           <span>Person</span>
@@ -385,7 +384,7 @@ export function TeamView() {
         ) : (
           <>
             <ul
-              className={`divide-y divide-slate-100 transition-opacity ${team.isPlaceholderData ? "opacity-60" : ""}`}
+              className={`divide-y divide-divider transition-opacity ${team.isPlaceholderData ? "opacity-60" : ""}`}
               aria-busy={team.isPlaceholderData}
             >
               {rows.map((p) => (
@@ -406,7 +405,7 @@ export function TeamView() {
             )}
           </>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

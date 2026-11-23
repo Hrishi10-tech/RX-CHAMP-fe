@@ -19,7 +19,7 @@ import { TbBrandVscode, TbBrandWindows } from "react-icons/tb";
 
 import type { AppIconDef } from "@/features/analytics/types";
 
-const APP_ICONS: AppIconDef[] = [ 
+const APP_ICONS: AppIconDef[] = [
   {
     keywords: ["visual studio code", "vs code", "vscode", "code.exe"],
     Icon: TbBrandVscode,

@@ -11,6 +11,8 @@ import { ScreenshotLightbox } from "@/features/screenshots/components/Screenshot
 import { indexOfScreenshot } from "@/features/screenshots/lib/sameScreenshot";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { ScreenshotReportDialog } from "@/features/screenshots/components/ScreenshotReportDialog";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { businessHourOf, formatTime12, twelveHour } from "@/lib/time/format";
 import { BUSINESS_TIMEZONE, todayKey, zoneOffsetMs } from "@/lib/time/businessTime";
 
@@ -26,8 +28,8 @@ const toMinutes = (hhmm: string) => {
 };
 
 const PAGE_SIZE = 10;
-// Default to the whole day so every screenshot the agent took shows — from login
-// through any overtime — instead of a fixed 9–6 window that hid captures outside it.
+// Default to the whole day so every screenshot the agent took shows, from login
+// through any overtime, instead of a fixed 9–6 window that hid captures outside it.
 // The user can still narrow the range to inspect a specific time.
 const FULL_DAY = { start: "00:00", end: "23:59" };
 // The chosen range is remembered across refreshes so a set window (e.g. 10:00–19:00)
@@ -86,12 +88,7 @@ function dedupById(list: Screenshot[]): Screenshot[] {
 
 function TimeField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <TimePicker
-      value={value}
-      onChange={onChange}
-      variant="inline"
-      iconClassName="text-[rgb(34_34_204)]"
-    />
+    <TimePicker value={value} onChange={onChange} variant="inline" iconClassName="text-brand" />
   );
 }
 
@@ -260,7 +257,7 @@ export function ScreenshotsWidget({
     setCapturing(true);
     try {
       await captureScreenshot(userId);
-      toast.success("Capture requested — waiting for the agent…");
+      toast.success("Capture requested. Waiting for the agent…");
       for (const delay of [3000, 6000]) {
         await new Promise((r) => setTimeout(r, delay));
         if (!mounted.current) return;
@@ -295,13 +292,13 @@ export function ScreenshotsWidget({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-card bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-wide text-slate-600">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-soft">
             Screenshots Timeline
           </h2>
-          <p className="mt-1 text-sm font-medium text-slate-600">
+          <p className="mt-1 text-sm font-medium text-soft">
             {loading
               ? "Loading…"
               : `Total ${total} screenshot${
@@ -316,10 +313,7 @@ export function ScreenshotsWidget({
             value={range.start}
             onChange={(v) => updateRange({ start: v, end: range.end })}
           />
-          <span
-            aria-hidden
-            className="hidden px-0.5 text-base font-semibold text-slate-400 sm:inline"
-          >
+          <span aria-hidden className="hidden px-0.5 text-base font-semibold text-quiet sm:inline">
             &ndash;
           </span>
           <TimeField
@@ -327,53 +321,54 @@ export function ScreenshotsWidget({
             onChange={(v) => updateRange({ start: range.start, end: v })}
           />
           {canCapture && (
-            <button
+            <Button
               type="button"
+              variant="primary"
               onClick={handleCapture}
               disabled={capturing}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[rgb(34_34_204)] px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[rgb(28_28_180)] disabled:opacity-60"
+              className="shrink-0"
             >
               <Camera className={`h-4 w-4 ${capturing ? "animate-pulse" : ""}`} />
               {capturing ? "Capturing…" : "Capture "}
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            onClick={() => setReporting(true)}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
+          <Button type="button" onClick={() => setReporting(true)} className="shrink-0">
             <FileText className="h-4 w-4" aria-hidden />
             PDF report
-          </button>
+          </Button>
         </div>
       </div>
 
       {!loading && hours.length > 0 && (
         <div className="mt-6 flex items-center gap-2">
-          <button
-            type="button"
+          <IconButton
+            label="Scroll timeline left"
             onClick={() => scrollAxis(-1)}
-            aria-label="Scroll timeline left"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+            className="rounded-full bg-panel hover:bg-edge"
           >
             <ChevronLeft className="h-4 w-4" />
-          </button>
+          </IconButton>
 
-          <div ref={axisRef} className="scrollbar-slim flex-1 overflow-x-auto">
+          <div
+            ref={axisRef}
+            tabIndex={0}
+            aria-label="Hours of the day"
+            className="scrollbar-slim flex-1 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35"
+          >
             <div style={{ minWidth: `${hours.length * 92}px` }}>
               <div className="flex">
                 {hours.map((h, i) => {
                   const active = i === activeIndex;
                   return (
                     <div key={h.hour} className="flex flex-1 flex-col items-center gap-2">
-                      <span className="whitespace-nowrap text-xs font-medium text-slate-500">
+                      <span className="whitespace-nowrap text-xs font-medium text-quiet">
                         {hourLabel(h.hour)}
                       </span>
                       <span
                         className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                           active
-                            ? "bg-[rgb(34_34_204)] text-white shadow-sm shadow-[rgba(34,34,204,0.35)]"
-                            : "bg-[rgba(34,34,204,0.1)] text-[rgb(34_34_204)]"
+                            ? "bg-brand text-on-brand shadow-sm shadow-brand/35"
+                            : "bg-brand/10 text-brand"
                         }`}
                       >
                         {h.count}
@@ -384,19 +379,17 @@ export function ScreenshotsWidget({
               </div>
 
               <div className="relative mt-3 h-3">
-                <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-slate-200" />
+                <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-edge" />
                 <div
-                  className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-[rgb(34_34_204)]"
+                  className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-brand"
                   style={{ width: `${fillPct}%` }}
                 />
                 <div className="relative flex justify-between">
                   {hours.map((h, i) => (
                     <span
                       key={h.hour}
-                      className={`h-3 w-3 rounded-full ring-2 ring-white ${
-                        i <= activeIndex && activeIndex >= 0
-                          ? "bg-[rgb(34_34_204)]"
-                          : "bg-slate-300"
+                      className={`h-3 w-3 rounded-full ring-2 ring-card ${
+                        i <= activeIndex && activeIndex >= 0 ? "bg-brand" : "bg-edge-strong"
                       }`}
                     />
                   ))}
@@ -405,25 +398,24 @@ export function ScreenshotsWidget({
             </div>
           </div>
 
-          <button
-            type="button"
+          <IconButton
+            label="Scroll timeline right"
             onClick={() => scrollAxis(1)}
-            aria-label="Scroll timeline right"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+            className="rounded-full bg-panel hover:bg-edge"
           >
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </IconButton>
         </div>
       )}
 
       {loading ? (
         <div className="mt-6 flex gap-3 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-28 w-44 shrink-0 animate-pulse rounded-xl bg-slate-100" />
+            <div key={i} className="h-28 w-44 shrink-0 animate-pulse rounded-xl bg-panel" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="mt-6 flex h-40 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-sm text-slate-400">
+        <div className="mt-6 flex h-40 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-card bg-fill text-center text-sm text-quiet">
           <Camera className="h-6 w-6" />
           <p>No screenshots in this range.</p>
         </div>
@@ -433,7 +425,7 @@ export function ScreenshotsWidget({
             type="button"
             onClick={() => scrollStrip(-1)}
             aria-label="Previous screenshots"
-            className="absolute -left-3 top-[38%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50"
+            className="absolute -left-3 top-[38%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-card bg-card text-quiet shadow-sm hover:bg-fill"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -445,19 +437,19 @@ export function ScreenshotsWidget({
             onPointerMove={onMove}
             onPointerUp={endDrag}
             onPointerLeave={endDrag}
+            tabIndex={0}
+            aria-label="Screenshots"
             className={`scrollbar-slim flex gap-3 overflow-x-auto pb-2 ${
               dragging ? "cursor-grabbing select-none" : "cursor-grab"
             }`}
           >
             {filtered.map((shot, i) => (
               <div key={shotKey(shot, i)} className="w-44 shrink-0">
-                <p className="mb-1.5 text-xs font-semibold text-slate-500">
-                  {timeLabel(shot.takenAt)}
-                </p>
+                <p className="mb-1.5 text-xs font-semibold text-quiet">{timeLabel(shot.takenAt)}</p>
                 <button
                   type="button"
                   onClick={() => setPreview(shot)}
-                  className="group block w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-900"
+                  className="group block w-full overflow-hidden rounded-xl border border-card bg-scrim"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -469,15 +461,14 @@ export function ScreenshotsWidget({
                   />
                 </button>
                 <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">{agoLabel(shot.takenAt)}</span>
-                  <button
-                    type="button"
+                  <span className="text-[0.6875rem] text-quiet">{agoLabel(shot.takenAt)}</span>
+                  <IconButton
+                    label="Open full screen"
                     onClick={() => setPreview(shot)}
-                    aria-label="Open full screen"
-                    className="text-slate-400 transition-colors hover:text-[rgb(34_34_204)]"
+                    className="h-8 w-8 hover:text-brand"
                   >
                     <Maximize2 className="h-3.5 w-3.5" />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             ))}
@@ -487,7 +478,7 @@ export function ScreenshotsWidget({
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="flex aspect-video w-44 shrink-0 flex-col items-center justify-center gap-1.5 self-start rounded-xl border border-dashed border-slate-200 bg-slate-50 text-xs font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-70"
+                className="flex aspect-video w-44 shrink-0 flex-col items-center justify-center gap-1.5 self-start rounded-xl border border-dashed border-card bg-fill text-xs font-semibold text-quiet hover:bg-panel disabled:opacity-70"
               >
                 {loadingMore ? (
                   <>
@@ -498,7 +489,7 @@ export function ScreenshotsWidget({
                   <>
                     <ChevronRight className="h-5 w-5" />
                     Load more
-                    <span className="text-[10px] font-medium text-slate-400">
+                    <span className="text-xs font-medium text-quiet">
                       {items.length} of {total}
                     </span>
                   </>
@@ -511,7 +502,7 @@ export function ScreenshotsWidget({
             type="button"
             onClick={() => scrollStrip(1)}
             aria-label="Next screenshots"
-            className="absolute -right-3 top-[38%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50"
+            className="absolute -right-3 top-[38%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-card bg-card text-quiet shadow-sm hover:bg-fill"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -520,19 +511,20 @@ export function ScreenshotsWidget({
 
       {!loading && (
         <div className="relative mt-4 flex items-center justify-center">
-          <span className="flex items-center gap-2 text-xs text-slate-400">
+          <span className="flex items-center gap-2 text-xs text-quiet">
             <ChevronLeft className="h-3.5 w-3.5" />
             Drag to scroll
             <ChevronRight className="h-3.5 w-3.5" />
           </span>
           {(range.start !== FULL_DAY.start || range.end !== FULL_DAY.end) && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => updateRange(FULL_DAY)}
-              className="absolute right-0 text-sm font-semibold text-[rgb(34_34_204)] hover:underline"
+              className="absolute right-0"
             >
               View Full Timeline →
-            </button>
+            </Button>
           )}
         </div>
       )}

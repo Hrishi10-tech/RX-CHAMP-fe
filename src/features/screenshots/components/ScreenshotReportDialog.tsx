@@ -5,7 +5,7 @@ import { FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Modal } from "@/components/ui/Modal";
-import { btnPrimary, btnSecondary, hintBase, inputBase, labelBase } from "@/components/ui/classes";
+import { labelBase } from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import { todayKey } from "@/lib/time/businessTime";
 import {
@@ -17,6 +17,8 @@ import {
 } from "@/features/screenshots/api/exports";
 import { ExportProgressModal } from "@/features/screenshots/components/ExportProgressModal";
 import { durationText, sizeText } from "@/features/screenshots/lib/progress";
+import { Hint, Input, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 
 const MODES: { value: ReportMode; label: string; hint: string }[] = [
   { value: "DAY", label: "One day", hint: "Every screenshot of one date." },
@@ -155,12 +157,10 @@ export function ScreenshotReportDialog({
                 <label
                   key={m.value}
                   className={`flex cursor-pointer flex-col rounded-xl border px-3 py-2 text-sm ${
-                    mode === m.value
-                      ? "border-[rgb(34_34_204)] bg-[rgba(34,34,204,0.05)]"
-                      : "border-slate-200"
+                    mode === m.value ? "border-brand bg-brand/5" : "border-card"
                   }`}
                 >
-                  <span className="flex items-center gap-2 font-semibold text-slate-800">
+                  <span className="flex items-center gap-2 font-semibold text-strong">
                     <input
                       type="radio"
                       name="mode"
@@ -169,7 +169,7 @@ export function ScreenshotReportDialog({
                     />
                     {m.label}
                   </span>
-                  <span className="mt-0.5 text-xs text-slate-500">{m.hint}</span>
+                  <span className="mt-0.5 text-xs text-quiet">{m.hint}</span>
                 </label>
               ))}
             </div>
@@ -177,97 +177,71 @@ export function ScreenshotReportDialog({
 
           {(mode === "DAY" || mode === "TIME_WINDOW") && (
             <div>
-              <label htmlFor="rep-date" className={labelBase}>
-                Date
-              </label>
-              <input
+              <Label htmlFor="rep-date">Date</Label>
+              <Input
                 id="rep-date"
                 type="date"
                 max={today}
                 value={fields.date}
                 onChange={set("date")}
-                className={inputBase}
               />
             </div>
           )}
           {mode === "TIME_WINDOW" && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="rep-from" className={labelBase}>
-                  From
-                </label>
-                <input
+                <Label htmlFor="rep-from">From</Label>
+                <Input
                   id="rep-from"
                   type="time"
                   value={fields.fromTime}
                   onChange={set("fromTime")}
-                  className={inputBase}
                 />
               </div>
               <div>
-                <label htmlFor="rep-to" className={labelBase}>
-                  To
-                </label>
-                <input
-                  id="rep-to"
-                  type="time"
-                  value={fields.toTime}
-                  onChange={set("toTime")}
-                  className={inputBase}
-                />
+                <Label htmlFor="rep-to">To</Label>
+                <Input id="rep-to" type="time" value={fields.toTime} onChange={set("toTime")} />
               </div>
             </div>
           )}
           {mode === "RANGE" && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="rep-fd" className={labelBase}>
-                  First day
-                </label>
-                <input
+                <Label htmlFor="rep-fd">First day</Label>
+                <Input
                   id="rep-fd"
                   type="date"
                   max={today}
                   value={fields.fromDate}
                   onChange={set("fromDate")}
-                  className={inputBase}
                 />
               </div>
               <div>
-                <label htmlFor="rep-td" className={labelBase}>
-                  Last day
-                </label>
-                <input
+                <Label htmlFor="rep-td">Last day</Label>
+                <Input
                   id="rep-td"
                   type="date"
                   max={today}
                   value={fields.toDate}
                   onChange={set("toDate")}
-                  className={inputBase}
                 />
               </div>
             </div>
           )}
           {mode === "MONTH" && (
             <div>
-              <label htmlFor="rep-month" className={labelBase}>
-                Month
-              </label>
-              <input
+              <Label htmlFor="rep-month">Month</Label>
+              <Input
                 id="rep-month"
                 type="month"
                 max={today.slice(0, 7)}
                 value={fields.month}
                 onChange={set("month")}
-                className={inputBase}
               />
             </div>
           )}
 
-          <p
-            className={`${hintBase} !mt-0 rounded-lg bg-slate-50 px-3 py-2 text-sm`}
-            aria-live="polite"
-          >
+          <Hint className="!mt-0 rounded-lg bg-fill px-3 py-2 text-sm" aria-live="polite">
             {estimateError
               ? estimateError
               : estimate
@@ -275,16 +249,16 @@ export function ScreenshotReportDialog({
                   ? `No screenshots in ${estimate.periodLabel}.`
                   : `${estimate.total} screenshots in ${estimate.periodLabel}: about ${sizeText(estimate.estimatedBytes)}, ready in ${durationText(estimate.estimatedSec)}.`
                 : "Counting the screenshots…"}
-          </p>
+          </Hint>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onClose} className={btnSecondary}>
+            <Button variant="secondary" type="button" onClick={onClose}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               type="submit"
               disabled={starting || !!estimateError || estimate?.total === 0}
-              className={btnPrimary}
             >
               {starting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -292,7 +266,7 @@ export function ScreenshotReportDialog({
                 <FileDown className="h-4 w-4" aria-hidden />
               )}
               Make the PDF
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

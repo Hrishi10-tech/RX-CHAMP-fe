@@ -3,7 +3,8 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { HourActivity } from "@/features/analytics/types";
-import { C, TOOLTIP_STYLE } from "@/features/analytics/lib/palette";
+import { C } from "@/features/analytics/lib/palette";
+import { chartGrid, axisTick, axisLine, tooltipStyle } from "@/components/charts/chartTheme";
 
 const SERIES = [
   { key: "Active", color: C.indigo },
@@ -19,26 +20,29 @@ export function ActivityTimelineChart({ data }: { data: HourActivity[] }) {
     Idle: toMin(h.idleSec),
   }));
 
+  // W-17: a day with nothing recorded says so, rather than drawing empty axes.
+  if (!rows.some((r) => r.Active > 0 || r.Idle > 0)) {
+    return (
+      <div className="flex h-56 w-full items-center justify-center text-sm text-quiet">
+        No activity recorded on this day.
+      </div>
+    );
+  }
+
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" {...chartGrid} />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: C.axis }}
+            tick={axisTick(11)}
             tickLine={false}
-            axisLine={{ stroke: C.track }}
+            axisLine={axisLine}
             interval={3}
           />
-          <YAxis
-            tick={{ fontSize: 11, fill: C.axis }}
-            tickLine={false}
-            axisLine={false}
-            unit="m"
-            width={44}
-          />
-          <Tooltip formatter={(v: number, n) => [`${v} min`, n]} contentStyle={TOOLTIP_STYLE} />
+          <YAxis tick={axisTick(11)} tickLine={false} axisLine={false} unit="m" width={44} />
+          <Tooltip formatter={(v: number, n) => [`${v} min`, n]} {...tooltipStyle} />
           {SERIES.map((s, i) => (
             <Bar
               key={s.key}

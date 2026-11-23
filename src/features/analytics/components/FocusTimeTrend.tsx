@@ -12,8 +12,10 @@ import {
 } from "recharts";
 
 import type { FocusTrendPoint } from "@/features/analytics/types";
-import { C, TOOLTIP_STYLE } from "@/features/analytics/lib/palette";
+import { C } from "@/features/analytics/lib/palette";
 import { formatDuration } from "@/features/activity/lib/format";
+import { chartGrid, axisTick, axisLine, tooltipStyle } from "@/components/charts/chartTheme";
+import { hex } from "@/styles/tokens";
 
 const toHours = (sec: number) => +(sec / 3600).toFixed(2);
 const dayLabel = (iso: string) => {
@@ -35,15 +37,10 @@ export function FocusTimeTrend({ data }: { data: FocusTrendPoint[] }) {
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 11, fill: C.axis }}
-            tickLine={false}
-            axisLine={{ stroke: C.track }}
-          />
+          <CartesianGrid strokeDasharray="3 3" {...chartGrid} />
+          <XAxis dataKey="label" tick={axisTick(11)} tickLine={false} axisLine={axisLine} />
           <YAxis
-            tick={{ fontSize: 11, fill: C.axis }}
+            tick={axisTick(11)}
             tickLine={false}
             axisLine={false}
             unit="h"
@@ -55,7 +52,7 @@ export function FocusTimeTrend({ data }: { data: FocusTrendPoint[] }) {
               formatDuration((item?.payload as { seconds: number }).seconds),
               "Focus",
             ]}
-            contentStyle={TOOLTIP_STYLE}
+            {...tooltipStyle}
           />
           <Line
             type="monotone"
@@ -63,7 +60,7 @@ export function FocusTimeTrend({ data }: { data: FocusTrendPoint[] }) {
             stroke={C.indigo}
             strokeWidth={2}
             dot={{ r: 3, fill: C.indigo, strokeWidth: 0 }}
-            activeDot={{ r: 5, strokeWidth: 2, stroke: "#fff" }}
+            activeDot={{ r: 5, strokeWidth: 2, stroke: hex.card }}
           />
         </LineChart>
       </ResponsiveContainer>

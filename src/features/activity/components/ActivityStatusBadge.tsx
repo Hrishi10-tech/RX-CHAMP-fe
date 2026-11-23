@@ -2,27 +2,27 @@ import type { ActivityStatus } from "@/features/activity/types";
 
 const STYLES: Record<ActivityStatus, { dot: string; text: string; bg: string; label: string }> = {
   ACTIVE: {
-    dot: "bg-emerald-500",
-    text: "text-emerald-700",
-    bg: "bg-emerald-50 ring-emerald-200",
+    dot: "bg-working",
+    text: "text-working",
+    bg: "bg-working-wash ring-working-edge",
     label: "Active",
   },
   IDLE: {
-    dot: "bg-amber-500",
-    text: "text-amber-700",
-    bg: "bg-amber-50 ring-amber-200",
+    dot: "bg-attention",
+    text: "text-attention",
+    bg: "bg-attention-wash ring-attention-edge",
     label: "Idle",
   },
   OFFLINE: {
-    dot: "bg-slate-400",
-    text: "text-slate-500",
-    bg: "bg-slate-50 ring-slate-200",
+    dot: "bg-neutral",
+    text: "text-quiet",
+    bg: "bg-fill ring-edge",
     label: "Offline",
   },
   DAY_ENDED: {
-    dot: "bg-indigo-500",
-    text: "text-indigo-700",
-    bg: "bg-indigo-50 ring-indigo-200",
+    dot: "bg-brand",
+    text: "text-brand",
+    bg: "bg-brand-wash ring-brand-edge",
     label: "Day ended",
   },
 };
@@ -39,7 +39,7 @@ export function ActivityStatusBadge({
   const s =
     (STYLES as Record<string, (typeof STYLES)[ActivityStatus]>)[raw] ??
     (raw === "NOT_STARTED"
-      ? { ...STYLES.OFFLINE, text: "text-slate-600", label: "Not started" }
+      ? { ...STYLES.OFFLINE, text: "text-soft", label: "Not started" }
       : { ...STYLES.OFFLINE, label: raw || "Unknown" });
   return (
     <span

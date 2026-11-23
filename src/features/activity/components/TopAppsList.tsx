@@ -1,7 +1,8 @@
 import type { AppUsage } from "@/features/activity/types";
 import { formatDuration } from "@/features/activity/lib/format";
+import { hex } from "@/styles/tokens";
 
-const BRAND = "rgb(34 34 204)";
+const BRAND = hex.brand;
 
 export function TopAppsList({
   items,
@@ -11,7 +12,7 @@ export function TopAppsList({
   emptyLabel?: string;
 }) {
   if (items.length === 0) {
-    return <p className="text-sm text-slate-400">{emptyLabel}</p>;
+    return <p className="text-sm text-quiet">{emptyLabel}</p>;
   }
 
   const max = Math.max(...items.map((i) => i.seconds), 1);
@@ -23,12 +24,10 @@ export function TopAppsList({
       {items.map((item) => (
         <li key={item.name}>
           <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="truncate font-medium text-slate-700">{item.name}</span>
-            <span className="shrink-0 tabular-nums text-slate-500">
-              {formatDuration(item.seconds)}
-            </span>
+            <span className="truncate font-medium text-body">{item.name}</span>
+            <span className="shrink-0 tabular-nums text-quiet">{formatDuration(item.seconds)}</span>
           </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-panel">
             <div
               className="h-full rounded-full"
               style={{

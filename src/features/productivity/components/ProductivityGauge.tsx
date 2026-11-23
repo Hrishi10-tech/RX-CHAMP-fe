@@ -1,9 +1,10 @@
 import type { DailyProductivity } from "@/features/productivity/types";
+import { hex } from "@/styles/tokens";
 
 const SEGMENTS = [
-  { key: "focusSec", label: "Focus Time", color: "rgb(34 34 204)" },
-  { key: "meetingSec", label: "Meeting Time", color: "#a855f7" },
-  { key: "idleSec", label: "Idle Time", color: "#cbd5e1" },
+  { key: "focusSec", label: "Focus Time", color: hex.brand },
+  { key: "meetingSec", label: "Meeting Time", color: hex.meeting },
+  { key: "idleSec", label: "Idle Time", color: hex["edge-strong"] },
 ] as const;
 
 function pct(part: number, total: number): number {
@@ -23,12 +24,12 @@ export function ProductivityGauge({ data }: { data: DailyProductivity }) {
         <svg viewBox="0 0 200 116" className="w-full">
           <defs>
             <linearGradient id="gaugeFill" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="rgb(34 34 204)" />
-              <stop offset="60%" stopColor="#7c74e6" />
-              <stop offset="100%" stopColor="#2dd4bf" />
+              <stop offset="0%" stopColor={hex.brand} />
+              <stop offset="60%" stopColor={hex.meeting} />
+              <stop offset="100%" stopColor={hex.brand} />
             </linearGradient>
           </defs>
-          <path d={arc} fill="none" stroke="#e2e8f0" strokeWidth={16} strokeLinecap="round" />
+          <path d={arc} fill="none" stroke={hex.edge} strokeWidth={16} strokeLinecap="round" />
           <path
             d={arc}
             fill="none"
@@ -40,10 +41,8 @@ export function ProductivityGauge({ data }: { data: DailyProductivity }) {
           />
         </svg>
         <div className="absolute inset-x-0 bottom-1 text-center">
-          <span className="text-3xl font-bold tracking-tight text-slate-900">
-            {score.toFixed(1)}
-          </span>
-          <span className="text-base font-medium text-slate-400"> / 10</span>
+          <span className="text-3xl font-bold tracking-tight text-primary">{score.toFixed(1)}</span>
+          <span className="text-base font-medium text-quiet"> / 10</span>
         </div>
       </div>
 
@@ -51,8 +50,8 @@ export function ProductivityGauge({ data }: { data: DailyProductivity }) {
         {SEGMENTS.map((s) => (
           <li key={s.key} className="flex items-center gap-2 text-sm">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className="text-slate-600">{s.label}</span>
-            <span className="ml-auto font-semibold tabular-nums text-slate-900">
+            <span className="text-soft">{s.label}</span>
+            <span className="ml-auto font-semibold tabular-nums text-primary">
               {pct(data[s.key], total)}%
             </span>
           </li>

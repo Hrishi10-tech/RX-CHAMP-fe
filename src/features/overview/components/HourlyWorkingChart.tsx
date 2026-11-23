@@ -11,11 +11,19 @@ import {
   YAxis,
 } from "recharts";
 
-import { C, TOOLTIP_STYLE } from "@/features/analytics/lib/palette";
+import {
+  axisLine,
+  axisTick,
+  chartCursor,
+  chartGrid,
+  tokenColor,
+  tooltipStyle,
+} from "@/components/charts/chartTheme";
+import { hex } from "@/styles/tokens";
 import { formatHour12 } from "@/lib/time/format";
 
-const BRAND = "rgb(34 34 204)";
-const BRAND_MUTED = "rgba(34,34,204,0.22)";
+const BRAND = hex.brand;
+const BRAND_MUTED = tokenColor("brand", 0.28);
 
 /** How many people were working in each hour of today (SPEC 7.2), 12-hour axis. */
 export function HourlyWorkingChart({
@@ -40,26 +48,26 @@ export function HourlyWorkingChart({
     <div className="h-60 w-full" role="img" aria-label="Working people by hour today">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" {...chartGrid} />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: C.axis }}
+            tick={axisTick(11)}
             tickLine={false}
-            axisLine={{ stroke: C.track }}
+            axisLine={axisLine}
             interval="preserveStartEnd"
             minTickGap={8}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: C.axis }}
+            tick={axisTick(11)}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}
             width={44}
           />
           <Tooltip
-            cursor={{ fill: "rgba(34,34,204,0.06)" }}
+            cursor={chartCursor}
             formatter={(v: number) => [`${v} ${v === 1 ? "person" : "people"}`, "Working"]}
-            contentStyle={TOOLTIP_STYLE}
+            {...tooltipStyle}
           />
           <Bar dataKey="working" radius={[6, 6, 0, 0]} maxBarSize={36}>
             {rows.map((r) => (

@@ -1,6 +1,6 @@
 import type { PresenceStatus } from "@/features/analytics/types";
 
-/** One row of `GET /presence/team/live` — a report's current presence status. */
+/** One row of `GET /presence/team/live`, a report's current presence status. */
 export interface TeamLiveMember {
   userId: string;
   name: string;

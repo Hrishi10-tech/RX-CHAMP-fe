@@ -8,12 +8,12 @@ import {
 } from "@/features/team/types";
 
 export const TEAM_STATUS: Record<TeamStatus, { label: string; tone: ChipTone; dot: string }> = {
-  WORKING: { label: "Working", tone: "success", dot: "bg-emerald-500" },
-  BREAK: { label: "On a break", tone: "warning", dot: "bg-amber-500" },
-  MEETING: { label: "In a meeting", tone: "brand", dot: "bg-[rgb(34_34_204)]" },
-  AWAY: { label: "Away", tone: "danger", dot: "bg-rose-500" },
-  NOT_STARTED: { label: "Not started", tone: "neutral", dot: "bg-slate-300" },
-  ENDED: { label: "Day ended", tone: "info", dot: "bg-sky-500" },
+  WORKING: { label: "Working", tone: "success", dot: "bg-working" },
+  BREAK: { label: "On a break", tone: "warning", dot: "bg-attention" },
+  MEETING: { label: "In a meeting", tone: "violet", dot: "bg-meeting" },
+  AWAY: { label: "Away", tone: "danger", dot: "bg-attention" },
+  NOT_STARTED: { label: "Not started", tone: "neutral", dot: "bg-edge-strong" },
+  ENDED: { label: "Day ended", tone: "info", dot: "bg-brand" },
 };
 
 export function teamStatusLook(status: string): { label: string; tone: ChipTone; dot: string } {
@@ -21,7 +21,7 @@ export function teamStatusLook(status: string): { label: string; tone: ChipTone;
     (TEAM_STATUS as Record<string, (typeof TEAM_STATUS)[TeamStatus]>)[status] ?? {
       label: status ? status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, " ") : "",
       tone: "neutral",
-      dot: "bg-slate-300",
+      dot: "bg-edge-strong",
     }
   );
 }

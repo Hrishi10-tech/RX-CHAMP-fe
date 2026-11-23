@@ -12,9 +12,9 @@ export function DashboardCard({
   className?: string;
 }) {
   return (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ${className}`}>
+    <section className={`rounded-2xl border border-card bg-card p-6 shadow-sm ${className}`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-quiet">{title}</h2>
         {aside}
       </div>
       <div className="mt-5">{children}</div>
@@ -32,7 +32,7 @@ export function LegendDot({
   className?: string;
 }) {
   return (
-    <span className={`flex items-center gap-1.5 text-xs text-slate-500 ${className}`}>
+    <span className={`flex items-center gap-1.5 text-xs text-quiet ${className}`}>
       <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
       {label}
     </span>

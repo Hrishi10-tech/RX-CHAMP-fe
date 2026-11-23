@@ -47,7 +47,9 @@ import { FocusBar } from "@/features/team/components/TeamView";
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState, LoadingState, ErrorState } from "@/components/ui/StatePanel";
-import { btnPrimary, cardBase } from "@/components/ui/classes";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { hex } from "@/styles/tokens";
 import { errorCode, errorMessage, errorStatus } from "@/lib/api";
 import { formatDuration as formatMinutesDuration } from "@/lib/format/duration";
 import { PAID_TIME_LABEL, offlineText } from "@/lib/format/payroll";
@@ -58,9 +60,9 @@ import { presenceLook } from "@/features/teamToday/lib/labels";
 const KPI_META: Record<string, { icon: LucideIcon; color: string }> = {
   idle: { icon: Moon, color: C.amber },
   active: { icon: Activity, color: C.indigo },
-  break: { icon: Coffee, color: C.teal },
-  lunch: { icon: Utensils, color: C.violet },
-  meeting: { icon: Users, color: "#0ea5e9" },
+  break: { icon: Coffee, color: C.amber },
+  lunch: { icon: Utensils, color: C.slate },
+  meeting: { icon: Users, color: hex.meeting },
 };
 
 /** Keyboard and mouse figures: the `activity` grant (SPEC 1.2). */
@@ -75,8 +77,8 @@ export const analyticsKeys = {
 
 function NotGranted({ what }: { what: string }) {
   return (
-    <p className="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white/60 px-4 py-3 text-sm text-slate-500">
-      <Lock className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+    <p className="flex items-center gap-2 rounded-xl border border-dashed border-card bg-card/60 px-4 py-3 text-sm text-quiet">
+      <Lock className="h-4 w-4 shrink-0 text-neutral" aria-hidden />
       Ask your Admin for access to {what}.
     </p>
   );
@@ -199,7 +201,7 @@ export function ProductivityDashboard({
       {backHref && (
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-quiet hover:text-body"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           {backLabel}
@@ -210,8 +212,8 @@ export function ProductivityDashboard({
         <div className="flex min-w-0 items-start gap-3">
           <PersonAvatar name={name} avatarId={person?.avatarId} userId={userId} size={48} />
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold tracking-tight text-slate-900">{name}</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="truncate text-2xl font-bold tracking-tight text-primary">{name}</h1>
+            <p className="text-sm text-quiet">
               {[person?.designation, person?.department].filter(Boolean).join(" · ") ||
                 "Productivity"}
               {" · "}
@@ -226,14 +228,14 @@ export function ProductivityDashboard({
                 </Chip>
               ) : null}
               {row?.in && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                  <LogIn className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-soft ring-1 ring-edge">
+                  <LogIn className="h-3.5 w-3.5 text-neutral" aria-hidden />
                   In {row.in.text}
                 </span>
               )}
               {row?.out && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                  <LogOut className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-soft ring-1 ring-edge">
+                  <LogOut className="h-3.5 w-3.5 text-neutral" aria-hidden />
                   Out {row.out.text}
                 </span>
               )}
@@ -243,41 +245,42 @@ export function ProductivityDashboard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm">
-            <span className="text-slate-400">Date</span>
+          <label className="flex h-11 items-center gap-2 rounded-lg border border-card bg-field px-3 text-sm font-semibold text-body shadow-sm">
+            <span className="text-quiet">Date</span>
             <input
               type="date"
               value={selectedDate}
               max={today}
               onChange={(e) => setSelectedDate(e.target.value || today)}
-              className="bg-transparent font-semibold text-slate-900 focus:outline-none"
+              className="bg-transparent font-semibold text-primary focus:outline-none"
             />
           </label>
-          <button type="button" onClick={() => setExportOpen(true)} className={btnPrimary}>
+          <Button type="button" variant="primary" onClick={() => setExportOpen(true)}>
             <Download className="h-4 w-4" aria-hidden />
             Export timesheet
-          </button>
+          </Button>
         </div>
       </div>
 
-      <section
-        className={`${cardBase} grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center`}
+      <Card
+        as="section"
+        className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
       >
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-wide text-quiet">
             {isToday ? "Focus today" : "Focus that day"}
           </p>
           {day.isPending ? (
-            <p className="mt-1 text-sm text-slate-400">Loading…</p>
+            <p className="mt-1 text-sm text-quiet">Loading…</p>
           ) : day.isError ? (
-            <p className="mt-1 text-sm text-rose-600">
+            <p className="mt-1 text-sm text-attention">
               {errorMessage(day.error) ?? "Couldn't load the day."}
             </p>
           ) : (
             <div className="mt-2 max-w-xl">
               <FocusBar focusSec={row?.focusSec ?? 0} targetSec={row?.targetSec ?? 0} />
               {row && offlineText(row.unverifiedSec) && (
-                <p className="mt-1.5 text-xs text-slate-500">
+                <p className="mt-1.5 text-xs text-quiet">
                   {offlineText(row.unverifiedSec)}: not counted as focus.
                 </p>
               )}
@@ -287,35 +290,35 @@ export function ProductivityDashboard({
         {row && (
           <dl className="grid grid-cols-2 gap-4 text-sm sm:flex sm:gap-6">
             <div>
-              <dt className="text-xs text-slate-500">{PAID_TIME_LABEL}</dt>
+              <dt className="text-xs text-quiet">{PAID_TIME_LABEL}</dt>
               <dd
-                className="font-semibold tabular-nums text-slate-900"
+                className="font-semibold tabular-nums text-primary"
                 title="Focus time plus paid breaks: what payroll uses"
               >
                 {formatMinutesDuration(row.paidSec)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Paid breaks</dt>
-              <dd className="font-semibold tabular-nums text-slate-900">
+              <dt className="text-xs text-quiet">Paid breaks</dt>
+              <dd className="font-semibold tabular-nums text-primary">
                 {formatMinutesDuration(row.paidBreakSec)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Unpaid</dt>
-              <dd className="font-semibold tabular-nums text-slate-900">
+              <dt className="text-xs text-quiet">Unpaid</dt>
+              <dd className="font-semibold tabular-nums text-primary">
                 {formatMinutesDuration(row.unpaidBreakSec)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Meetings</dt>
-              <dd className="font-semibold tabular-nums text-slate-900">
+              <dt className="text-xs text-quiet">Meetings</dt>
+              <dd className="font-semibold tabular-nums text-primary">
                 {formatMinutesDuration(row.meetingsSec)}
               </dd>
             </div>
           </dl>
         )}
-      </section>
+      </Card>
 
       <ExportTimesheetDialog
         open={exportOpen}
@@ -336,19 +339,19 @@ export function ProductivityDashboard({
         {backHref && (
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-quiet hover:text-body"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
             {backLabel}
           </Link>
         )}
-        <div className={cardBase}>
+        <Card>
           <EmptyState
             icon={Users}
             title="Not in your team"
             message="This person is not in your departments or organisation, or has been removed."
           />
-        </div>
+        </Card>
       </div>
     );
   }
@@ -358,23 +361,23 @@ export function ProductivityDashboard({
       {header}
 
       {wantsAnalytics && analytics.isPending && (
-        <div className={cardBase}>
+        <Card>
           <LoadingState label="Loading the day…" />
-        </div>
+        </Card>
       )}
       {/* Without the activity grant the line at the bottom already says so. */}
       {wantsAnalytics && analytics.isError && grantMissing(analytics.error) && grants.activity && (
         <NotGranted what="this person's activity" />
       )}
       {wantsAnalytics && analytics.isError && !grantMissing(analytics.error) && (
-        <div className={cardBase}>
+        <Card>
           <ErrorState
             title="Couldn't load activity"
             message={errorMessage(analytics.error)}
             onRetry={() => void analytics.refetch()}
             retrying={analytics.isFetching}
           />
-        </div>
+        </Card>
       )}
 
       {data && kpis.length > 0 && (
@@ -438,10 +441,10 @@ export function ProductivityDashboard({
       {data && grants.activity && (
         <>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:divide-x sm:divide-slate-100">
+            <section className="rounded-2xl border border-card bg-card p-6 shadow-sm lg:col-span-2">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:divide-x sm:divide-divider">
                 <div className="sm:pr-6">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-quiet">
                     Focus Sessions
                   </h2>
                   <div className="mt-5">
@@ -452,7 +455,7 @@ export function ProductivityDashboard({
                   </div>
                 </div>
                 <div className="sm:pl-6">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-quiet">
                     Work vs Break
                   </h2>
                   <div className="mt-5">
@@ -475,8 +478,8 @@ export function ProductivityDashboard({
             <DashboardCard
               title="Online Hours per Day"
               aside={
-                <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <span className="h-0.5 w-4 rounded bg-[#2dd4bf]" />
+                <span className="flex items-center gap-1.5 text-xs text-quiet">
+                  <span className="h-0.5 w-4 rounded bg-brand" />
                   Compare to average
                 </span>
               }

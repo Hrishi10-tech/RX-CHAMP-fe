@@ -17,11 +17,13 @@ import {
 import { PersonAvatar } from "@/components/avatar/PersonAvatar";
 import { Chip } from "@/components/ui/Chip";
 import { ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import { btnSmall, cardBase } from "@/components/ui/classes";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { cardBase } from "@/components/ui/classes";
 import { errorMessage } from "@/lib/api";
 import { formatDuration } from "@/lib/format/duration";
 import { formatDayWithWeekday, todayKey } from "@/lib/time/businessTime";
-import { formatTime12 } from "@/lib/time/format";
+import { businessHourOf, formatTime12 } from "@/lib/time/format";
 import { selectOrg } from "@/lib/org/selection";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useAgentHealth } from "@/features/agentHealth/hooks/useAgentHealth";
@@ -36,8 +38,9 @@ import {
   type OrgCard as OrgCardData,
 } from "@/features/overview/api/organisationsOverview";
 
+/** 3.6 (W-03): the hour in the business zone, never the browser clock. */
 function greeting(now: Date): string {
-  const h = now.getHours();
+  const h = businessHourOf(now);
   if (h < 12) return "Good morning";
   if (h < 17) return "Good afternoon";
   return "Good evening";
@@ -58,22 +61,20 @@ function Tile({
 }) {
   const inner = (
     <>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className={`mt-0.5 text-xl font-bold tabular-nums ${tone ?? "text-slate-900"}`}>
-        {value}
-      </dd>
-      <dd className="truncate text-xs text-slate-500">{sub}</dd>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-quiet">{label}</dt>
+      <dd className={`mt-0.5 text-xl font-bold tabular-nums ${tone ?? "text-primary"}`}>{value}</dd>
+      <dd className="truncate text-xs text-quiet">{sub}</dd>
     </>
   );
   return href ? (
     <Link
       href={href}
-      className="block min-w-0 bg-white px-4 py-3 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[rgba(34,34,204,0.35)]"
+      className="block min-w-0 bg-card px-4 py-3 transition hover:bg-fill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/35"
     >
       {inner}
     </Link>
   ) : (
-    <div className="min-w-0 bg-white px-4 py-3">{inner}</div>
+    <div className="min-w-0 bg-card px-4 py-3">{inner}</div>
   );
 }
 
@@ -90,16 +91,17 @@ function OrgCard({
   const t = org.today;
   const { pending, overdue } = org.approvals;
   return (
-    <section
+    <Card
+      as="section"
       aria-labelledby={`org-${org.id}`}
-      className={`${cardBase} flex min-w-0 flex-col gap-3 p-4 sm:p-5`}
+      className="flex min-w-0 flex-col gap-3 p-4 sm:p-5"
     >
       <div className="flex items-start justify-between gap-3">
         <h3
           id={`org-${org.id}`}
-          className="flex min-w-0 items-center gap-2 text-base font-bold text-slate-900"
+          className="flex min-w-0 items-center gap-2 text-base font-bold text-primary"
         >
-          <Building2 className="h-4 w-4 shrink-0 text-violet-600" aria-hidden />
+          <Building2 className="h-4 w-4 shrink-0 text-brand" aria-hidden />
           <span className="truncate">{org.name}</span>
         </h3>
         {overdue > 0 ? (
@@ -118,43 +120,39 @@ function OrgCard({
       </div>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
         <div>
-          <dt className="text-xs text-slate-500">Started today</dt>
-          <dd className="font-semibold text-slate-900">{`${t.started} of ${t.people}`}</dd>
+          <dt className="text-xs text-quiet">Started today</dt>
+          <dd className="font-semibold text-primary">{`${t.started} of ${t.people}`}</dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500">Away now</dt>
-          <dd className="font-semibold text-slate-900">{t.onBreak + t.inMeeting + t.away}</dd>
+          <dt className="text-xs text-quiet">Away now</dt>
+          <dd className="font-semibold text-primary">{t.onBreak + t.inMeeting + t.away}</dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500">Focus so far</dt>
-          <dd className="font-semibold text-slate-900">{formatDuration(t.focusSec)}</dd>
+          <dt className="text-xs text-quiet">Focus so far</dt>
+          <dd className="font-semibold text-primary">{formatDuration(t.focusSec)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500">Pending approvals</dt>
-          <dd className={`font-semibold ${pending ? "text-amber-700" : "text-slate-900"}`}>
+          <dt className="text-xs text-quiet">Pending approvals</dt>
+          <dd className={`font-semibold ${pending ? "text-attention" : "text-primary"}`}>
             {pending}
           </dd>
         </div>
       </dl>
       <div className="mt-auto flex flex-wrap gap-2">
-        <button type="button" onClick={() => onOpen("/dashboard/team")} className={btnSmall}>
+        <Button type="button" variant="small" onClick={() => onOpen("/dashboard/team")}>
           <Activity className="h-3.5 w-3.5" aria-hidden />
           Team
-        </button>
-        <button type="button" onClick={() => onOpen("/dashboard/approvals")} className={btnSmall}>
+        </Button>
+        <Button type="button" variant="small" onClick={() => onOpen("/dashboard/approvals")}>
           <ClipboardCheck className="h-3.5 w-3.5" aria-hidden />
           Approvals
-        </button>
-        <button
-          type="button"
-          onClick={() => onOpen("/dashboard/agent-health")}
-          className={btnSmall}
-        >
+        </Button>
+        <Button type="button" variant="small" onClick={() => onOpen("/dashboard/agent-health")}>
           <HeartPulse className="h-3.5 w-3.5" aria-hidden />
           Agent health
-        </button>
+        </Button>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -211,11 +209,11 @@ export function SuperOverview() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-primary">
           {greeting(new Date())}, {first}
         </h1>
-        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-slate-500">
-          <Globe2 className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-quiet">
+          <Globe2 className="h-4 w-4 text-brand" aria-hidden />
           <span>
             {org ? org.name || data?.organisation?.name : "Every organisation"} ·{" "}
             {formatDayWithWeekday(todayKey())}
@@ -226,7 +224,7 @@ export function SuperOverview() {
 
       <dl
         aria-label="Totals in view"
-        className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-3 xl:grid-cols-5"
+        className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-card bg-edge shadow-sm sm:grid-cols-3 xl:grid-cols-5"
       >
         <Tile
           label="Started the day"
@@ -254,9 +252,9 @@ export function SuperOverview() {
           sub={t?.overdueApprovals ? `${t.overdueApprovals} overdue` : "None overdue"}
           tone={
             t?.overdueApprovals
-              ? "text-rose-600"
+              ? "text-attention"
               : t?.pendingApprovals
-                ? "text-amber-700"
+                ? "text-attention"
                 : undefined
           }
           href="/dashboard/approvals"
@@ -271,14 +269,14 @@ export function SuperOverview() {
                 ? "Agent health unavailable"
                 : "Loading"
           }
-          tone={problems.length ? "text-rose-600" : undefined}
+          tone={problems.length ? "text-attention" : undefined}
           href="/dashboard/agent-health"
         />
       </dl>
 
       {mixed && (data?.organisations.length ?? 0) > 0 && (
         <section aria-labelledby="by-org" className="space-y-3">
-          <h2 id="by-org" className="text-base font-bold text-slate-900">
+          <h2 id="by-org" className="text-base font-bold text-primary">
             By organisation
           </h2>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -295,25 +293,22 @@ export function SuperOverview() {
       )}
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <section aria-labelledby="decide-now" className={`${cardBase} overflow-hidden`}>
+        <Card as="section" aria-labelledby="decide-now" className="overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-4 sm:px-5">
-            <h2 id="decide-now" className="text-base font-bold text-slate-900">
+            <h2 id="decide-now" className="text-base font-bold text-primary">
               Waiting for a decision
             </h2>
-            <Link
-              href="/dashboard/approvals"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-[rgb(34_34_204)] hover:underline"
-            >
+            <Link href="/dashboard/approvals" className={buttonClass("ghost", "gap-1")}>
               All approvals
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
           {items.length === 0 ? (
-            <p className="px-4 pb-5 text-sm text-slate-500 sm:px-5">
+            <p className="px-4 pb-5 text-sm text-quiet sm:px-5">
               Nothing is waiting. Every break, skip, meeting and away time in view has been decided.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-divider">
               {items.map((it) => {
                 const effect = effectChip(it);
                 return (
@@ -321,11 +316,11 @@ export function SuperOverview() {
                     <Link href="/dashboard/approvals" className="group block">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-900 group-hover:text-[rgb(34_34_204)]">
+                          <p className="truncate text-sm font-semibold text-primary group-hover:text-brand">
                             {it.user?.name ?? "Someone"}
-                            <span className="font-normal text-slate-500"> · {it.title}</span>
+                            <span className="font-normal text-quiet"> · {it.title}</span>
                           </p>
-                          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+                          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-quiet">
                             <span>{formatDayWithWeekday(it.date)}</span>
                             <OrgChip name={it.user?.companyName} show={mixed} />
                             {it.overdue && (
@@ -342,46 +337,43 @@ export function SuperOverview() {
                 );
               })}
               {(data?.waiting.total ?? 0) > items.length && (
-                <li className="px-4 py-2.5 text-xs text-slate-500 sm:px-5">
+                <li className="px-4 py-2.5 text-xs text-quiet sm:px-5">
                   and {(data?.waiting.total ?? 0) - items.length} more on Approvals
                 </li>
               )}
             </ul>
           )}
-        </section>
+        </Card>
 
-        <section aria-labelledby="look-now" className={`${cardBase} overflow-hidden`}>
+        <Card as="section" aria-labelledby="look-now" className="overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-4 sm:px-5">
-            <h2 id="look-now" className="text-base font-bold text-slate-900">
+            <h2 id="look-now" className="text-base font-bold text-primary">
               Agents that need a look
             </h2>
-            <Link
-              href="/dashboard/agent-health"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-[rgb(34_34_204)] hover:underline"
-            >
+            <Link href="/dashboard/agent-health" className={buttonClass("ghost", "gap-1")}>
               Agent health
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
           {health.isLoading ? (
-            <p className="px-4 pb-5 text-sm text-slate-500 sm:px-5">Checking…</p>
+            <p className="px-4 pb-5 text-sm text-quiet sm:px-5">Checking…</p>
           ) : health.isError ? (
-            <p className="px-4 pb-5 text-sm text-slate-500 sm:px-5">
+            <p className="px-4 pb-5 text-sm text-quiet sm:px-5">
               Agent health could not be read just now.
             </p>
           ) : problems.length === 0 ? (
-            <p className="px-4 pb-5 text-sm text-slate-500 sm:px-5">
+            <p className="px-4 pb-5 text-sm text-quiet sm:px-5">
               Every agent in view is calling in, days are running, screenshots are arriving.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-divider">
               {problems.slice(0, 6).map((r) => (
                 <li key={r.userId} className="px-4 py-3 sm:px-5">
                   <div className="flex items-start justify-between gap-3">
                     <PersonAvatar name={r.name} avatarId={r.avatarId} userId={r.userId} size={28} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900">{r.name}</p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+                      <p className="truncate text-sm font-semibold text-primary">{r.name}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-quiet">
                         <span>{r.department ?? "No department"}</span>
                         <OrgChip name={r.companyName} show={mixed} />
                       </p>
@@ -402,13 +394,13 @@ export function SuperOverview() {
                 </li>
               ))}
               {problems.length > 6 && (
-                <li className="px-4 py-2.5 text-xs text-slate-500 sm:px-5">
+                <li className="px-4 py-2.5 text-xs text-quiet sm:px-5">
                   and {problems.length - 6} more on Agent health
                 </li>
               )}
             </ul>
           )}
-        </section>
+        </Card>
       </div>
 
       <nav aria-label="Everything else" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -421,9 +413,9 @@ export function SuperOverview() {
           <Link
             key={l.href}
             href={l.href}
-            className={`${cardBase} flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:border-[rgba(34,34,204,0.35)] hover:text-[rgb(34_34_204)]`}
+            className={`${cardBase} flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-strong transition hover:border-brand/35 hover:text-brand`}
           >
-            <l.icon className="h-4 w-4 text-[rgb(34_34_204)]" aria-hidden />
+            <l.icon className="h-4 w-4 text-brand" aria-hidden />
             {l.label}
           </Link>
         ))}

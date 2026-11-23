@@ -8,17 +8,6 @@ import { toast } from "sonner";
 import { Chip } from "@/components/ui/Chip";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StatePanel";
-import {
-  btnDanger,
-  btnPrimary,
-  btnSecondary,
-  btnSmall,
-  cardBase,
-  checkboxBase,
-  hintBase,
-  inputBase,
-  labelBase,
-} from "@/components/ui/classes";
 import { errorDetails, errorMessage } from "@/lib/api";
 import { dateKeyOf } from "@/lib/time/businessTime";
 import { formatTime12 } from "@/lib/time/format";
@@ -37,8 +26,11 @@ import {
   downloadExport,
 } from "@/features/screenshots/components/ExportProgressModal";
 import { sizeText } from "@/features/screenshots/lib/progress";
+import { Checkbox, Hint, Input, Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
-/** "2 Nov 2026, 14:05" in the business zone. */
+/** "2 Nov 2026, 2:05 PM" in the business zone. */
 function when(iso: string | null | undefined): string {
   if (!iso) return "";
   return `${formatDayLong(dateKeyOf(new Date(iso)))}, ${formatTime12(iso)}`;
@@ -65,13 +57,13 @@ function MonthChip({ m }: { m: MonthArchiveView }) {
 /** What the newest archive of the month is, in a line or two. */
 function ArchiveLine({ m }: { m: MonthArchiveView }) {
   const a = m.latestArchive;
-  if (!a) return <p className="text-sm text-slate-500">No archive yet.</p>;
+  if (!a) return <p className="text-sm text-quiet">No archive yet.</p>;
   if (a.status === "QUEUED" || a.status === "RUNNING") {
-    return <p className="text-sm text-slate-600">An archive is being made now.</p>;
+    return <p className="text-sm text-soft">An archive is being made now.</p>;
   }
   if (a.status !== "DONE") {
     return (
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-soft">
         The last archive {a.status === "CANCELLED" ? "was cancelled" : "did not finish"} (
         {when(a.finishedAt)}). Create it again.
       </p>
@@ -79,12 +71,12 @@ function ArchiveLine({ m }: { m: MonthArchiveView }) {
   }
   const qualifies = m.qualifyingArchive?.id === a.id;
   return (
-    <div className="space-y-0.5 text-sm text-slate-600">
+    <div className="space-y-0.5 text-sm text-soft">
       <p>
         Archive made {when(a.finishedAt)}: {n(a.done, "screenshot")}, {sizeText(a.bytes)}
         {a.missing > 0 ? `, ${a.missing} unreadable` : ""}.
       </p>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-quiet">
         {a.downloadedAt ? `Downloaded ${when(a.downloadedAt)}.` : "Not downloaded yet."}{" "}
         {a.downloadable
           ? a.expiresAt
@@ -148,7 +140,7 @@ function DeleteMonthDialog({
       className="max-w-md"
     >
       <form onSubmit={submit} className="space-y-4 px-6 pb-6" noValidate>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-soft">
           This removes {n(month?.deletable ?? 0, "screenshot")} of {label} from storage for good.
           The archive {archive?.fileName ? <strong>{archive.fileName}</strong> : null} made on{" "}
           {when(archive?.finishedAt)} becomes the only copy.
@@ -156,42 +148,35 @@ function DeleteMonthDialog({
             ? ` ${n(month.newerThanArchive, "screenshot")} that arrived after the archive started stay until a new archive is made.`
             : ""}
         </p>
-        <label className="flex items-start gap-2.5 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            className={`${checkboxBase} mt-0.5`}
-            checked={kept}
-            onChange={(e) => setKept(e.target.checked)}
-          />
+        <label className="flex items-start gap-2.5 text-sm text-body">
+          <Checkbox className="mt-0.5" checked={kept} onChange={(e) => setKept(e.target.checked)} />
           I have downloaded the archive and kept it safe.
         </label>
         <div>
-          <label htmlFor="purge-confirm" className={labelBase}>
+          <Label htmlFor="purge-confirm">
             Type <span className="font-mono">{label}</span> to confirm
-          </label>
-          <input
+          </Label>
+          <Input
             id="purge-confirm"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
-            className={`${inputBase} mt-1.5`}
+            className="mt-1.5"
           />
-          <p className={hintBase}>
-            Keep the next window open until it finishes. Closing it stops the deletion.
-          </p>
+          <Hint>Keep the next window open until it finishes. Closing it stops the deletion.</Hint>
         </div>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={close} className={btnSecondary}>
+          <Button variant="secondary" type="button" onClick={close}>
             Cancel
-          </button>
-          <button type="submit" disabled={!ready || busy} className={btnDanger}>
+          </Button>
+          <Button variant="attention" type="submit" disabled={!ready || busy}>
             {busy ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <Trash2 className="h-4 w-4" aria-hidden />
             )}
             Delete for good
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -258,31 +243,31 @@ export function ArchivesView() {
         subtitle="Archive each month's screenshots, keep the file, then delete them to free storage."
       />
 
-      <section className={`${cardBase} flex gap-3 p-4 text-sm text-slate-600 sm:p-5`}>
-        <Info className="mt-0.5 h-5 w-5 shrink-0 text-[rgb(34_34_204)]" aria-hidden />
+      <Card as="section" className="flex gap-3 p-4 text-sm text-soft sm:p-5">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
         <div className="space-y-1.5">
           <p>
-            <strong className="text-slate-800">1. Create the archive</strong> once the month has
-            ended: one zip, a folder per department and per employee, one PDF per working day with
-            every screenshot and its time.
+            <strong className="text-strong">1. Create the archive</strong> once the month has ended:
+            one zip, a folder per department and per employee, one PDF per working day with every
+            screenshot and its time.
           </p>
           <p>
-            <strong className="text-slate-800">2. Download it</strong> and keep it safe. The file
-            stays downloadable for 7 days.
+            <strong className="text-strong">2. Download it</strong> and keep it safe. The file stays
+            downloadable for 7 days.
           </p>
           <p>
-            <strong className="text-slate-800">3. Delete the month</strong> to free storage. This is
+            <strong className="text-strong">3. Delete the month</strong> to free storage. This is
             allowed only after the month has ended and only with a complete archive made after its
             end.
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-quiet">
             An archive can be made at any time, mid-month too, but only one made after the month
             ends allows deleting. Each month is due by the end of the month after it: January by 1
             March. Keep the progress window open while it runs; closing it cancels, and it has to be
             started again.
           </p>
         </div>
-      </section>
+      </Card>
 
       {months.isLoading ? (
         <LoadingState label="Loading the months…" />
@@ -293,26 +278,26 @@ export function ArchivesView() {
           retrying={months.isFetching}
         />
       ) : !months.data?.length ? (
-        <section className={cardBase}>
+        <Card as="section">
           <EmptyState
             icon={FileArchive}
             title="No screenshots stored"
             message="Months with screenshots show here."
           />
-        </section>
+        </Card>
       ) : (
         <ul className="space-y-3">
           {months.data.map((m) => {
             const running = m.running;
             const latest = m.latestArchive;
             return (
-              <li key={m.month} className={`${cardBase} p-4 sm:p-5`}>
+              <Card as="li" key={m.month} className="p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-semibold text-slate-900">{m.label}</h2>
+                    <h2 className="text-base font-semibold text-primary">{m.label}</h2>
                     <MonthChip m={m} />
                   </div>
-                  <span className="text-sm tabular-nums text-slate-500">
+                  <span className="text-sm tabular-nums text-quiet">
                     {n(m.screenshots, "screenshot")} stored
                   </span>
                 </div>
@@ -320,13 +305,13 @@ export function ArchivesView() {
                 <div className="mt-2">
                   <ArchiveLine m={m} />
                   {m.newerThanArchive > 0 && (
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-quiet">
                       {n(m.newerThanArchive, "screenshot")} arrived after the archive started. They
                       stay until the next archive.
                     </p>
                   )}
                   {m.lastPurge?.status === "DONE" && (
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-quiet">
                       Deleted {n(m.lastPurge.done, "screenshot")} on {when(m.lastPurge.finishedAt)}.
                     </p>
                   )}
@@ -334,22 +319,18 @@ export function ArchivesView() {
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {running ? (
-                    <button
-                      type="button"
-                      onClick={() => setJobId(running.id)}
-                      className={btnPrimary}
-                    >
+                    <Button variant="primary" type="button" onClick={() => setJobId(running.id)}>
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                       Show progress
-                    </button>
+                    </Button>
                   ) : (
                     <>
                       {m.screenshots > 0 && (
-                        <button
+                        <Button
+                          variant="small"
                           type="button"
                           onClick={() => void archive(m)}
                           disabled={starting === m.month}
-                          className={btnSmall}
                         >
                           {starting === m.month ? (
                             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -357,14 +338,14 @@ export function ArchivesView() {
                             <Archive className="h-4 w-4" aria-hidden />
                           )}
                           {latest?.status === "DONE" ? "Create a new archive" : "Create archive"}
-                        </button>
+                        </Button>
                       )}
                       {latest?.downloadable && (
-                        <button
+                        <Button
+                          variant="small"
                           type="button"
                           onClick={() => void download(m)}
                           disabled={downloading === m.month}
-                          className={btnSmall}
                         >
                           {downloading === m.month ? (
                             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -372,18 +353,19 @@ export function ArchivesView() {
                             <Download className="h-4 w-4" aria-hidden />
                           )}
                           Download ({sizeText(latest.bytes)})
-                        </button>
+                        </Button>
                       )}
                       {m.ended && m.screenshots > 0 && (
-                        <button
+                        <Button
+                          variant="small"
                           type="button"
                           onClick={() => setToDelete(m)}
                           disabled={!m.canDelete}
-                          className={`${btnSmall} text-rose-600 disabled:text-slate-400`}
+                          className="text-attention disabled:text-neutral"
                         >
                           <Trash2 className="h-4 w-4" aria-hidden />
                           Delete month
-                        </button>
+                        </Button>
                       )}
                     </>
                   )}
@@ -393,13 +375,13 @@ export function ArchivesView() {
                   m.screenshots > 0 &&
                   !m.canDelete &&
                   m.deleteBlockedText && (
-                    <p className={hintBase}>
+                    <Hint>
                       {m.deleteBlockedBy === "NOTHING_TO_DELETE"
                         ? "What is left arrived after the last archive. Create a new archive and download it to delete it."
                         : m.deleteBlockedText}
-                    </p>
+                    </Hint>
                   )}
-              </li>
+              </Card>
             );
           })}
         </ul>
