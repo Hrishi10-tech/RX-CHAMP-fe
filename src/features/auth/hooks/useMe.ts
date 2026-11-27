@@ -38,18 +38,16 @@ export function useMeSync(enabled: boolean) {
     setOrgSwitching(seesEveryOrg(me.role));
     adoptOrgFromUrl();
     dispatch(meLoaded(me));
-    if (me.role !== "USER") {
-      saveSession({
-        user: {
-          id: me.id,
-          email: me.email,
-          name: me.name,
-          role: me.role,
-          grants: me.grants,
-          avatarId: me.avatarId,
-        },
-      });
-    }
+    saveSession({
+      user: {
+        id: me.id,
+        email: me.email,
+        name: me.name,
+        role: me.role,
+        grants: me.grants,
+        avatarId: me.avatarId,
+      },
+    });
   }, [me, dispatch]);
 
   return query;

@@ -105,7 +105,7 @@ export function MyWfhPanel({ compact = false }: { compact?: boolean }) {
           {d.todayWfh ? (
             <>
               <p className="mt-1 text-xl font-bold text-primary">
-                From home, {d.todayWfh.label.toLowerCase()}
+                Remote, {d.todayWfh.label.toLowerCase()}
               </p>
               <p className="mt-0.5 text-xs text-quiet">
                 {d.todayWfh.source}
@@ -118,7 +118,7 @@ export function MyWfhPanel({ compact = false }: { compact?: boolean }) {
           <p className="mt-2 flex items-start gap-1.5 text-xs text-quiet">
             <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             {biometric
-              ? "On a work-from-home day, start and end your day in the RX Vision phone app."
+              ? "On a remote day, start and end your day on Today or in the RX Vision phone app."
               : "Your desktop app tracks the day at home as at the office."}
           </p>
         </Card>

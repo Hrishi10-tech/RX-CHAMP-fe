@@ -52,10 +52,22 @@ describe("middleware", () => {
     );
   });
 
-  it("refuses Staff with the app message and drops their cookie", () => {
+  it("starts Staff on their own Today (4.1) and keeps them off everyone else's pages", () => {
+    expect(location(middleware(request("/dashboard", "USER")))).toBe("/dashboard/today");
     const res = middleware(request("/dashboard/overview", "USER"));
-    expect(location(res)).toBe("/auth/login?reason=staff");
-    expect(res.headers.get("set-cookie") ?? "").toContain(`${SESSION_COOKIE}=;`);
+    expect(location(res)).toBe("/dashboard/today");
+    expect(res.headers.get("set-cookie") ?? "").not.toContain(`${SESSION_COOKIE}=;`);
+    for (const page of ["/dashboard/people", "/dashboard/settings", "/dashboard/reports"]) {
+      expect(location(middleware(request(page, "USER")))).toBe("/dashboard/today");
+    }
+    for (const page of [
+      "/dashboard/today",
+      "/dashboard/leave",
+      "/dashboard/wfh",
+      "/dashboard/chat",
+    ]) {
+      expect(location(middleware(request(page, "USER")))).toBeNull();
+    }
   });
 
   it("redirects Team today to Team", () => {

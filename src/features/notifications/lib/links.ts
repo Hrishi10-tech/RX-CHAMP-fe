@@ -1,3 +1,5 @@
+import { MY_CALENDAR_ROUTE, TODAY_ROUTE, canAccess, type Role } from "@/constants/roles";
+
 /** Where a notification takes you when opened, by type (SPEC 7.1 pages). */
 export const APPROVALS_PAGE = "/dashboard/approvals";
 export const REPORTS_PAGE = "/dashboard/reports";
@@ -11,6 +13,8 @@ export const LEAVE_REQUESTS_PAGE = "/dashboard/leave?tab=requests";
 export const WFH_PAGE = "/dashboard/wfh";
 export const WFH_REQUESTS_PAGE = "/dashboard/wfh?tab=requests";
 export const COMPOFF_PAGE = "/dashboard/leave?tab=compoff";
+/** 4.1 */
+export const CHAT_PAGE = "/dashboard/chat";
 
 /** @deprecated 3.1 name, kept for older imports. */
 export const APPROVALS_PAGE_31 = APPROVALS_PAGE;
@@ -101,7 +105,30 @@ const LINKS: Record<string, string> = {
   [T4.COMPOFF_EXPIRING]: COMPOFF_PAGE,
 };
 
-/** The page a notification opens, or null for types that have nowhere to go. */
-export function notificationHref(type: string): string | null {
-  return LINKS[type] ?? null;
+/**
+ * 4.1: Staff have their own pages, so the notices about their own day open Today
+ * (the phone app does the same), the calendar opens their year, and a message opens
+ * Messages. Everything else Staff get (leave, work from home, comp off decisions)
+ * opens the same page as for anyone.
+ */
+const STAFF_LINKS: Record<string, string> = {
+  BREAK_DECIDED: TODAY_ROUTE,
+  [T.MEETING_DECIDED]: TODAY_ROUTE,
+  [T4.AWAY_DECIDED]: TODAY_ROUTE,
+  [T4.FOCUS_ADJUSTED]: TODAY_ROUTE,
+  [T4.WFH_AUTO_ENDED]: TODAY_ROUTE,
+  [T4.BIOMETRIC_NO_CHECKOUT]: TODAY_ROUTE,
+  LATE_START_REASON: TODAY_ROUTE,
+  [T4.CALENDAR_CHANGED]: MY_CALENDAR_ROUTE,
+  CHAT_MESSAGE: CHAT_PAGE,
+};
+
+/**
+ * The page a notification opens, or null for types that have nowhere to go. With the
+ * reader's role, Staff get their own pages, and never a link they could not open.
+ */
+export function notificationHref(type: string, role?: Role | null): string | null {
+  if (role !== "USER") return LINKS[type] ?? null;
+  const href = STAFF_LINKS[type] ?? (type.startsWith("DAY_") ? TODAY_ROUTE : LINKS[type]) ?? null;
+  return href && canAccess(role, href.split("?")[0]) ? href : null;
 }

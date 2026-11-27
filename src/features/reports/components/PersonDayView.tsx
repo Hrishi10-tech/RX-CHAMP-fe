@@ -555,7 +555,7 @@ export function PersonDayView({
           <span>
             <span className="font-semibold">{wfhText(s)}.</span>{" "}
             {typeof s.wfhSec === "number" && s.wfhSec > 0
-              ? `${formatDuration(s.wfhSec)} from home counted${(s.wfhOverSec ?? 0) > 0 ? `; ${formatDuration(s.wfhOverSec ?? 0)} over the day's cap was not` : ""}.`
+              ? `${formatDuration(s.wfhSec)} remote counted${(s.wfhOverSec ?? 0) > 0 ? `; ${formatDuration(s.wfhOverSec ?? 0)} over the day's cap was not` : ""}.`
               : "Tracked by the desktop app as usual."}
           </span>
         </div>

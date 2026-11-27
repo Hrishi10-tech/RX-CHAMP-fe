@@ -8,6 +8,7 @@ import {
   Clock3,
   Coffee,
   FileChartColumn,
+  History,
   Fingerprint,
   HeartPulse,
   House,
@@ -19,13 +20,17 @@ import {
   Settings,
   FileArchive,
   SlidersHorizontal,
+  Sun,
   UserCog,
   UserRound,
   Users,
 } from "lucide-react";
 
 import {
+  HISTORY_ROUTE,
+  MY_CALENDAR_ROUTE,
   PROFILE_ROUTE,
+  TODAY_ROUTE,
   canAccess,
   isOrgFreeRoute,
   seesEveryOrg,
@@ -111,6 +116,29 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+/**
+ * 4.1: Staff's menu, the phone app's tabs: their own day, leave (comp off is a tab
+ * there), work from home, year, history, messages and profile. Never the admin sections,
+ * even where a route is shared (Leave, Work from home): those pages show Staff their own.
+ */
+export const STAFF_NAV_SECTIONS: NavSection[] = [
+  {
+    heading: "My work",
+    items: [
+      { href: TODAY_ROUTE, label: "Today", icon: Sun },
+      { href: LEAVE_HREF, label: "Leave", icon: CalendarHeart },
+      { href: WFH_HREF, label: "Work from home", icon: House },
+      { href: MY_CALENDAR_ROUTE, label: "Calendar", icon: CalendarDays },
+      { href: HISTORY_ROUTE, label: "History", icon: History },
+      { href: CHAT_HREF, label: "Messages", icon: MessageSquare },
+    ],
+  },
+  {
+    heading: "Account",
+    items: [{ href: PROFILE_ROUTE, label: "Profile", icon: UserRound }],
+  },
+];
+
 export interface NavContext {
   grants?: Grants | null;
   /** Super Admin, Super Manager: whether an organisation is selected. */
@@ -121,6 +149,7 @@ export interface NavContext {
 
 /** The menu one person sees. */
 export function navFor(role: Role | null, ctx: NavContext = {}): NavSection[] {
+  if (role === "USER") return STAFF_NAV_SECTIONS;
   const needsOrg = seesEveryOrg(role) && !ctx.hasOrg;
   return NAV_SECTIONS.map((section) => ({
     ...section,

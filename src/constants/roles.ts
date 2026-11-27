@@ -6,7 +6,7 @@
  *                departments, organisations, locks or roles
  *   ADMIN        exactly one organisation
  *   MANAGER      one organisation, one or more departments (read-only on people)
- *   USER         Staff: the agent only, never the portal
+ *   USER         Staff: the agent, the phone and (4.1) their own pages on the portal
  *
  * The cookie role is only used for the middleware's coarse redirect. The pages
  * read the role, the organisation and the manager's grants from GET /me.
@@ -59,17 +59,26 @@ export function roleLabel(role?: string | null): string {
   return role?.trim() || "Unknown";
 }
 
-/** Staff are refused by the portal; this page explains it (SPEC 1.1). */
+/**
+ * Where someone the server says may not use the portal (`permissions.canUsePortal` false)
+ * is sent; the sign-in page explains it. 4.1: Staff have the portal, so this is only for
+ * an account the server turns away.
+ */
 export const STAFF_REFUSED_ROUTE = "/auth/login?reason=staff";
 
 export const OVERVIEW_ROUTE = "/dashboard/overview";
+
+/** 4.1: Staff's own pages, the phone app's tabs on the portal. */
+export const TODAY_ROUTE = "/dashboard/today";
+export const HISTORY_ROUTE = "/dashboard/history";
+export const MY_CALENDAR_ROUTE = "/dashboard/my-calendar";
 
 export const roleHomeRoute: Record<Role, string> = {
   SUPER_ADMIN: OVERVIEW_ROUTE,
   SUPER_MANAGER: OVERVIEW_ROUTE,
   ADMIN: OVERVIEW_ROUTE,
   MANAGER: OVERVIEW_ROUTE,
-  USER: STAFF_REFUSED_ROUTE,
+  USER: TODAY_ROUTE,
 };
 
 export const DEFAULT_HOME_ROUTE = "/auth/login";
@@ -147,13 +156,17 @@ export function viewerGrants(
 
 const ADMINS: Role[] = ["SUPER_ADMIN", "ADMIN"];
 const PORTAL: Role[] = ["SUPER_ADMIN", "SUPER_MANAGER", "ADMIN", "MANAGER"];
+/** 4.1: a page every role opens, Staff included (each shows its own data). */
+const EVERYONE: Role[] = [...PORTAL, "USER"];
+const STAFF: Role[] = ["USER"];
 /** Admins plus the Super Manager (3.3): People (Staff only for her). */
 const OVERSEERS: Role[] = ["SUPER_ADMIN", "SUPER_MANAGER", "ADMIN"];
 
 /**
  * Who may open which part of the dashboard (SPEC 7.1). The longest matching
- * prefix wins. Staff match nothing: they never use the portal. The backend
- * re-checks every request; this only keeps people off screens that would fail.
+ * prefix wins. 4.1: Staff open only the pages listed with them here; a page with
+ * no rule is never theirs. The backend re-checks every request; this only keeps
+ * people off screens that would fail.
  */
 export const routeRoles: Record<string, Role[]> = {
   "/dashboard/organisations": ["SUPER_ADMIN"],
@@ -173,21 +186,28 @@ export const routeRoles: Record<string, Role[]> = {
   "/dashboard/tracking": ADMINS,
   "/dashboard/signout-keys": ADMINS,
   "/dashboard/settings": ADMINS,
-  // 3.6: your own profile and avatar, for every portal role (Staff change theirs on the
-  // agent or the phone): a wider child of the admins' Settings.
-  "/dashboard/settings/profile": PORTAL,
-  "/dashboard/chat": PORTAL,
+  // 3.6: your own profile and avatar, for every role (4.1: Staff too): a wider child of the
+  // admins' Settings.
+  "/dashboard/settings/profile": EVERYONE,
+  // 4.1: Staff message their manager (the page shows them only that).
+  "/dashboard/chat": EVERYONE,
   "/dashboard/agent-health": PORTAL,
   "/dashboard/focus-adjustments": PORTAL,
   "/dashboard/instructions": PORTAL,
   // 3.2: the monthly screenshot archive and deletion, per organisation.
   "/dashboard/screenshots/archives": ADMINS,
   // 3.4: approvers see requests and balances; the policy is the admins' (the page decides).
-  "/dashboard/leave": PORTAL,
+  // 4.1: Staff see only their own leave and comp off there.
+  "/dashboard/leave": EVERYONE,
   // 3.5: work from home (requests, schedules; the policy is the admins', the page decides);
   // Attendance (biometric) for the organisation's admins, read by the Super Manager.
-  "/dashboard/wfh": PORTAL,
+  // 4.1: Staff see only their own work from home there.
+  "/dashboard/wfh": EVERYONE,
   "/dashboard/attendance": OVERSEERS,
+  // 4.1: Staff's own day, history and year.
+  [TODAY_ROUTE]: STAFF,
+  [HISTORY_ROUTE]: STAFF,
+  [MY_CALENDAR_ROUTE]: STAFF,
 };
 
 /**
@@ -235,12 +255,13 @@ export interface AccessContext {
 }
 
 export function canAccess(role: Role | null, path: string, ctx: AccessContext = {}): boolean {
-  if (!role || role === "USER") return false;
+  if (!role) return false;
   const match = Object.keys(routeRoles)
     .filter((p) => matches(path, p))
     .sort((a, b) => b.length - a.length)[0];
-  // A page with no rule is open to every portal role (it 404s if it does not exist).
-  if (!match) return true;
+  // A page with no rule is open to every portal role (it 404s if it does not exist),
+  // never to Staff: theirs are listed one by one.
+  if (!match) return role !== "USER";
   if (!routeRoles[match].includes(role)) return false;
   if (role === "MANAGER" && GRANT_ROUTES.some((p) => matches(path, p))) {
     // Unknown grants (an old cookie) let the page decide from GET /me.

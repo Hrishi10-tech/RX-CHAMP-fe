@@ -13,8 +13,8 @@ import type { WfhRequestView } from "@/features/wfh/types";
 import { WaitingFor } from "@/features/leave/components/WaitingFor";
 import { Button } from "@/components/ui/Button";
 
-/** "From home" in the brand colour, wherever a day or a request is work from home. */
-export function WfhChip({ label = "From home", title }: { label?: string; title?: string }) {
+/** "Remote" in the brand colour, wherever a day or a request is work from home (4.1: Remote). */
+export function WfhChip({ label = "Remote", title }: { label?: string; title?: string }) {
   return (
     <Chip tone="brand" icon={Home} title={title} wrap>
       {label}

@@ -19,9 +19,10 @@ const COPY: Record<LoginFailureReason, LoginErrorCopy> = {
     duration: 10000,
   },
   staff: {
-    title: "Use the RX Vision app on your computer",
+    // 4.1: only an account the server turns away (permissions.canUsePortal false).
+    title: "Use the RX Vision app",
     description:
-      "The web portal is for Admins and Managers. Your day, breaks and history are in the RX Vision app.",
+      "Your account can't use the web portal. Your day, breaks and history are in the RX Vision app.",
     duration: 10000,
   },
   network: {

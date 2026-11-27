@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { STAFF_REFUSED_ROUTE, canAccess, normalizeRole, resolveHomeRoute } from "@/constants/roles";
+import { canAccess, normalizeRole, resolveHomeRoute } from "@/constants/roles";
 import { SESSION_COOKIE, decodeSession } from "@/lib/auth/session";
 import { contentSecurityPolicy, newNonce } from "@/lib/security/csp";
 
@@ -84,13 +84,6 @@ export function middleware(req: NextRequest) {
     // A role this app does not know. Every route would refuse it, and sending it
     // "home" would bounce forever, so drop the cookie and ask for a fresh sign-in.
     const res = toLogin(req);
-    res.cookies.delete(SESSION_COOKIE);
-    return res;
-  }
-
-  if (role === "USER") {
-    // Staff use the agent (SPEC 1.1): the sign-in page says so.
-    const res = NextResponse.redirect(new URL(STAFF_REFUSED_ROUTE, req.url));
     res.cookies.delete(SESSION_COOKIE);
     return res;
   }

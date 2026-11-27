@@ -137,7 +137,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (ready && !user) router.replace("/auth/login");
   }, [ready, user, router]);
 
-  // Staff never use the portal (SPEC 1.1): end the session and say why.
+  // The server says the portal is not for this person (SPEC 1.1; 4.1: Staff have it):
+  // end the session and say why.
   useEffect(() => {
     if (!refused) return;
     void logoutRequest();
@@ -407,6 +408,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         loading={loading}
         onMarkRead={markRead}
         onMarkAllRead={markAllRead}
+        role={role}
       />
     </div>
   );

@@ -176,6 +176,7 @@ export function NotificationPanel({
   loading,
   onMarkRead,
   onMarkAllRead,
+  role = null,
 }: NotificationPanelProps) {
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const router = useRouter();
@@ -186,7 +187,7 @@ export function NotificationPanel({
 
   function openItem(id: string, type: string, unread: boolean) {
     if (unread) onMarkRead(id);
-    const href = notificationHref(type);
+    const href = notificationHref(type, role);
     if (!href) return;
     onClose();
     router.push(href);
@@ -341,7 +342,7 @@ export function NotificationPanel({
                       {items.map((n) => {
                         const { icon: Icon, tint } = TYPE_STYLE[n.type] ?? DEFAULT_STYLE;
                         const unread = !n.read;
-                        const linked = notificationHref(n.type) !== null;
+                        const linked = notificationHref(n.type, role) !== null;
                         return (
                           <button
                             key={n.id}

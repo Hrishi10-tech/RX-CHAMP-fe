@@ -8,7 +8,8 @@ export type SignInOutcome =
 
 /**
  * After the password is accepted: who this really is, from GET /me (SPEC 5.3).
- * Staff are refused (they use the agent). When /me cannot be read, the role the
+ * Refused only when the server says the portal is not for this person
+ * (`permissions.canUsePortal` false); 4.1: Staff have it. When /me cannot be read, the role the
  * sign-in answer carried is used instead, which is the server's word as well.
  */
 export async function resolveSignIn(
@@ -23,7 +24,7 @@ export async function resolveSignIn(
   }
   const role = me?.role ?? normalizeRole(user.role);
   if (!role) return { ok: false, reason: "unknown_role" };
-  if (role === "USER" || me?.permissions?.canUsePortal === false) {
+  if (me?.permissions?.canUsePortal === false) {
     return { ok: false, reason: "staff" };
   }
   return {

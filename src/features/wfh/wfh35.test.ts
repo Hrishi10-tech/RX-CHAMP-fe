@@ -13,11 +13,10 @@ import {
 import { wfhRequestBody } from "@/features/wfh/api/wfh";
 
 describe("3.5 work from home on 4.0: who opens what, where notices go", () => {
-  it("every portal role opens Work from home, on All organisations too; Staff never use the portal", () => {
-    for (const role of ["SUPER_ADMIN", "SUPER_MANAGER", "ADMIN", "MANAGER"] as Role[]) {
+  it("every role opens Work from home (4.1: Staff their own), on All organisations too", () => {
+    for (const role of ["SUPER_ADMIN", "SUPER_MANAGER", "ADMIN", "MANAGER", "USER"] as Role[]) {
       expect([role, canAccess(role, "/dashboard/wfh")]).toEqual([role, true]);
     }
-    expect(canAccess("USER", "/dashboard/wfh")).toBe(false);
     expect(isOrgFreeRoute("/dashboard/wfh")).toBe(true);
   });
 
@@ -26,8 +25,10 @@ describe("3.5 work from home on 4.0: who opens what, where notices go", () => {
     expect(notificationHref("WFH_CANCELLED")).toBe("/dashboard/wfh?tab=requests");
     for (const t of ["WFH_DECIDED", "WFH_REVOKED", "WFH_SCHEDULED"])
       expect(notificationHref(t)).toBe("/dashboard/wfh");
-    // About the reader's own tracked day, read in the RX Vision app: nowhere to go here.
+    // About the reader's own tracked day: nowhere for an approver; 4.1: Staff's Today.
     expect(notificationHref("WFH_AUTO_ENDED")).toBeNull();
+    expect(notificationHref("WFH_AUTO_ENDED", "USER")).toBe("/dashboard/today");
+    expect(notificationHref("WFH_DECIDED", "USER")).toBe("/dashboard/wfh");
   });
 });
 

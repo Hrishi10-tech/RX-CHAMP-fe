@@ -148,12 +148,13 @@ function OwnGender({ userId }: { userId: string }) {
 
 /** Who sets the gender of someone in this role (4.0, the API's canSetGender). */
 function whoSetsGender(role: string | null): string {
-  return role === "MANAGER" ? "the organisation admin" : "a Super Admin";
+  // Staff and Managers: their organisation's Admin (4.1: Staff use this page too).
+  return role === "MANAGER" || role === "USER" ? "the organisation admin" : "a Super Admin";
 }
 
 /**
- * Settings, Profile, Avatar (design page 10): every portal role changes their avatar
- * here; Staff have no web picker (D-15) and never use the portal (4.0). Dark cards as in the
+ * Settings, Profile, Avatar (design page 10): every role changes their avatar here
+ * (4.1: Staff too, as on the agent and the phone). Dark cards as in the
  * approved design, so the preview reads as it will on a screen.
  */
 export function AvatarSettings() {
@@ -191,7 +192,13 @@ export function AvatarSettings() {
   const status = previewTab ?? liveStatus ?? "NOT_STARTED";
   const ring = progress ? progressOf(progress.workedSec, progress.targetSec) : 0;
   const label = progress
-    ? dayLabel(status, progress.workedSec, progress.targetSec, progress.date)
+    ? dayLabel(
+        status,
+        progress.workedSec,
+        progress.targetSec,
+        progress.date,
+        status === liveStatus && progress.remote,
+      )
     : day.isError && DAY_NOT_LOADED;
   const over = progress ? overTargetLabel(status, progress.overSec) : null;
   const name = user?.name ?? user?.email ?? "";

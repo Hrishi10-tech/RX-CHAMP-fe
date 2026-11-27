@@ -73,14 +73,14 @@ export function readPermissions(value: unknown): MePermissions | null {
 }
 
 /**
- * Whether the server says the portal is not for this person: Staff, or anyone
- * whose `permissions.canUsePortal` is false (SPEC 1.1).
+ * Whether the server says the portal is not for this person: anyone whose
+ * `permissions.canUsePortal` is false (SPEC 1.1). 4.1: Staff have the portal.
  */
 export function portalRefused(
   me: Pick<MeView, "role" | "permissions"> | null | undefined,
 ): boolean {
   if (!me) return false;
-  return me.role === "USER" || me.permissions?.canUsePortal === false;
+  return me.permissions?.canUsePortal === false;
 }
 
 /** Reads the `/me` answer defensively: a missing list is empty, never undefined. */

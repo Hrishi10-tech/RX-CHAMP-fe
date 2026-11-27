@@ -168,7 +168,7 @@ export function LockBlockers({
                     {w.userName}
                   </span>
                   <span className="min-w-0 flex-1 text-body">
-                    From home · {formatDay(w.startDate)}
+                    Remote · {formatDay(w.startDate)}
                     {w.endDate !== w.startDate ? ` to ${formatDay(w.endDate)}` : ""} · {w.days}{" "}
                     {w.days === 1 || w.days < 1 ? "day" : "days"}
                   </span>

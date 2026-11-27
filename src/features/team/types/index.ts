@@ -20,6 +20,8 @@ export interface TeamPerson {
   status: TeamStatus;
   /** When the current status began. */
   since: string | null;
+  /** 4.1: on a remote day right now (started from the portal or the phone): WORKING reads "Remote". */
+  remote?: boolean;
   startedAt: string | null;
   focusSec: number;
   targetSec: number;

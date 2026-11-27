@@ -34,6 +34,11 @@ import {
   refreshLiveAvatars,
 } from "@/features/avatars/lib/liveAvatars";
 import type { AvatarChanged } from "@/features/avatars/types";
+import { workdayKeys } from "@/features/workday/api/keys";
+import { myDayKeys } from "@/features/myday/api/keys";
+import { reportKeys } from "@/features/reports/api/keys";
+import { leaveKeys } from "@/features/leave/api/keys";
+import { wfhKeys } from "@/features/wfh/api/keys";
 import { useAppSelector } from "@/store/hooks";
 import type { NotificationView, UseNotificationsResult } from "@/features/notifications/types";
 
@@ -45,15 +50,18 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
   const router = useRouter();
   const queryClient = useQueryClient();
   const myId = useAppSelector((state) => state.auth.user?.id);
+  const role = useAppSelector((state) => state.auth.role);
   // The socket effect must not reconnect whenever the router or the client
   // object changes identity, so it reads them through refs.
   const routerRef = useRef(router);
   const queryClientRef = useRef(queryClient);
   const myIdRef = useRef(myId);
+  const roleRef = useRef(role);
   useEffect(() => {
     routerRef.current = router;
     queryClientRef.current = queryClient;
     myIdRef.current = myId;
+    roleRef.current = role;
   });
 
   const refresh = useCallback(async () => {
@@ -114,7 +122,7 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
       if (isApproverNotice(n.type)) approvals.add("BREAK");
       else refreshFor31Notification(queryClientRef.current, n.type);
 
-      const href = notificationHref(n.type);
+      const href = notificationHref(n.type, roleRef.current);
       toast(n.title, {
         description: n.body ?? undefined,
         action: href
@@ -151,10 +159,20 @@ export function useNotifications(enabled: boolean): UseNotificationsResult {
     });
 
     // 3.6: your status or breaks changed: the avatar preview's ring and dot follow.
-    socket.on("workday:changed", () => {
-      if (active) {
-        void queryClientRef.current.invalidateQueries({ queryKey: avatarKeys.dayProgress() });
+    // 4.1: and your own pages (Today, History, Leave, Work from home) read again.
+    socket.on("workday:changed", (e: { what?: string } | undefined) => {
+      if (!active) return;
+      const qc = queryClientRef.current;
+      void qc.invalidateQueries({ queryKey: avatarKeys.dayProgress() });
+      void qc.invalidateQueries({ queryKey: workdayKeys.all });
+      void qc.invalidateQueries({ queryKey: myDayKeys.all });
+      void qc.invalidateQueries({ queryKey: [...reportKeys.all, "me"] });
+      const what = e?.what;
+      if (what === "LEAVE" || what === "COMPOFF") {
+        void qc.invalidateQueries({ queryKey: [...leaveKeys.all, "me"] });
+        void qc.invalidateQueries({ queryKey: leaveKeys.compOffMe() });
       }
+      if (what === "WFH") void qc.invalidateQueries({ queryKey: wfhKeys.me() });
     });
 
     // A Super Admin hears the selected organisation: reconnect when it changes.

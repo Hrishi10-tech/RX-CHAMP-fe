@@ -1,4 +1,4 @@
-import { NO_GRANTS } from "@/constants/roles";
+import { NO_GRANTS, canAccess } from "@/constants/roles";
 import { NAV_SECTIONS, activeHrefFor, navFor } from "./nav";
 
 function labels(...args: Parameters<typeof navFor>): string[] {
@@ -106,8 +106,19 @@ describe("navFor", () => {
     ]);
   });
 
-  it("has nothing for Staff, and no removed pages for anyone", () => {
-    expect(navFor("USER")).toEqual([]);
+  it("gives Staff their own menu (4.1), and no removed pages for anyone", () => {
+    expect(labels("USER")).toEqual([
+      "Today",
+      "Leave",
+      "Work from home",
+      "Calendar",
+      "History",
+      "Messages",
+      "Profile",
+    ]);
+    for (const href of navFor("USER").flatMap((s) => s.items.map((i) => i.href))) {
+      expect([href, canAccess("USER", href)]).toEqual([href, true]);
+    }
     const hrefs = NAV_SECTIONS.flatMap((s) => s.items.map((i) => i.href));
     expect(hrefs).not.toContain("/dashboard/me");
     expect(hrefs).not.toContain("/dashboard/team-today");
@@ -143,7 +154,9 @@ describe("Agent health in the menu (3.3)", () => {
         permissions: { canSeeAgentHealth: true },
       }),
     ).toContain("Agent health");
-    expect(navFor("USER", { permissions: { canSeeAgentHealth: true } })).toEqual([]);
+    expect(labels("USER", { permissions: { canSeeAgentHealth: true } })).not.toContain(
+      "Agent health",
+    );
   });
 });
 
@@ -156,6 +169,8 @@ describe("Focus adjustments in the menu (3.3)", () => {
     expect(
       labels("SUPER_MANAGER", { hasOrg: true, permissions: { canAdjustFocus: true } }),
     ).toContain("Focus adjustments");
-    expect(navFor("USER", { permissions: { canAdjustFocus: true } })).toEqual([]);
+    expect(labels("USER", { permissions: { canAdjustFocus: true } })).not.toContain(
+      "Focus adjustments",
+    );
   });
 });

@@ -79,7 +79,13 @@ export function ProfileSettings() {
           {department && <p className="text-sm text-quiet">{department}</p>}
           <p className="mt-2 min-h-4 text-xs text-quiet">
             {progress
-              ? dayLabel(progress.status, progress.workedSec, progress.targetSec, progress.date)
+              ? dayLabel(
+                  progress.status,
+                  progress.workedSec,
+                  progress.targetSec,
+                  progress.date,
+                  progress.remote,
+                )
               : day.isError && DAY_NOT_LOADED}
           </p>
           {over && <p className="mt-0.5 text-xs font-semibold text-working">{over}</p>}

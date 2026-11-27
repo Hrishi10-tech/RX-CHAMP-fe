@@ -26,9 +26,12 @@ describe("after signing in", () => {
     );
   });
 
-  it("sends Staff to the sign-in page that tells them to use the app", () => {
-    expect(afterLoginPath("/dashboard/approvals", "USER")).toBe("/auth/login?reason=staff");
-    expect(afterLoginPath(null, "USER")).toBe("/auth/login?reason=staff");
+  it("sends Staff to their own Today (4.1), or to one of their own pages", () => {
+    expect(afterLoginPath("/dashboard/approvals", "USER")).toBe("/dashboard/today");
+    expect(afterLoginPath(null, "USER")).toBe("/dashboard/today");
+    expect(afterLoginPath("/dashboard/leave?tab=compoff", "USER")).toBe(
+      "/dashboard/leave?tab=compoff",
+    );
   });
 
   it("goes home without a redirect, or with one that is not a dashboard page", () => {

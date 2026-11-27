@@ -68,7 +68,12 @@ export function FocusBar({ focusSec, targetSec }: { focusSec: number; targetSec:
 }
 
 function StatusCell({ person }: { person: TeamPerson }) {
-  const look = teamStatusLook(person.status);
+  const base = teamStatusLook(person.status);
+  // 4.1: a remote day reads Remote rather than Working.
+  const look =
+    person.status === "WORKING" && person.remote
+      ? { ...base, label: "Remote", tone: "info" as const }
+      : base;
   const since =
     person.status === "NOT_STARTED"
       ? null
@@ -94,7 +99,7 @@ function StatusCell({ person }: { person: TeamPerson }) {
       )}
       {(person.wfhDays ?? 0) > 0 && (
         <span className="text-xs font-medium text-brand">
-          {(person.wfhDays ?? 0) >= 1 ? "from home" : "from home, half day"}
+          {(person.wfhDays ?? 0) >= 1 ? "remote" : "remote, half day"}
         </span>
       )}
       {person.attendance === "BIOMETRIC" && (

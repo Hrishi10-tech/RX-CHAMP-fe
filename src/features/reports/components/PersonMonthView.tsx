@@ -584,12 +584,12 @@ export function PersonMonthView({
         )}
         {((t.wfhDays ?? 0) > 0 || (t.wfhOverSec ?? 0) > 0) && (
           <Kpi
-            label="Work from home"
+            label="Remote"
             value={`${t.wfhDays ?? 0} ${t.wfhDays === 1 || (t.wfhDays ?? 0) < 1 ? "day" : "days"}`}
             sub={
               (t.wfhOverSec ?? 0) > 0
-                ? `${formatDuration(t.wfhOverSec ?? 0)} at home over the cap, not counted`
-                : "Time from home counted within the cap"
+                ? `${formatDuration(t.wfhOverSec ?? 0)} remote over the cap, not counted`
+                : "Remote time counted within the cap"
             }
           />
         )}

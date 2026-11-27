@@ -86,9 +86,9 @@ describe("4.0 attendance: who may do what", () => {
 
 describe("3.5 reports: day notes", () => {
   it("names work from home and comp off earned", () => {
-    expect(wfhText({ wfhDays: 1, wfhSec: 32400, wfhOverSec: 0 })).toBe("From home, full day");
+    expect(wfhText({ wfhDays: 1, wfhSec: 32400, wfhOverSec: 0 })).toBe("Remote, full day");
     expect(wfhText({ wfhDays: 0.5, wfhSec: 16200, wfhOverSec: 5400 })).toBe(
-      "From home, half day, 90 min over the cap not counted",
+      "Remote, half day, 90 min over the cap not counted",
     );
     expect(wfhText({ wfhDays: 0 })).toBeNull();
     expect(compOffEarnedText({ compOffEarnedDays: 0.5 })).toBe("Comp off earned: 0.5 day");

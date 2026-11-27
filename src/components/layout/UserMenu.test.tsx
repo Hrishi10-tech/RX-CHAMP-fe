@@ -50,7 +50,8 @@ describe("the user menu's My Profile", () => {
     });
   });
 
-  it.each(["MANAGER", "SUPER_MANAGER", "SUPER_ADMIN"])(
+  // 4.1: Staff too, who change their avatar on the portal as well.
+  it.each(["MANAGER", "SUPER_MANAGER", "SUPER_ADMIN", "USER"])(
     "takes a %s to Settings, Profile",
     (role) => {
       mockRole.current = role;
@@ -59,14 +60,6 @@ describe("the user menu's My Profile", () => {
       expect(mockPush).toHaveBeenCalledWith("/dashboard/settings/profile");
     },
   );
-
-  it("stays as it was for Staff, who have no web picker", () => {
-    mockRole.current = "USER";
-    openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: "My Profile" }));
-    expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.queryByRole("menu")).toBeNull();
-  });
 
   it("shows initials while the person has no avatar", async () => {
     mockRole.current = "USER";

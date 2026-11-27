@@ -162,7 +162,7 @@ describe("TeamView", () => {
       meta: null,
     });
     renderTeam();
-    expect(await screen.findByText("from home, half day")).toBeInTheDocument();
+    expect(await screen.findByText("remote, half day")).toBeInTheDocument();
     expect(screen.getByText("biometric")).toBeInTheDocument();
     expect(screen.getByText("no check-out")).toBeInTheDocument();
   });

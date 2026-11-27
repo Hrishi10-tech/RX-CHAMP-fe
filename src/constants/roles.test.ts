@@ -3,6 +3,7 @@ import {
   NO_GRANTS,
   ROLE_LABEL,
   STAFF_REFUSED_ROUTE,
+  TODAY_ROUTE,
   canAccess,
   effectiveGrants,
   hasAnyGrant,
@@ -64,14 +65,16 @@ describe("resolveHomeRoute", () => {
     ["SUPER_MANAGER", "/dashboard/overview"],
     ["ADMIN", "/dashboard/overview"],
     ["MANAGER", "/dashboard/overview"],
-    ["USER", STAFF_REFUSED_ROUTE],
+    // 4.1: Staff start on their own Today.
+    ["USER", "/dashboard/today"],
     [undefined, "/auth/login"],
   ])("%p starts on %p", (role, home) => {
     expect(resolveHomeRoute(role)).toBe(home);
   });
 
-  it("refuses Staff with the app message", () => {
+  it("keeps the app message for an account the server turns away", () => {
     expect(STAFF_REFUSED_ROUTE).toBe("/auth/login?reason=staff");
+    expect(TODAY_ROUTE).toBe("/dashboard/today");
   });
 });
 
@@ -213,9 +216,18 @@ describe("canAccess (route guard)", () => {
     ["/dashboard/signout-keys", ADMINS],
     ["/dashboard/settings", ADMINS],
     // 3.6: a wider child of the admins' Settings: your own profile and avatar, every portal role.
-    ["/dashboard/settings/profile", yes(true, true, true, true, false, true)],
-    ["/dashboard/settings/profile/avatar", yes(true, true, true, true, false, true)],
-    ["/dashboard/chat", yes()],
+    // 4.1: Staff too.
+    ["/dashboard/settings/profile", yes(true, true, true, true, true, true)],
+    ["/dashboard/settings/profile/avatar", yes(true, true, true, true, true, true)],
+    ["/dashboard/chat", yes(true, true, true, true, true)],
+    // 4.1: Staff see only their own leave and work from home there (the page decides).
+    ["/dashboard/leave", yes(true, true, true, true, true)],
+    ["/dashboard/wfh", yes(true, true, true, true, true)],
+    // 4.1: Staff's own pages, theirs alone.
+    ["/dashboard/today", yes(false, false, false, false, true, false)],
+    ["/dashboard/history", yes(false, false, false, false, true, false)],
+    ["/dashboard/my-calendar", yes(false, false, false, false, true, false)],
+    ["/dashboard/attendance", OVERSEERS],
     ["/dashboard/instructions", yes()],
     ["/dashboard/screenshots/archives", ADMINS],
   ];
@@ -243,10 +255,30 @@ describe("canAccess (route guard)", () => {
     expect(canAccess("MANAGER", "/dashboard/team", { grants: null })).toBe(false);
   });
 
-  it("refuses everything without a role, and Staff everywhere", () => {
+  it("refuses everything without a role", () => {
     expect(canAccess(null, "/dashboard/overview")).toBe(false);
-    expect(canAccess("USER", "/dashboard/chat")).toBe(false);
-    expect(canAccess("USER", "/dashboard/anything")).toBe(false);
+    expect(canAccess(null, "/dashboard/today")).toBe(false);
+  });
+
+  it("keeps Staff to their own pages: never a page with no rule, never anyone else's", () => {
+    for (const path of [
+      "/dashboard/anything",
+      "/dashboard/unknown-page",
+      "/dashboard/overview",
+      "/dashboard/people",
+      "/dashboard/reports",
+      "/dashboard/approvals",
+      "/dashboard/breaks/team",
+      "/dashboard/team/u-1",
+      "/dashboard/screenshots/archives",
+      "/dashboard/agent-health",
+      "/dashboard/focus-adjustments",
+      "/dashboard/instructions",
+      "/dashboard/calendar",
+      "/dashboard/settings",
+    ]) {
+      expect([path, canAccess("USER", path)]).toEqual([path, false]);
+    }
   });
 
   it("lets portal roles reach pages with no rule", () => {

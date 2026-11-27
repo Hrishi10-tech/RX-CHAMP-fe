@@ -33,6 +33,8 @@ export interface MyAvatar {
 /** GET /me/day-progress */
 export interface DayProgress {
   status: FloatingIconStatus;
+  /** 4.1: WORKING on a remote day (started from the portal or the phone): reads "Remote". */
+  remote?: boolean;
   date: string;
   workedSec: number;
   targetSec: number;

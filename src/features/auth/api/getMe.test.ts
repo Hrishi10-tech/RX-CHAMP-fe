@@ -55,9 +55,9 @@ describe("GET /me permissions", () => {
     expect(readMe(meAnswer({ permissions: undefined })).permissions).toBeNull();
   });
 
-  it("refuses Staff, and anyone the server says may not use the portal", () => {
+  it("refuses only anyone the server says may not use the portal (4.1: Staff have it)", () => {
     expect(portalRefused(readMe(meAnswer()))).toBe(false);
-    expect(portalRefused(readMe(meAnswer({ role: "USER" })))).toBe(true);
+    expect(portalRefused(readMe(meAnswer({ role: "USER" })))).toBe(false);
     const blocked = meAnswer();
     (blocked.permissions as Record<string, boolean>).canUsePortal = false;
     expect(portalRefused(readMe(blocked))).toBe(true);
@@ -75,5 +75,12 @@ describe("GET /me permissions", () => {
       readMe(blocked),
     );
     expect(refused).toEqual({ ok: false, reason: "staff" });
+  });
+
+  it("signs in Staff (4.1)", async () => {
+    const staff = await resolveSignIn({ id: "s-1", email: "sam@example.test" }, async () =>
+      readMe(meAnswer({ role: "USER" })),
+    );
+    expect(staff).toMatchObject({ ok: true, role: "USER" });
   });
 });

@@ -33,6 +33,8 @@ export function dayLabel(
   workedSec: number,
   targetSec: number,
   date?: string,
+  /** 4.1: the day is a remote one, so Working reads Remote. */
+  remote = false,
 ): string {
   const worked = formatWorked(workedSec);
   const ofTarget = `${worked} of ${formatTarget(targetSec)}`;
@@ -40,7 +42,7 @@ export function dayLabel(
     case "NOT_STARTED":
       return "Not started";
     case "WORKING":
-      return `Working · ${ofTarget}`;
+      return `${remote ? "Remote" : "Working"} · ${ofTarget}`;
     case "MEETING":
       return `In a meeting · ${ofTarget}`;
     case "BREAK":

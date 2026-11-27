@@ -40,7 +40,7 @@ export function leaveText(d: Pick<PersonDaySummary, "leave">): string | null {
   return l.pendingDays > 0 ? "Leave asked for, waiting for a decision" : null;
 }
 
-/** "From home, full day (9h 00m counted)", "From home, half day"; null without any (3.5). */
+/** "Remote, full day", "Remote, half day" (4.1: a day worked from home reads Remote); null without any (3.5). */
 export function wfhText(
   d: Pick<PersonDaySummary, "wfhDays" | "wfhSec" | "wfhOverSec">,
 ): string | null {
@@ -58,7 +58,7 @@ export function wfhText(
   const over = d.wfhOverSec
     ? `, ${Math.round(d.wfhOverSec / 60)} min over the cap not counted`
     : "";
-  return `From home, ${what}${over}`;
+  return `Remote, ${what}${over}`;
 }
 
 /** "Comp off earned: 1 day" (3.5); null when none. */
